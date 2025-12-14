@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Login - Cyberpunk Recipe Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600&family=Rajdhani:wght@400;600&display=swap" rel="stylesheet">
+<style>
+body { background: #1b1b1e; color: #e2e2e2; font-family: 'Rajdhani', sans-serif; display:flex; justify-content:center; align-items:center; height:100vh; }
+form { background: #121212; padding:40px; border:2px solid #00ffff; border-radius:12px; box-shadow:0 0 16px #ff00ff; width:300px; }
+input { width:100%; padding:10px; margin:6px 0 14px; background:#1a1a1a; color:#00ffff; border:1px solid #ff00ff; border-radius:6px; }
+button { width:100%; padding:10px; border:none; border-radius:6px; background: linear-gradient(90deg,#ff00ff,#00ffff); color:#111; font-weight:bold; cursor:pointer; }
+.error { color:red; text-align:center; margin-bottom:10px; }
+</style>
+</head>
+<body>
+<form method="post" action="/login">
+    {% if error %}
+        <div class="error">{{ error }}</div>
+    {% endif %}
+    <input type="text" name="username" placeholder="Username" required>
+    <input type="password" name="password" placeholder="Password" required>
+    <button type="submit">Login</button>
+</form>
+</body>
+</html>
