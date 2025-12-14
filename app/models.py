@@ -1,0 +1,36 @@
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey
+from sqlalchemy.orm import relationship
+from .database import Base
+from datetime import datetime
+
+
+class Recipe(Base):
+    __tablename__ = "recipes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, index=True)
+    instructions = Column(String, nullable=True)
+    description = Column(String, nullable=True)
+    ingredients = Column(String, nullable=True)  # prosty JSON/string
+    created_at = Column(DateTime, default=datetime.utcnow)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    author = relationship("User")
+
+class Weather(Base):
+    __tablename__ = "weather"
+
+    id = Column(Integer, primary_key=True, index=True)
+    city = Column(String, index=True)
+    temperature = Column(Float)
+    timestamp = Column(DateTime, default=datetime.utcnow)
+
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, unique=True, index=True, nullable=False)
+    hashed_password = Column(String, nullable=False)
+    role = Column(String, default="user")
+    created_at = Column(DateTime, default=datetime.utcnow)
