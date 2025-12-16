@@ -72,6 +72,15 @@ button.secondary {
 button:hover {
     box-shadow: 0 0 14px #00ffff, 0 0 24px #ff00ff;
 }
+button.danger {
+    background: transparent;
+    border: 1px solid #ff0055;
+    color: #ff0055;
+}
+
+button.danger:hover {
+    box-shadow: 0 0 14px #ff0055, 0 0 24px #ff00ff;
+}
 #search { margin-bottom: 25px; }
 .collapsible {
     width: 100%;
@@ -169,7 +178,20 @@ button:hover {
         <div id="modal-text"></div>
     </div>
 </div>
+<div id="edit-modal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeEdit()">&times;</span>
 
+        <h3>Edit Recipe</h3>
+
+        <input id="edit-name">
+        <input id="edit-description">
+        <textarea id="edit-ingredients" rows="5"></textarea>
+        <textarea id="edit-instructions" rows="5"></textarea>
+
+        <button class="primary" onclick="saveEdit()">Save</button>
+    </div>
+</div>
 <script>
 // === ADD RECIPE (TYLKO TEN PRZYCISK) ===
 const addBtn = document.getElementById("add-recipe-btn");
@@ -203,19 +225,35 @@ async function loadRecipes() {
 function displayRecipes(recipes) {
     const container = document.getElementById("recipes-container");
     container.innerHTML = "";
+
     recipes.forEach(r => {
         const box = document.createElement("div");
         box.className = "recipe-box";
+
         box.innerHTML = `
             <h3>${r.name}</h3>
             <p><strong>Description:</strong> ${r.description}</p>
             <p><strong>Ingredients:</strong><br>${r.ingredients.replace(/\n/g, "<br>")}</p>
-            <button class="secondary" onclick="showInstructions('${r.instructions.replace(/'/g,"\\'")}')">View Instructions</button>
+
+            <button class="secondary"
+                onclick="showInstructions('${r.instructions.replace(/'/g,"\\'")}')">
+                View Instructions
+            </button>
+
+            <button class="secondary"
+                onclick="openEdit(${r.id})">
+                Edit
+            </button>
+
+            <button class="danger"
+                onclick="confirmDelete(${r.id}, '${r.name.replace(/'/g,"\\'")}')">
+                Delete
+            </button>
         `;
+
         container.appendChild(box);
     });
 }
-
 async function addRecipe() {
     const name = document.getElementById("name").value;
     const description = document.getElementById("description").value;
@@ -263,6 +301,66 @@ function closeModal() {
 }
 
 loadRecipes();
+let editingId = null;
+
+function openEdit(id) {
+    editingId = id;
+
+    fetch(`/recipes/${id}`)
+        .then(res => res.json())
+        .then(r => {
+            document.getElementById("edit-name").value = r.name;
+            document.getElementById("edit-description").value = r.description;
+            document.getElementById("edit-ingredients").value = r.ingredients;
+            document.getElementById("edit-instructions").value = r.instructions;
+
+            document.getElementById("edit-modal").style.display = "block";
+        });
+}
+
+function closeEdit() {
+    document.getElementById("edit-modal").style.display = "none";
+}
+
+async function saveEdit() {
+    const recipe = {
+        name: document.getElementById("edit-name").value,
+        description: document.getElementById("edit-description").value,
+        ingredients: document.getElementById("edit-ingredients").value,
+        instructions: document.getElementById("edit-instructions").value,
+    };
+
+    const res = await fetch(`/recipes/${editingId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(recipe)
+    });
+
+    if (res.ok) {
+        closeEdit();
+        loadRecipes();
+    } else {
+        alert("Failed to update recipe");
+    }
+}
+async function confirmDelete(id, name) {
+    const ok = confirm(`Delete recipe "${name}"?\nThis cannot be undone.`);
+    if (!ok) return;
+
+    try {
+        const res = await fetch(`/recipes/${id}`, {
+            method: "DELETE"
+        });
+
+        if (res.ok) {
+            loadRecipes();
+        } else {
+            alert("Failed to delete recipe");
+        }
+    } catch (err) {
+        console.error("Delete error:", err);
+    }
+}
 </script>
 
 </div> <!-- koniec .app -->

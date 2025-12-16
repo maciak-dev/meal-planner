@@ -49,3 +49,23 @@ def delete_recipe(recipe_id: int, db: Session = Depends(get_db)):
     db.delete(recipe)
     db.commit()
     return None
+
+# --- UPDATE by ID ---
+@router.put("/{recipe_id}", response_model=RecipeRead)
+def update_recipe(
+    recipe_id: int,
+    recipe: RecipeCreate,
+    db: Session = Depends(get_db)
+):
+    db_recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
+    if not db_recipe:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+
+    db_recipe.name = recipe.name
+    db_recipe.description = recipe.description
+    db_recipe.ingredients = recipe.ingredients
+    db_recipe.instructions = recipe.instructions
+
+    db.commit()
+    db.refresh(db_recipe)
+    return db_recipe
