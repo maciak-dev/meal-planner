@@ -120,6 +120,45 @@ button.danger:hover {
     color: #111;
     font-weight: bold;
 }
+.toast {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    min-width: 220px;
+    padding: 14px 20px;
+    border-radius: 10px;
+    font-weight: bold;
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 1px;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(20px);
+    transition: all 0.4s ease;
+    z-index: 999;
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.toast.success {
+    background: #00ffff;
+    color: #111;
+    box-shadow: 0 0 12px #00ffff, 0 0 20px #00ffff;
+}
+
+.toast.error {
+    background: #ff0055;
+    color: #111;
+    box-shadow: 0 0 12px #ff0055, 0 0 20px #ff0055;
+}
+
+.toast.warn {
+    background: #ff00ff;
+    color: #111;
+    box-shadow: 0 0 12px #ff00ff, 0 0 20px #ff00ff;
+}
 /* ---------- MODAL ---------- */
 .modal {
     display: none;
@@ -269,20 +308,26 @@ async function addRecipe() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(recipe)
         });
+
         if (res.ok) {
             loadRecipes();
+
             document.getElementById("name").value = "";
             document.getElementById("description").value = "";
             document.getElementById("ingredients").value = "";
             document.getElementById("instructions").value = "";
+
+            showToast("Recipe saved ✔", "success");
         } else {
             console.error("Failed to add recipe");
+            showToast("Failed to save recipe", "error");
         }
+
     } catch (err) {
         console.error("Error adding recipe:", err);
+        showToast("Server error", "warn");
     }
 }
-
 function filterRecipes() {
     const filter = document.getElementById("search").value.toLowerCase();
     document.querySelectorAll(".recipe-box").forEach(box => {
@@ -387,13 +432,26 @@ async function confirmDeleteYes() {
         if (res.ok) {
             closeDeleteModal();
             loadRecipes();
+            showToast("Recipe deleted 🗑", "success");
         } else {
             console.error("Delete failed");
+            showToast("Failed to delete recipe", "error");
         }
     } catch (err) {
         console.error("Error deleting recipe:", err);
+        showToast("Server error", "warn");
     }
 }
+function showToast(message, type = "success") {
+    const toast = document.getElementById("toast");
+    toast.textContent = message;
+    toast.className = `toast ${type} show`;
+
+    setTimeout(() => {
+        toast.classList.remove("show");
+    }, 2500);
+}
+
 </script>
 
 </div> <!-- koniec .app -->
@@ -409,5 +467,6 @@ async function confirmDeleteYes() {
         </div>
     </div>
 </div>
+<div id="toast" class="toast"></div>
 </body>
 </html>
