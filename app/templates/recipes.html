@@ -72,6 +72,7 @@ button.secondary {
 button:hover {
     box-shadow: 0 0 14px #00ffff, 0 0 24px #ff00ff;
 }
+
 button.danger {
     background: transparent;
     border: 1px solid #ff0055;
@@ -245,10 +246,10 @@ function displayRecipes(recipes) {
                 Edit
             </button>
 
-            <button class="danger"
-                onclick="confirmDelete(${r.id}, '${r.name.replace(/'/g,"\\'")}')">
-                Delete
-            </button>
+<button class="danger"
+    onclick="openDeleteModal(${r.id}, '${r.name.replace(/'/g, "\\'")}')">
+    Delete
+</button>
         `;
 
         container.appendChild(box);
@@ -361,8 +362,52 @@ async function confirmDelete(id, name) {
         console.error("Delete error:", err);
     }
 }
+let deleteRecipeId = null;
+
+function openDeleteModal(id, name) {
+    deleteRecipeId = id;
+    document.getElementById("delete-text").innerText =
+        `Are you sure you want to delete "${name}"?`;
+    document.getElementById("delete-modal").style.display = "block";
+}
+
+function closeDeleteModal() {
+    deleteRecipeId = null;
+    document.getElementById("delete-modal").style.display = "none";
+}
+
+async function confirmDeleteYes() {
+    if (!deleteRecipeId) return;
+
+    try {
+        const res = await fetch(`/recipes/${deleteRecipeId}`, {
+            method: "DELETE"
+        });
+
+        if (res.ok) {
+            closeDeleteModal();
+            loadRecipes();
+        } else {
+            console.error("Delete failed");
+        }
+    } catch (err) {
+        console.error("Error deleting recipe:", err);
+    }
+}
 </script>
 
 </div> <!-- koniec .app -->
+<!-- DELETE CONFIRM MODAL -->
+<div id="delete-modal" class="modal">
+    <div class="modal-content">
+        <h3 id="delete-title">Delete recipe</h3>
+        <p id="delete-text"></p>
+
+        <div style="display:flex; gap:12px; margin-top:20px; justify-content:flex-end;">
+            <button class="secondary" onclick="closeDeleteModal()">Cancel</button>
+            <button class="danger" onclick="confirmDeleteYes()">Delete</button>
+        </div>
+    </div>
+</div>
 </body>
 </html>
