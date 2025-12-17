@@ -1,0 +1,148 @@
+/* =========================
+   DEFAULT THEME (CYBERPUNK)
+   ========================= */
+
+body.theme-cyber {
+    --bg-main: #1b1b1e;
+    --bg-panel: #121212;
+
+    --text-main: #e2e2e2;
+    --accent-primary: #00ffff;
+    --accent-secondary: #ff00ff;
+    --accent-danger: #ff0055;
+
+    --border-main: #00ffff;
+    --shadow-primary: 0 0 12px #00ffff;
+    --shadow-secondary: 0 0 14px #ff00ff;
+}
+
+/* =========================
+   SCANDI / JAPANDI THEME
+   ========================= */
+
+
+body.theme-scandi {
+    --bg-main: #f4f3ef;
+    --bg-panel: #ffffff;
+
+    --text-main: #2e2e2e;
+
+    --accent-primary: #7b8a7a;   /* szałwia */
+    --accent-secondary: #c4a484; /* jasne drewno */
+    --accent-danger: #b85c5c;
+
+    --shadow-primary: 0 4px 14px rgba(0,0,0,0.06);
+    --shadow-secondary: 0 2px 6px rgba(0,0,0,0.04);
+
+    /* fonts */
+    --font-body: 'Inter', sans-serif;
+    --font-heading: 'Playfair Display', serif;
+
+    /* colors */
+    --bg-main: #f5f4f2;
+    --bg-panel: #ffffff;
+
+    --text-main: #2b2b2b;
+    --accent-primary: #6b705c;
+    --accent-secondary: #a5a58d;
+    --accent-danger: #b5838d;
+
+    /* effects */
+    --shadow-primary: 0 6px 18px rgba(0,0,0,0.08);
+    --shadow-secondary: 0 2px 8px rgba(0,0,0,0.06);
+    background-image:
+        radial-gradient(circle, rgba(0,0,0,0.03) 1px, transparent 1px);
+    background-size: 6px 6px;
+}
+
+/* Nagłówki – eleganckie, spokojne */
+body.theme-scandi h1,
+body.theme-scandi h2,
+body.theme-scandi h3 {
+    font-family: 'Playfair Display', serif;
+    letter-spacing: 0.5px;
+    text-shadow: none;
+}
+
+/* Inputs – papierowy look */
+body.theme-scandi input,
+body.theme-scandi textarea {
+    background: #fafafa;
+    color: #2e2e2e;
+    border: 1px solid #ddd;
+    box-shadow: none;
+}
+
+body.theme-scandi input:focus,
+body.theme-scandi textarea:focus {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px rgba(123,138,122,0.15);
+}
+
+/* Buttons */
+body.theme-scandi button.primary {
+    background: var(--accent-primary);
+    color: #fff;
+}
+
+body.theme-scandi button.secondary {
+    border: 1px solid var(--accent-primary);
+    color: var(--accent-primary);
+}
+
+body.theme-scandi button:hover {
+    box-shadow: var(--shadow-primary);
+}
+
+/* Cards / recipe box */
+body.theme-scandi .recipe-box {
+    background: #fff;
+    border: 1px solid #e5e5e5;
+    box-shadow: var(--shadow-primary);
+}
+
+body.theme-scandi .recipe-box:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+}
+
+/* Tags – naturalne */
+body.theme-scandi .recipe-tags span {
+    background: #ede9e2;
+    color: #4a4a4a;
+    font-weight: 500;
+}
+
+/* Toast – minimalistyczny */
+body.theme-scandi .toast {
+    background: #ffffff;
+    color: #2e2e2e;
+    border: 1px solid #ddd;
+    box-shadow: var(--shadow-primary);
+    font-family: 'Inter', sans-serif;
+}
+
+body.theme-scandi .toast.success {
+    border-left: 4px solid var(--accent-primary);
+}
+
+body.theme-scandi .toast.error {
+    border-left: 4px solid var(--accent-danger);
+}
+
+/* Modal */
+body.theme-scandi .modal-content {
+    background: #ffffff;
+    border: 1px solid #ddd;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+}
+
+/* Divider */
+body.theme-scandi .divider {
+    background: linear-gradient(
+        90deg,
+        transparent,
+        #d6d0c6,
+        transparent
+    );
+}
