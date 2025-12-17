@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Cyberpunk Recipe Manager</title>
+<title>Recipe Manager</title>
 
 <!-- FAVICONS -->
 <link rel="icon" type="image/png" sizes="16x16" href="static/favicon-16.png">
@@ -10,47 +10,72 @@
 <link rel="icon" type="image/png" sizes="48x48" href="static/favicon-48.png">
 
 <!-- FONTS -->
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600&family=Rajdhani:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600&family=Orbitron:wght@400;600&display=swap" rel="stylesheet">
 
+<!-- Scandi / Japandi fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@400;500;600&display=swap" rel="stylesheet">
+
+<!-- CSS -->
+<link rel="stylesheet" href="/static/main.css">
+<link rel="stylesheet" href="/static/themes.css">
 <style>
 * { box-sizing: border-box; }
+
+/* =========================
+   BASE (THEME AWARE)
+   ========================= */
+
 body {
     margin: 0;
-    background-color: #1b1b1e;
+    background-color: var(--bg-main);
     background-image:
         radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px),
         radial-gradient(circle, rgba(255,255,255,0.03) 1px, transparent 1px);
     background-size: 4px 4px, 2px 2px;
-    color: #e2e2e2;
-    font-family: 'Rajdhani', sans-serif;
+    color: var(--text-main);
+    font-family: var(--font-body);
 }
+
 .app {
     max-width: 900px;
     margin: 40px auto;
     padding: 20px;
 }
+
 h1, h2, h3 {
-    font-family: 'Orbitron', sans-serif;
+    font-family: var(--font-heading);
     letter-spacing: 1px;
-    text-shadow: 0 0 6px #ff00ff, 0 0 10px #00ffff;
+    text-shadow: 0 0 6px var(--accent-secondary), 0 0 10px var(--accent-primary);
 }
+
 h1 { text-align: center; }
+
+/* =========================
+   INPUTS
+   ========================= */
+
 input, textarea {
     width: 100%;
     padding: 10px;
     margin: 6px 0 14px;
-    background: #1a1a1a;
-    color: #00ffff;
-    border: 1px solid #ff00ff;
+    background: var(--bg-panel);
+    color: var(--accent-primary);
+    border: 1px solid var(--accent-secondary);
     border-radius: 6px;
     font-size: 16px;
-    box-shadow: 0 0 6px #ff00ff;
+    box-shadow: var(--shadow-secondary);
 }
+
 input:focus, textarea:focus {
     outline: none;
-    border-color: #00ffff;
-    box-shadow: 0 0 12px #00ffff;
+    border-color: var(--accent-primary);
+    box-shadow: var(--shadow-primary);
 }
+
+/* =========================
+   BUTTONS
+   ========================= */
+
 button {
     padding: 10px;
     border-radius: 6px;
@@ -59,107 +84,163 @@ button {
     font-size: 16px;
     transition: 0.25s;
 }
+
 button.primary {
-    background: linear-gradient(90deg, #ff00ff, #00ffff);
+    background: linear-gradient(90deg, var(--accent-secondary), var(--accent-primary));
     color: #111;
     font-weight: bold;
 }
+
 button.secondary {
     background: transparent;
-    border: 1px solid #00ffff;
-    color: #00ffff;
+    border: 1px solid var(--accent-primary);
+    color: var(--accent-primary);
 }
+
 button:hover {
-    box-shadow: 0 0 14px #00ffff, 0 0 24px #ff00ff;
+    box-shadow: var(--shadow-primary), var(--shadow-secondary);
 }
 
 button.danger {
     background: transparent;
-    border: 1px solid #ff0055;
-    color: #ff0055;
+    border: 1px solid var(--accent-danger);
+    color: var(--accent-danger);
 }
 
 button.danger:hover {
-    box-shadow: 0 0 14px #ff0055, 0 0 24px #ff00ff;
+    box-shadow: 0 0 14px var(--accent-danger), var(--shadow-secondary);
 }
+
+/* =========================
+   SEARCH / COLLAPSIBLE
+   ========================= */
+
 #search { margin-bottom: 25px; }
+
 .collapsible {
     width: 100%;
-    background: #121212;
-    border: 1px solid #ff00ff;
-    color: #00ffff;
+    background: var(--bg-panel);
+    border: 1px solid var(--accent-secondary);
+    color: var(--accent-primary);
     padding: 12px;
     text-align: left;
     font-size: 18px;
     border-radius: 8px;
-    box-shadow: 0 0 8px #ff00ff;
+    box-shadow: var(--shadow-secondary);
 }
+
 .collapsible::after { content: "+"; float: right; }
 .collapsible.active::after { content: "−"; }
-.content { display: none; margin-top: 15px; padding: 15px; background: #111; border-radius: 10px; border: 2px solid #00ffff; }
-.divider { height: 1px; background: linear-gradient(90deg, transparent, #00ffff, #ff00ff, transparent); margin: 40px 0; }
+
+.content {
+    display: none;
+    margin-top: 15px;
+    padding: 15px;
+    background: var(--bg-panel);
+    border-radius: 10px;
+    border: 2px solid var(--accent-primary);
+}
+
+/* =========================
+   DIVIDER
+   ========================= */
+
+.divider {
+    height: 1px;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        var(--accent-primary),
+        var(--accent-secondary),
+        transparent
+    );
+    margin: 40px 0;
+}
+
+/* =========================
+   RECIPE BOX
+   ========================= */
+
 .recipe-box {
     padding: 18px;
     margin-bottom: 20px;
     border-radius: 12px;
-    border: 1px solid #00ffff;
-    background: #1b1b1e;
-    box-shadow: 0 0 10px #00ffff, 0 0 14px #ff00ff;
+    border: 1px solid var(--accent-primary);
+    background: var(--bg-panel);
+    box-shadow: var(--shadow-primary), var(--shadow-secondary);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
+
 .recipe-box:hover {
     transform: translateY(-4px) scale(1.01);
-    box-shadow: 0 0 20px #00ffff, 0 0 30px #ff00ff;
+    box-shadow: var(--shadow-primary), 0 0 30px var(--accent-secondary);
 }
+
 .recipe-tags span {
     display: inline-block;
     margin: 4px;
     padding: 6px 10px;
     border-radius: 6px;
-    background: #ff00ff;
+    background: var(--accent-secondary);
     color: #111;
     font-weight: bold;
 }
+
+/* =========================
+   TOASTS
+   ========================= */
+
 .toast {
     position: fixed;
     bottom: 30px;
     right: 30px;
-    min-width: 220px;
-    padding: 14px 20px;
+    min-width: 240px;
+    padding: 14px 22px;
     border-radius: 10px;
-    font-weight: bold;
+
     font-family: 'Orbitron', sans-serif;
+    font-size: 14px;
     letter-spacing: 1px;
+
+    background: rgba(18,18,18,0.95);
+    border: 1px solid var(--accent-primary);
+    color: var(--accent-primary);
+
+    box-shadow: var(--shadow-primary), var(--shadow-secondary);
+
     opacity: 0;
     pointer-events: none;
-    transform: translateY(20px);
-    transition: all 0.4s ease;
+    transform: translateY(20px) scale(0.98);
+    transition: all 0.35s ease;
+
     z-index: 999;
+    backdrop-filter: blur(6px);
 }
 
 .toast.show {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
 }
 
 .toast.success {
-    background: #00ffff;
-    color: #111;
-    box-shadow: 0 0 12px #00ffff, 0 0 20px #00ffff;
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
 }
 
 .toast.error {
-    background: #ff0055;
-    color: #111;
-    box-shadow: 0 0 12px #ff0055, 0 0 20px #ff0055;
+    border-color: var(--accent-danger);
+    color: var(--accent-danger);
 }
 
 .toast.warn {
-    background: #ff00ff;
-    color: #111;
-    box-shadow: 0 0 12px #ff00ff, 0 0 20px #ff00ff;
+    border-color: var(--accent-secondary);
+    color: var(--accent-secondary);
 }
-/* ---------- MODAL ---------- */
+
+/* =========================
+   MODAL
+   ========================= */
+
 .modal {
     display: none;
     position: fixed;
@@ -168,32 +249,79 @@ button.danger:hover {
     padding: 60px 20px;
     z-index: 100;
 }
+
 .modal-content {
     max-width: 600px;
     margin: auto;
-    background: #121212;
+    background: var(--bg-panel);
     padding: 25px;
     border-radius: 12px;
-    border: 2px solid #00ffff;
-    box-shadow: 0 0 16px #ff00ff, 0 0 20px #00ffff;
+    border: 2px solid var(--accent-primary);
+    box-shadow: var(--shadow-secondary), var(--shadow-primary);
     animation: modalIn 0.3s ease;
 }
-@keyframes modalIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
-.close { float: right; font-size: 28px; cursor: pointer; color: #ff00ff; }
-#quote { text-align: center; margin-top: 40px; font-style: italic; color: #ff00ff; text-shadow: 0 0 6px #00ffff; }
+
+@keyframes modalIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to   { opacity: 1; transform: scale(1); }
+}
+
+.close {
+    float: right;
+    font-size: 28px;
+    cursor: pointer;
+    color: var(--accent-secondary);
+}
+
+#quote {
+    text-align: center;
+    margin-top: 40px;
+    font-style: italic;
+    color: var(--accent-secondary);
+    text-shadow: 0 0 6px var(--accent-primary);
+}
+/* =========================
+   THEME TRANSITIONS
+   ========================= */
+
+body,
+.app,
+.recipe-box,
+input,
+textarea,
+button,
+.modal-content,
+.toast {
+    transition:
+        background-color 0.35s ease,
+        color 0.35s ease,
+        border-color 0.35s ease,
+        box-shadow 0.35s ease,
+        transform 0.35s ease;
+}
+
+/* Nagłówki – osobno, wolniej i subtelniej */
+h1, h2, h3 {
+    transition:
+        color 0.45s ease,
+        text-shadow 0.45s ease,
+        letter-spacing 0.45s ease;
+}
+
 </style>
 </head>
 
 <body>
 <div class="app">
 
-<h1>Cyberpunk Recipe Manager</h1>
+<h1>Recipe Manager</h1>
 
 <input id="search" placeholder="Search recipes..." oninput="filterRecipes()">
 
 <div style="text-align:right; margin-bottom:15px;">
     <form method="get" action="/logout" style="display:inline;">
-        <button class="secondary" type="submit">Logout</button>
+        <button type="button" class="secondary" onclick="toggleTheme()">Switch Theme</button>
+        <button type="submit" class="secondary">Logout</button>
     </form>
 </div>
 
@@ -317,7 +445,7 @@ async function addRecipe() {
             document.getElementById("ingredients").value = "";
             document.getElementById("instructions").value = "";
 
-            showToast("Recipe saved ✔", "success");
+            showToast("Recipe saved", "success");
         } else {
             console.error("Failed to add recipe");
             showToast("Failed to save recipe", "error");
@@ -369,6 +497,8 @@ function closeEdit() {
 }
 
 async function saveEdit() {
+    if (!editingId) return;
+
     const recipe = {
         name: document.getElementById("edit-name").value,
         description: document.getElementById("edit-description").value,
@@ -376,37 +506,29 @@ async function saveEdit() {
         instructions: document.getElementById("edit-instructions").value,
     };
 
-    const res = await fetch(`/recipes/${editingId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(recipe)
-    });
-
-    if (res.ok) {
-        closeEdit();
-        loadRecipes();
-    } else {
-        alert("Failed to update recipe");
-    }
-}
-async function confirmDelete(id, name) {
-    const ok = confirm(`Delete recipe "${name}"?\nThis cannot be undone.`);
-    if (!ok) return;
-
     try {
-        const res = await fetch(`/recipes/${id}`, {
-            method: "DELETE"
+        const res = await fetch(`/recipes/${editingId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(recipe)
         });
 
         if (res.ok) {
+            closeEdit();
             loadRecipes();
+            showToast("Recipe updated", "success");
         } else {
-            alert("Failed to delete recipe");
+            console.error("Failed to update recipe");
+            showToast("Failed to update recipe", "error");
         }
+
     } catch (err) {
-        console.error("Delete error:", err);
+        console.error("Edit error:", err);
+        showToast("Server error", "warn");
     }
 }
+
+
 let deleteRecipeId = null;
 
 function openDeleteModal(id, name) {
@@ -432,7 +554,7 @@ async function confirmDeleteYes() {
         if (res.ok) {
             closeDeleteModal();
             loadRecipes();
-            showToast("Recipe deleted 🗑", "success");
+            showToast("Recipe deleted", "success");
         } else {
             console.error("Delete failed");
             showToast("Failed to delete recipe", "error");
@@ -451,7 +573,22 @@ function showToast(message, type = "success") {
         toast.classList.remove("show");
     }, 2500);
 }
+function setTheme(theme) {
+    document.body.classList.remove("theme-cyber", "theme-scandi");
+    document.body.classList.add(theme);
+    localStorage.setItem("theme", theme);
+}
 
+function toggleTheme() {
+    const currentTheme = document.body.classList.contains("theme-scandi") ? "theme-scandi" : "theme-cyber";
+    setTheme(currentTheme === "theme-scandi" ? "theme-cyber" : "theme-scandi");
+}
+
+/* ON LOAD */
+document.addEventListener("DOMContentLoaded", () => {
+    const saved = localStorage.getItem("theme") || "theme-cyber";
+    setTheme(saved); // używamy setTheme, żeby usuwało stare klasy
+});
 </script>
 
 </div> <!-- koniec .app -->

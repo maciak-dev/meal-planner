@@ -1,0 +1,36 @@
+:root {
+    /* fonts */
+    --font-body: 'Rajdhani', sans-serif;
+    --font-heading: 'Orbitron', sans-serif;
+
+    /* colors */
+    --bg-main: #1b1b1e;
+    --bg-panel: #121212;
+
+    --text-main: #e2e2e2;
+    --accent-primary: #00ffff;
+    --accent-secondary: #ff00ff;
+    --danger: #ff0055;
+
+    /* effects */
+    --glow-primary: 0 0 12px #00ffff;
+    --glow-secondary: 0 0 12px #ff00ff;
+}
+
+/* =========================
+   DEFAULT THEME (CYBERPUNK)
+   ========================= */
+
+body.theme-cyber {
+    --bg-main: #1b1b1e;
+    --bg-panel: #121212;
+
+    --text-main: #e2e2e2;
+    --accent-primary: #00ffff;
+    --accent-secondary: #ff00ff;
+    --accent-danger: #ff0055;
+
+    --border-main: #00ffff;
+    --shadow-primary: 0 0 12px #00ffff;
+    --shadow-secondary: 0 0 14px #ff00ff;
+}
