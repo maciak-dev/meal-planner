@@ -1,27 +1,40 @@
-from fastapi import FastAPI, Request, Response, Depends, HTTPException, Form
+from fastapi import FastAPI, Request, Response, Depends, Form, HTTPException
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy.orm import Session as DbSession
+from sqlalchemy.orm import Session
 
 from app import models
 from app.database import Base, engine, get_db
-from app.models import Recipe
+from app.models import Recipe, User
 from app.core import security
 from app.recipes.routers import router as recipes_router
-
 # --- Tworzymy aplikację ---
 app = FastAPI()
-
-# --- Tworzymy bazę (jeśli jeszcze nie istnieje) ---
 Base.metadata.create_all(bind=engine)
 
+app.include_router(recipes_router)
 # --- Templates ---
 templates = Jinja2Templates(directory="app/templates")
-sessions = {}
 
-# mount folder ze statycznymi plikami
+# --- Static ---
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
+# --- ADMIN BOOTSTRAP ---
+def ensure_admin():
+    db = Session(bind=engine)
+    admin = db.query(User).filter(User.username == "admin").first()
+    if not admin:
+        admin = User(
+            username="admin",
+            hashed_password=security.hash_password("admin"),
+            role="admin"
+        )
+        db.add(admin)
+        db.commit()
+    db.close()
+
+ensure_admin()
 
 
 # --- ENDPOINTY LOGOWANIA ---
@@ -30,50 +43,42 @@ def login_page(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
 
 @app.post("/login")
-async def login(request: Request, username: str = Form(...), password: str = Form(...)):
-    db = DbSession(bind=engine)
-    user = db.query(models.User).filter(models.User.username == username).first()
+def login(request: Request, username: str = Form(...), password: str = Form(...)):
+    db = Session(bind=engine)
+    user = db.query(User).filter(User.username == username).first()
     db.close()
+
     if not user or not security.verify_password(password, user.hashed_password):
-        return templates.TemplateResponse("login.html", {"request": request, "error": "Invalid credentials"})
-    
-    # Tworzymy losowy token sesji
-    import secrets
-    token = secrets.token_hex(16)
-    sessions[token] = username
-    
+        return templates.TemplateResponse(
+            "login.html",
+            {"request": request, "error": "Invalid credentials"}
+        )
+
+    token = security.create_access_token({"sub": user.id})
     response = RedirectResponse(url="/recipes-ui", status_code=302)
-    response.set_cookie(key="session_token", value=token, httponly=True)
+    response.set_cookie(
+        key="access_token",
+        value=token,
+        httponly=True,
+        samesite="lax",
+        path="/"
+    )
     return response
 
-def get_current_user(request: Request):
-    token = request.cookies.get("session_token")
-    if not token or token not in sessions:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    return sessions[token]
 
 # --- ENDPOINT RECIPE UI ---
 @app.get("/recipes-ui")
-def recipes_ui(request: Request, user: str = Depends(get_current_user), db: sessions = Depends(get_db)):
-    # pobieramy wszystkie przepisy z bazy
+def recipes_ui(request: Request, user=Depends(security.get_current_user), db: Session = Depends(get_db)):
     recipes = db.query(Recipe).all()
     return templates.TemplateResponse(
         "recipes.html",
         {"request": request, "user": user, "recipes": recipes}
     )
 
-app.include_router(recipes_router)
+
 # --- LOGOUT ---
 @app.get("/logout")
-def logout(response: Response, request: Request):
-    token = request.cookies.get("session_token")
-    if token in sessions:
-        del sessions[token]
+def logout():
     response = RedirectResponse(url="/login", status_code=302)
-    response.delete_cookie(key="session_token")
+    response.delete_cookie("access_token", path="/")
     return response
-
-# --- ROOT ---
-@app.get("/")
-def root():
-    return {"message": "MealETL API is running!"}

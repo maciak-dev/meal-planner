@@ -1,3 +1,5 @@
+# TODO: API auth (future)
+"""
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -27,3 +29,5 @@ def login(
 
     token = create_access_token({"sub": user.id})
     return {"access_token": token, "token_type": "bearer"}
+
+"""

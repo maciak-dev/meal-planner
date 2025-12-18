@@ -5,23 +5,24 @@
 <title>Login - Recipe Manager</title>
 
 <!-- FONTS -->
-<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600&family=Orbitron:wght@400;600&family=Inter:wght@400;500;600&family=Playfair+Display:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600&family=Orbitron:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@400;500;600&display=swap" rel="stylesheet">
 
 <!-- CSS -->
 <link rel="stylesheet" href="/static/main.css">
 <link rel="stylesheet" href="/static/themes.css">
 
 <style>
-/* LOGIN FORM */
 body {
     margin: 0;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    height:100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
     background-color: var(--bg-main);
     color: var(--text-main);
     font-family: var(--font-body);
+    transition: background-color 0.35s ease, color 0.35s ease;
 }
 
 form.login-form {
@@ -29,11 +30,12 @@ form.login-form {
     padding: 40px;
     border-radius: 12px;
     border: 2px solid var(--accent-primary);
-    box-shadow: var(--shadow-secondary), var(--shadow-primary);
     width: 320px;
     display: flex;
     flex-direction: column;
     gap: 10px;
+    box-shadow: var(--shadow-primary), var(--shadow-secondary);
+    transition: background 0.35s ease, color 0.35s ease, border-color 0.35s ease;
 }
 
 input {
@@ -43,8 +45,9 @@ input {
     color: var(--accent-primary);
     border: 1px solid var(--accent-secondary);
     border-radius: 6px;
-    font-family: var(--font-body);
-    font-size: 14px;
+    font-size: 16px;
+    box-shadow: var(--shadow-secondary);
+    transition: border-color 0.35s ease, box-shadow 0.35s ease, background-color 0.35s ease, color 0.35s ease;
 }
 
 input:focus {
@@ -56,13 +59,11 @@ input:focus {
 button {
     width: 100%;
     padding: 10px;
-    border: none;
     border-radius: 6px;
     font-weight: bold;
     cursor: pointer;
     font-family: var(--font-heading);
-    font-size: 16px;
-    transition: 0.25s;
+    transition: box-shadow 0.35s ease, background 0.35s ease, color 0.35s ease;
 }
 
 button.login-btn {
@@ -76,42 +77,19 @@ button.theme-btn {
     color: var(--accent-primary);
 }
 
-/* ERROR MESSAGE */
+button:hover {
+    box-shadow: var(--shadow-primary), var(--shadow-secondary);
+}
+
 .error {
-    color: #ff0055;
+    color: var(--accent-danger);
     text-align: center;
-    margin-bottom: 10px;
     font-weight: bold;
 }
-
-/* OPTIONAL: TOASTS (from main.css) */
-.toast {
-    position: fixed;
-    bottom: 30px;
-    right: 30px;
-    min-width: 240px;
-    padding: 14px 22px;
-    border-radius: 10px;
-    font-family: var(--font-heading);
-    font-size: 14px;
-    letter-spacing: 1px;
-    opacity: 0;
-    pointer-events: none;
-    transform: translateY(20px) scale(0.98);
-    transition: all 0.35s ease;
-    z-index: 999;
-    backdrop-filter: blur(6px);
-}
-
-.toast.show { opacity:1; transform:translateY(0) scale(1); }
-.toast.success { border:1px solid var(--accent-primary); color: var(--accent-primary); }
-.toast.error { border:1px solid var(--accent-danger); color: var(--accent-danger); }
-.toast.warn { border:1px solid var(--accent-secondary); color: var(--accent-secondary); }
-
 </style>
 </head>
-<body>
 
+<body>
 <form class="login-form" method="post" action="/login">
     <button type="button" class="theme-btn" onclick="toggleTheme()">Switch Theme</button>
 
@@ -125,21 +103,22 @@ button.theme-btn {
 </form>
 
 <script>
+// THEME FUNCTIONS
 function setTheme(theme) {
-    document.body.classList.remove("theme-cyber", "theme-scandi");
+    document.body.classList.remove("theme-cyber","theme-scandi");
     document.body.classList.add(theme);
     localStorage.setItem("theme", theme);
 }
 
 function toggleTheme() {
-    const isScandi = document.body.classList.contains("theme-scandi");
-    setTheme(isScandi ? "theme-cyber" : "theme-scandi");
+    const current = document.body.classList.contains("theme-scandi") ? "theme-scandi" : "theme-cyber";
+    setTheme(current === "theme-scandi" ? "theme-cyber" : "theme-scandi");
 }
 
-/* ON LOAD */
-(function () {
+// ON LOAD
+(function(){
     const saved = localStorage.getItem("theme") || "theme-cyber";
-    document.body.classList.add(saved);
+    setTheme(saved);
 })();
 </script>
 
