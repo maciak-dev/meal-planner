@@ -4,10 +4,11 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import Recipe
 from app.schemas.recipe import RecipeCreate, RecipeRead
-
+from app.core.security import get_current_user
 router = APIRouter(
     prefix="/recipes",
-    tags=["recipes"]
+    tags=["recipes"],
+    dependencies=[Depends(get_current_user)]
 )
 
 # --- GET: lista przepisów ---
