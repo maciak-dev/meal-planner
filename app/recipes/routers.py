@@ -4,11 +4,10 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import Recipe
 from app.schemas.recipe import RecipeCreate, RecipeRead
-from app.core.security import get_current_user
+from app.core.security import get_current_user,  require_admin
 router = APIRouter(
     prefix="/recipes",
     tags=["recipes"],
-    dependencies=[Depends(get_current_user)]
 )
 
 # --- GET: lista przepisów ---
@@ -17,7 +16,10 @@ def get_recipes_api(db: Session = Depends(get_db)):
     return db.query(Recipe).all()
 
 # --- POST: dodaj przepis ---
-@router.post("/", response_model=RecipeRead)
+@router.post("/",
+    response_model=RecipeRead,
+    dependencies=[Depends(require_admin)]
+)
 def add_recipe_api(
     recipe: RecipeCreate,
     db: Session = Depends(get_db)
@@ -42,17 +44,25 @@ def get_recipe(recipe_id: int, db: Session = Depends(get_db)):
     return recipe
 
 # --- DELETE by ID ---
-@router.delete("/{recipe_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{recipe_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(require_admin)]
+)
 def delete_recipe(recipe_id: int, db: Session = Depends(get_db)):
     recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
     if not recipe:
         raise HTTPException(status_code=404, detail="Recipe not found")
+
     db.delete(recipe)
     db.commit()
     return None
 
 # --- UPDATE by ID ---
-@router.put("/{recipe_id}", response_model=RecipeRead)
+@router.put("/{recipe_id}",
+    response_model=RecipeRead,
+    dependencies=[Depends(require_admin)]
+)
 def update_recipe(
     recipe_id: int,
     recipe: RecipeCreate,
