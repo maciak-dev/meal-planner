@@ -1,3 +1,4 @@
+from pydantic import BaseModel
 from fastapi import FastAPI, Request, Response, Depends, Form, HTTPException
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
@@ -36,6 +37,10 @@ def ensure_admin():
 
 ensure_admin()
 
+class UserCreate(BaseModel):
+    username: str
+    password: str
+    role: str = "user"
 
 # --- ENDPOINTY LOGOWANIA ---
 @app.get("/login")
@@ -82,3 +87,29 @@ def logout():
     response = RedirectResponse(url="/login", status_code=302)
     response.delete_cookie("access_token", path="/")
     return response
+
+# --- NEW USER ---
+@app.post("/users")
+def create_user(
+    user: UserCreate,
+    current_user=Depends(security.require_admin),
+    db: Session = Depends(get_db)
+):
+    existing = db.query(User).filter(User.username == user.username).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Username already exists")
+
+    new_user = User(
+        username=user.username,
+        hashed_password=security.hash_password(user.password),
+        role=user.role
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+
+    return {
+        "id": new_user.id,
+        "username": new_user.username,
+        "role": new_user.role
+    }

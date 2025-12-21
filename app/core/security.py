@@ -55,3 +55,12 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
     except JWTError as e:
         print("JWT ERROR:", e)  # ⬅️ bardzo ważne do debugowania
         raise HTTPException(status_code=401, detail="Not authenticated")
+
+
+def require_admin(current_user: models.User = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin privileges required"
+        )
+    return current_user
