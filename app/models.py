@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from .database import Base
 from datetime import datetime
@@ -16,15 +16,6 @@ class Recipe(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     author = relationship("User")
 
-class Weather(Base):
-    __tablename__ = "weather"
-
-    id = Column(Integer, primary_key=True, index=True)
-    city = Column(String, index=True)
-    temperature = Column(Float)
-    timestamp = Column(DateTime, default=datetime.utcnow)
-
-
 
 class User(Base):
     __tablename__ = "users"
@@ -34,3 +25,11 @@ class User(Base):
     hashed_password = Column(String, nullable=False)
     role = Column(String, default="user")
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class Ingredient(Base):
+    __tablename__ = "ingredients"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, nullable=False)
+    is_essential = Column(Boolean, default=True)

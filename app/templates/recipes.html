@@ -18,224 +18,12 @@
 <link rel="stylesheet" href="/static/main.css">
 <link rel="stylesheet" href="/static/themes.css">
 
-<style>
-* { box-sizing: border-box; }
 
-body {
-    margin: 0;
-    background-color: var(--bg-main);
-    background-image:
-        radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px),
-        radial-gradient(circle, rgba(255,255,255,0.03) 1px, transparent 1px);
-    background-size: 4px 4px, 2px 2px;
-    color: var(--text-main);
-    font-family: var(--font-body);
-    transition: background-color 0.35s ease, color 0.35s ease;
-}
-
-.app {
-    max-width: 900px;
-    margin: 40px auto;
-    padding: 20px;
-}
-
-h1 { 
-    font-family: var(--font-heading);
-    text-align: center;
-    letter-spacing: 1px;
-    text-shadow: 0 0 6px var(--accent-secondary), 0 0 10px var(--accent-primary);
-    transition: color 0.45s ease, text-shadow 0.45s ease;
-}
-
-h1, h2, h3 {
-    font-family: var(--font-heading);
-    letter-spacing: 1px;
-    text-shadow: 0 0 6px var(--accent-secondary), 0 0 10px var(--accent-primary);
-}
-
-input, textarea {
-    width: 100%;
-    padding: 10px;
-    margin: 6px 0 14px;
-    background: var(--bg-panel);
-    color: var(--accent-primary);
-    border: 1px solid var(--accent-secondary);
-    border-radius: 6px;
-    font-size: 16px;
-    box-shadow: var(--shadow-secondary);
-    transition: border-color 0.35s ease, box-shadow 0.35s ease, background-color 0.35s ease, color 0.35s ease;
-}
-
-input:focus, textarea:focus {
-    outline: none;
-    border-color: var(--accent-primary);
-    box-shadow: var(--shadow-primary);
-}
-
-button {
-    padding: 10px;
-    border-radius: 6px;
-    border: none;
-    cursor: pointer;
-    font-size: 16px;
-    transition: 0.25s;
-}
-
-button.primary {
-    background: linear-gradient(90deg, var(--accent-secondary), var(--accent-primary));
-    color: #111;
-    font-weight: bold;
-}
-
-button.secondary {
-    background: transparent;
-    border: 1px solid var(--accent-primary);
-    color: var(--accent-primary);
-}
-
-button.danger {
-    background: transparent;
-    border: 1px solid var(--accent-danger);
-    color: var(--accent-danger);
-}
-
-button.danger:hover {
-    box-shadow: 0 0 14px var(--accent-danger), var(--shadow-secondary);
-}
-
-button:hover {
-    box-shadow: var(--shadow-primary), var(--shadow-secondary);
-}
-
-/* Collapsible Form */
-.collapsible {
-    width: 100%;
-    background: var(--bg-panel);
-    border: 1px solid var(--accent-secondary);
-    color: var(--accent-primary);
-    padding: 12px;
-    text-align: left;
-    font-size: 18px;
-    border-radius: 8px;
-    box-shadow: var(--shadow-secondary);
-    cursor: pointer;
-}
-
-.collapsible::after { content: "+"; float: right; }
-.collapsible.active::after { content: "−"; }
-
-.content {
-    display: none;
-    margin-top: 15px;
-    padding: 15px;
-    background: var(--bg-panel);
-    border-radius: 10px;
-    border: 2px solid var(--accent-primary);
-}
-
-/* =========================
-   DIVIDER
-   ========================= */
-
-.divider {
-    height: 1px;
-    background: linear-gradient(
-        90deg,
-        transparent,
-        var(--accent-primary),
-        var(--accent-secondary),
-        transparent
-    );
-    margin: 40px 0;
-}
-
-/* Recipe Box */
-.recipe-box {
-    padding: 18px;
-    margin-bottom: 20px;
-    border-radius: 12px;
-    border: 1px solid var(--accent-primary);
-    background: var(--bg-panel);
-    box-shadow: var(--shadow-primary), var(--shadow-secondary);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.recipe-box:hover {
-    transform: translateY(-4px) scale(1.01);
-    box-shadow: var(--shadow-primary), 0 0 30px var(--accent-secondary);
-}
-
-/* Modal */
-.modal {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(10,10,10,0.95);
-    padding: 60px 20px;
-    z-index: 100;
-}
-
-.modal-content {
-    max-width: 600px;
-    margin: auto;
-    background: var(--bg-panel);
-    padding: 25px;
-    border-radius: 12px;
-    border: 2px solid var(--accent-primary);
-    box-shadow: var(--shadow-secondary), var(--shadow-primary);
-    animation: modalIn 0.3s ease;
-}
-
-@keyframes modalIn {
-    from { opacity: 0; transform: scale(0.9); }
-    to   { opacity: 1; transform: scale(1); }
-}
-
-.close { float: right; font-size: 28px; cursor: pointer; color: var(--accent-secondary); }
-
-/* Toasts */
-.toast {
-    position: fixed;
-    bottom: 30px;
-    right: 30px;
-    min-width: 240px;
-    padding: 14px 22px;
-    border-radius: 10px;
-    font-family: 'Orbitron', sans-serif;
-    font-size: 14px;
-    letter-spacing: 1px;
-    background: rgba(18,18,18,0.95);
-    border: 1px solid var(--accent-primary);
-    color: var(--accent-primary);
-    box-shadow: var(--shadow-primary), var(--shadow-secondary);
-    opacity: 0;
-    pointer-events: none;
-    transform: translateY(20px) scale(0.98);
-    transition: all 0.35s ease;
-    z-index: 999;
-    backdrop-filter: blur(6px);
-}
-
-.toast.show { opacity: 1; transform: translateY(0) scale(1); }
-
-.toast.success { border-color: var(--accent-primary); color: var(--accent-primary); }
-.toast.error { border-color: var(--accent-danger); color: var(--accent-danger); }
-.toast.warn { border-color: var(--accent-secondary); color: var(--accent-secondary); }
-
-/* Nagłówki – osobno, wolniej i subtelniej */
-h1, h2, h3 {
-    transition:
-        color 0.45s ease,
-        text-shadow 0.45s ease,
-        letter-spacing 0.45s ease;
-}
-
-</style>
 </head>
 
-<body>
-<div class="app">
-
+<body class="theme-cyber">
+<main class="app">
+<header>
 <h1>Recipe Manager</h1>
 
 <div style="text-align:right; margin-bottom:15px;">
@@ -244,6 +32,9 @@ h1, h2, h3 {
         <button type="submit" class="secondary">Logout</button>
     </form>
 </div>
+</header>
+<section class="controls">
+
 <input id="search" placeholder="Search recipes..." oninput="filterRecipes()">
 <button id="add-recipe-btn" class="collapsible">Add Recipe</button>
 
@@ -254,11 +45,11 @@ h1, h2, h3 {
     <textarea id="instructions" rows="5" placeholder="Instructions"></textarea>
     <button class="primary" onclick="addRecipe()">Add Recipe</button>
 </div>
-
 <div class="divider"></div>
+</section>
+<section id="recipes-container"></section>
 
-<div id="recipes-container"></div>
-
+</main>
 <!-- MODALS -->
 <div id="modal" class="modal">
     <div class="modal-content">
@@ -283,7 +74,7 @@ h1, h2, h3 {
     <div class="modal-content">
         <h3 id="delete-title">Delete Recipe</h3>
         <p id="delete-text"></p>
-        <div style="display:flex; gap:12px; margin-top:20px; justify-content:flex-end;">
+        <div class="modal-actions">
             <button class="secondary" onclick="closeDeleteModal()">Cancel</button>
             <button class="danger" onclick="confirmDeleteYes()">Delete</button>
         </div>
@@ -292,156 +83,6 @@ h1, h2, h3 {
 
 <div id="toast" class="toast"></div>
 
-<script>
-// === COLLAPSIBLE FORM ===
-const addBtn = document.getElementById("add-recipe-btn");
-const addForm = document.getElementById("add-recipe-form");
-addBtn.addEventListener("click", () => {
-    addBtn.classList.toggle("active");
-    addForm.style.display = addForm.style.display === "block" ? "none" : "block";
-});
-
-// === LOAD & DISPLAY RECIPES ===
-async function loadRecipes() {
-    try {
-        const res = await fetch("/recipes/");
-        const data = await res.json();
-        displayRecipes(data);
-    } catch (err) { console.error("Error loading recipes:", err); }
-}
-
-function displayRecipes(recipes) {
-    const container = document.getElementById("recipes-container");
-    container.innerHTML = "";
-
-    recipes.forEach(r => {
-        const box = document.createElement("div");
-        box.className = "recipe-box";
-
-        box.innerHTML = `
-            <h3>${r.name}</h3>
-            <p><strong>Description:</strong> ${r.description}</p>
-            <p><strong>Ingredients:</strong><br>${r.ingredients.replace(/\n/g,"<br>")}</p>
-            <button class="secondary" onclick="showInstructions('${r.instructions.replace(/'/g,"\\'")}')">View Instructions</button>
-            <button class="secondary" onclick="openEdit(${r.id})">Edit</button>
-            <button class="danger" onclick="openDeleteModal(${r.id},'${r.name.replace(/'/g,"\\'")}')">Delete</button>
-        `;
-        container.appendChild(box);
-    });
-}
-
-// === ADD RECIPE ===
-async function addRecipe() {
-    const recipe = {
-        name: document.getElementById("name").value,
-        description: document.getElementById("description").value,
-        ingredients: document.getElementById("ingredients").value,
-        instructions: document.getElementById("instructions").value
-    };
-
-    try {
-        const res = await fetch("/recipes/", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(recipe)
-        });
-        if (res.ok) {
-            loadRecipes();
-            ["name","description","ingredients","instructions"].forEach(id=>document.getElementById(id).value="");
-            showToast("Recipe saved","success");
-        } else showToast("Failed to save recipe","error");
-    } catch (err) { console.error(err); showToast("Server error","warn"); }
-}
-
-// === EDIT RECIPE ===
-let editingId = null;
-function openEdit(id) {
-    editingId = id;
-    fetch(`/recipes/${id}`).then(r=>r.json()).then(r=>{
-        document.getElementById("edit-name").value = r.name;
-        document.getElementById("edit-description").value = r.description;
-        document.getElementById("edit-ingredients").value = r.ingredients;
-        document.getElementById("edit-instructions").value = r.instructions;
-        document.getElementById("edit-modal").style.display="block";
-    });
-}
-function closeEdit() { document.getElementById("edit-modal").style.display="none"; }
-
-async function saveEdit() {
-    if(!editingId) return;
-    const recipe = {
-        name: document.getElementById("edit-name").value,
-        description: document.getElementById("edit-description").value,
-        ingredients: document.getElementById("edit-ingredients").value,
-        instructions: document.getElementById("edit-instructions").value
-    };
-    try {
-        const res = await fetch(`/recipes/${editingId}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(recipe)
-        });
-        if(res.ok){ closeEdit(); loadRecipes(); showToast("Recipe updated","success"); }
-        else showToast("Failed to update recipe","error");
-    } catch(err){ console.error(err); showToast("Server error","warn"); }
-}
-
-// === DELETE RECIPE ===
-let deleteRecipeId=null;
-function openDeleteModal(id,name){
-    deleteRecipeId=id;
-    document.getElementById("delete-text").innerText=`Are you sure you want to delete "${name}"?`;
-    document.getElementById("delete-modal").style.display="block";
-}
-function closeDeleteModal(){ deleteRecipeId=null; document.getElementById("delete-modal").style.display="none"; }
-
-async function confirmDeleteYes(){
-    if(!deleteRecipeId) return;
-    try{
-        const res=await fetch(`/recipes/${deleteRecipeId}`,{method:"DELETE"});
-        if(res.ok){ closeDeleteModal(); loadRecipes(); showToast("Recipe deleted","success"); }
-        else showToast("Failed to delete recipe","error");
-    }catch(err){ console.error(err); showToast("Server error","warn"); }
-}
-
-// === INSTRUCTIONS MODAL ===
-function showInstructions(text){ 
-    document.getElementById("modal-text").innerHTML = text.replace(/\n/g,"<br>");
-    document.getElementById("modal").style.display="block";
-}
-function closeModal(){ document.getElementById("modal").style.display="none"; }
-
-// === TOAST ===
-function showToast(msg,type="success"){
-    const toast=document.getElementById("toast");
-    toast.textContent=msg;
-    toast.className=`toast ${type} show`;
-    setTimeout(()=>{ toast.classList.remove("show"); },2500);
-}
-
-// === THEME ===
-function setTheme(theme){
-    document.body.classList.remove("theme-cyber","theme-scandi");
-    document.body.classList.add(theme);
-    localStorage.setItem("theme",theme);
-}
-function toggleTheme(){
-    const current=document.body.classList.contains("theme-scandi")?"theme-scandi":"theme-cyber";
-    setTheme(current==="theme-scandi"?"theme-cyber":"theme-scandi");
-}
-function filterRecipes() {
-    const query = document.getElementById("search").value.toLowerCase();
-    const recipes = document.querySelectorAll(".recipe-box");
-
-    recipes.forEach(box => {
-        const text = box.innerText.toLowerCase();
-        box.style.display = text.includes(query) ? "block" : "none";
-    });
-}
-// === ON LOAD ===
-document.addEventListener("DOMContentLoaded",()=>{ loadRecipes(); const saved=localStorage.getItem("theme")||"theme-cyber"; setTheme(saved); });
-</script>
-
-</div> <!-- .app -->
+<script src="/static/recipes.js"></script>
 </body>
 </html>

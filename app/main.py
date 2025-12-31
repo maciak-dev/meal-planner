@@ -6,13 +6,16 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 
 from app import models
-from app.database import Base, engine, get_db
+from app.database import Base, engine, get_db, SessionLocal
 from app.models import Recipe, User
 from app.core import security
+from app.core.config import ENV,COOKIE_SECURE
 from app.recipes.routers import router as recipes_router
 # --- Tworzymy aplikację ---
 app = FastAPI()
-Base.metadata.create_all(bind=engine)
+if ENV == "dev":
+    Base.metadata.create_all(bind=engine)
+
 
 app.include_router(recipes_router)
 # --- Templates ---
@@ -22,8 +25,8 @@ templates = Jinja2Templates(directory="app/templates")
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 # --- ADMIN BOOTSTRAP ---
-def ensure_admin():
-    db = Session(bind=engine)
+
+def ensure_admin(db: Session):
     admin = db.query(User).filter(User.username == "admin").first()
     if not admin:
         admin = User(
@@ -33,14 +36,20 @@ def ensure_admin():
         )
         db.add(admin)
         db.commit()
-    db.close()
-
-ensure_admin()
 
 class UserCreate(BaseModel):
     username: str
     password: str
     role: str = "user"
+
+@app.on_event("startup")
+def startup_event():
+    if ENV == "dev":
+        db = SessionLocal()
+        try:
+            ensure_admin(db)
+        finally:
+            db.close()
 
 # --- ENDPOINTY LOGOWANIA ---
 @app.get("/login")
@@ -48,15 +57,19 @@ def login_page(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
 
 @app.post("/login")
-def login(request: Request, username: str = Form(...), password: str = Form(...)):
-    db = Session(bind=engine)
+def login(
+    request: Request,
+    username: str = Form(...),
+    password: str = Form(...),
+    db: Session = Depends(get_db)
+):
     user = db.query(User).filter(User.username == username).first()
-    db.close()
 
     if not user or not security.verify_password(password, user.hashed_password):
         return templates.TemplateResponse(
             "login.html",
-            {"request": request, "error": "Invalid credentials"}
+            {"request": request, "error": "Invalid credentials"},
+            status_code=401
         )
 
     token = security.create_access_token({"sub": user.id})
@@ -66,6 +79,7 @@ def login(request: Request, username: str = Form(...), password: str = Form(...)
         value=token,
         httponly=True,
         samesite="lax",
+        secure=COOKIE_SECURE,
         path="/"
     )
     return response
@@ -73,13 +87,27 @@ def login(request: Request, username: str = Form(...), password: str = Form(...)
 
 # --- ENDPOINT RECIPE UI ---
 @app.get("/recipes-ui")
-def recipes_ui(request: Request, user=Depends(security.get_current_user), db: Session = Depends(get_db)):
+def recipes_ui(
+    request: Request,
+    user=Depends(security.get_current_user),
+    db: Session = Depends(get_db)
+):
     recipes = db.query(Recipe).all()
+
+    ingredients_map = {
+        i.name.lower(): i.is_essential
+        for i in db.query(models.Ingredient).all()
+    }
+
     return templates.TemplateResponse(
         "recipes.html",
-        {"request": request, "user": user, "recipes": recipes}
+        {
+            "request": request,
+            "user": user,
+            "recipes": recipes,
+            "ingredients_map": ingredients_map
+        }
     )
-
 
 # --- LOGOUT ---
 @app.get("/logout")
@@ -112,4 +140,11 @@ def create_user(
         "id": new_user.id,
         "username": new_user.username,
         "role": new_user.role
+    }
+
+@app.get("/ingredients/map")
+def ingredients_map(db: Session = Depends(get_db)):
+    return {
+        i.name.lower(): i.is_essential
+        for i in db.query(models.Ingredient).all()
     }
