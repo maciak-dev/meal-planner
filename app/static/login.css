@@ -1,0 +1,44 @@
+body.login {
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    font-family: var(--font-body);
+}
+
+form.login-form {
+    width: 320px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 40px;
+    border-radius: 12px;
+    border: 2px solid var(--accent-primary);
+    background: var(--bg-panel);
+    box-shadow: var(--shadow-primary), var(--shadow-secondary);
+}
+
+.login input,
+.login textarea,
+.login button {
+    width: 100%;
+    padding: 10px;
+    border-radius: 6px;
+    font-size: 16px;
+    box-sizing: border-box;
+}
+
+button.login-btn {
+    background: linear-gradient(90deg, var(--accent-secondary), var(--accent-primary));
+    color: #111;
+    font-weight: bold;
+}
+
+button.theme-btn {
+    background: transparent;
+    border: 1px solid var(--accent-primary);
+    color: var(--accent-primary);
+}

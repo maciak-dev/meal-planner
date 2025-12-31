@@ -1,27 +1,12 @@
+/* =========================
+   RESET & VARIABLES
+   ========================= */
+* { box-sizing: border-box; }
+
 :root {
-    /* fonts */
     --font-body: 'Rajdhani', sans-serif;
     --font-heading: 'Orbitron', sans-serif;
 
-    /* colors */
-    --bg-main: #1b1b1e;
-    --bg-panel: #121212;
-
-    --text-main: #e2e2e2;
-    --accent-primary: #00ffff;
-    --accent-secondary: #ff00ff;
-    --danger: #ff0055;
-
-    /* effects */
-    --glow-primary: 0 0 12px #00ffff;
-    --glow-secondary: 0 0 12px #ff00ff;
-}
-
-/* =========================
-   DEFAULT THEME (CYBERPUNK)
-   ========================= */
-
-body.theme-cyber {
     --bg-main: #1b1b1e;
     --bg-panel: #121212;
 
@@ -30,7 +15,266 @@ body.theme-cyber {
     --accent-secondary: #ff00ff;
     --accent-danger: #ff0055;
 
-    --border-main: #00ffff;
     --shadow-primary: 0 0 12px #00ffff;
     --shadow-secondary: 0 0 14px #ff00ff;
+}
+
+/* =========================
+   THEMES
+   ========================= */
+body.theme-cyber {
+    --bg-main: #1b1b1e;
+    --bg-panel: #121212;
+}
+
+/* =========================
+   BODY / APP
+   ========================= */
+body {
+    margin: 0;
+    background-color: var(--bg-main);
+    background-image:
+        radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px),
+        radial-gradient(circle, rgba(255,255,255,0.03) 1px, transparent 1px);
+    background-size: 4px 4px, 2px 2px;
+    color: var(--text-main);
+    font-family: var(--font-body);
+}
+
+.app {
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 20px;
+}
+
+/* =========================
+   HEADINGS
+   ========================= */
+h1, h2, h3 {
+    font-family: var(--font-heading);
+    text-align: center;
+    letter-spacing: 1px;
+    text-shadow: 0 0 6px var(--accent-secondary), 0 0 10px var(--accent-primary);
+}
+
+/* =========================
+   INPUTS
+   ========================= */
+input,
+textarea {
+    width: 100%;
+    padding: 10px;
+    margin: 6px 0 14px;
+    background: var(--bg-panel);
+    color: var(--accent-primary);
+    border: 1px solid var(--accent-secondary);
+    border-radius: 6px;
+    font-size: 16px;
+    box-shadow: var(--shadow-secondary);
+}
+
+input:focus,
+textarea:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: var(--shadow-primary);
+}
+
+/* =========================
+   BUTTONS (GLOBAL)
+   ========================= */
+button {
+    padding: 10px 18px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-family: var(--font-heading);
+    font-weight: bold;
+    transition: box-shadow 0.3s ease, background 0.3s ease, color 0.3s ease;
+}
+
+button.primary {
+    background: linear-gradient(90deg, var(--accent-secondary), var(--accent-primary));
+    color: #111;
+}
+
+button.secondary {
+    background: transparent;
+    border: 1px solid var(--accent-primary);
+    color: var(--accent-primary);
+}
+
+button.danger {
+    background: transparent;
+    border: 1px solid var(--accent-danger);
+    color: var(--accent-danger);
+}
+
+button:hover {
+    box-shadow: var(--shadow-primary), var(--shadow-secondary);
+}
+
+button.danger:hover {
+    box-shadow: 0 0 14px var(--accent-danger);
+}
+
+/* =========================
+   CONTROLS (SEARCH + ADD)
+   ========================= */
+.controls {
+    display: block;
+    width: 100%;
+}
+
+.controls input,
+.controls button {
+    width: 100%;
+}
+
+#add-recipe-btn {
+    width: 100%;
+    margin-top: 10px;
+}
+
+/* =========================
+   COLLAPSIBLE
+   ========================= */
+.collapsible {
+    background: var(--bg-panel);
+    border: 1px solid var(--accent-secondary);
+    color: var(--accent-primary);
+    padding: 12px;
+    font-size: 18px;
+    border-radius: 8px;
+    box-shadow: var(--shadow-secondary);
+}
+
+.collapsible::after { content: "+"; float: right; }
+.collapsible.active::after { content: "−"; }
+
+.content {
+    display: none;
+    margin-top: 15px;
+    padding: 15px;
+    background: var(--bg-panel);
+    border-radius: 10px;
+    border: 2px solid var(--accent-primary);
+}
+
+/* =========================
+   DIVIDER
+   ========================= */
+.divider {
+    width: 100%;
+    height: 1px;
+    margin: 40px 0;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        var(--accent-primary),
+        var(--accent-secondary),
+        transparent
+    );
+}
+
+/* =========================
+   RECIPE BOX
+   ========================= */
+.recipe-box {
+    padding: 18px;
+    margin-bottom: 20px;
+    border-radius: 12px;
+    border: 1px solid var(--accent-primary);
+    background: var(--bg-panel);
+    box-shadow: var(--shadow-primary), var(--shadow-secondary);
+}
+
+.recipe-box button {
+    margin-top: 10px;
+}
+
+/* =========================
+   INGREDIENTS
+   ========================= */
+.ingredients-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.ingredient {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    font-size: 16px;
+    line-height: 1.3;
+}
+
+/* checkbox – stabilny, nie pływa */
+.ingredient input[type="checkbox"] {
+    margin: 0;
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+}
+
+/* tekst składnika */
+.ingredient span {
+    display: block;
+    flex: 1;
+    text-align: left;
+}
+
+/* =========================
+   MODALS
+   ========================= */
+.modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(10,10,10,0.95);
+    padding: 60px 20px;
+    z-index: 100;
+}
+
+.modal-content {
+    max-width: 600px;
+    margin: auto;
+    background: var(--bg-panel);
+    padding: 25px;
+    border-radius: 12px;
+    border: 2px solid var(--accent-primary);
+    box-shadow: var(--shadow-secondary), var(--shadow-primary);
+}
+
+.close {
+    float: right;
+    font-size: 28px;
+    cursor: pointer;
+    color: var(--accent-secondary);
+}
+
+/* =========================
+   TOASTS
+   ========================= */
+.toast {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    min-width: 240px;
+    padding: 14px 22px;
+    border-radius: 10px;
+    background: rgba(18,18,18,0.95);
+    border: 1px solid var(--accent-primary);
+    color: var(--accent-primary);
+    box-shadow: var(--shadow-primary), var(--shadow-secondary);
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.35s ease;
+}
+
+.toast.show {
+    opacity: 1;
 }

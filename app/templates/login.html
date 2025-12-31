@@ -17,85 +17,11 @@
 <!-- CSS -->
 <link rel="stylesheet" href="/static/main.css">
 <link rel="stylesheet" href="/static/themes.css">
+<link rel="stylesheet" href="/static/login.css">
 
-<style>
-body {
-    margin: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    background-color: var(--bg-main);
-    color: var(--text-main);
-    font-family: var(--font-body);
-    transition: background-color 0.35s ease, color 0.35s ease;
-}
-
-form.login-form {
-    background: var(--bg-panel);
-    padding: 40px;
-    border-radius: 12px;
-    border: 2px solid var(--accent-primary);
-    width: 320px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    box-shadow: var(--shadow-primary), var(--shadow-secondary);
-    transition: background 0.35s ease, color 0.35s ease, border-color 0.35s ease;
-}
-
-input {
-    width: 100%;
-    padding: 10px;
-    background: var(--bg-panel);
-    color: var(--accent-primary);
-    border: 1px solid var(--accent-secondary);
-    border-radius: 6px;
-    font-size: 16px;
-    box-shadow: var(--shadow-secondary);
-    transition: border-color 0.35s ease, box-shadow 0.35s ease, background-color 0.35s ease, color 0.35s ease;
-}
-
-input:focus {
-    outline: none;
-    border-color: var(--accent-primary);
-    box-shadow: var(--shadow-primary);
-}
-
-button {
-    width: 100%;
-    padding: 10px;
-    border-radius: 6px;
-    font-weight: bold;
-    cursor: pointer;
-    font-family: var(--font-heading);
-    transition: box-shadow 0.35s ease, background 0.35s ease, color 0.35s ease;
-}
-
-button.login-btn {
-    background: linear-gradient(90deg, var(--accent-secondary), var(--accent-primary));
-    color: #111;
-}
-
-button.theme-btn {
-    background: transparent;
-    border: 1px solid var(--accent-primary);
-    color: var(--accent-primary);
-}
-
-button:hover {
-    box-shadow: var(--shadow-primary), var(--shadow-secondary);
-}
-
-.error {
-    color: var(--accent-danger);
-    text-align: center;
-    font-weight: bold;
-}
-</style>
 </head>
 
-<body>
+<body class="login">
 <form class="login-form" method="post" action="/login">
     <button type="button" class="theme-btn" onclick="toggleTheme()">Switch Theme</button>
 
