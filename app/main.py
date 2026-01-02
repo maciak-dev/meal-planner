@@ -28,14 +28,16 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 def ensure_admin(db: Session):
     admin = db.query(User).filter(User.username == "admin").first()
-    if not admin:
-        admin = User(
-            username="admin",
-            hashed_password=security.hash_password("admin"),
-            role="admin"
-        )
-        db.add(admin)
-        db.commit()
+    if admin:
+        return  # 👈 KLUCZOWE: nic nie robimy
+
+    admin = User(
+        username="admin",
+        hashed_password=security.hash_password("admin"),
+        role="admin"
+    )
+    db.add(admin)
+    db.commit()
 
 class UserCreate(BaseModel):
     username: str
@@ -44,12 +46,18 @@ class UserCreate(BaseModel):
 
 @app.on_event("startup")
 def startup_event():
-    if ENV == "dev":
-        db = SessionLocal()
-        try:
-            ensure_admin(db)
-        finally:
-            db.close()
+    if ENV != "dev":
+        return
+
+    db = SessionLocal()
+    try:
+        ensure_admin(db)
+    finally:
+        db.close()
+
+@app.get("/", include_in_schema=False)
+def root():
+    return RedirectResponse(url="/login")
 
 # --- ENDPOINTY LOGOWANIA ---
 @app.get("/login")
