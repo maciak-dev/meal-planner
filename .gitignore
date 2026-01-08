@@ -13,7 +13,8 @@ venv/
 .vscode/
 .idea/
 
+*.db
+
 # OS
 .DS_Store
 Thumbs.db
-.db
