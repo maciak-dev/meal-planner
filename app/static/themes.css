@@ -1,102 +1,245 @@
 /* =========================
-   SCANDI / JAPANDI THEME
+   CV PREMIUM THEME
    ========================= */
 body.theme-scandi {
-    --bg-main: #f5f4f2;
+    /* =========================
+       COLORS
+       ========================= */
+
+    /* Backgrounds */
+    --bg-main: #f3efe9;
     --bg-panel: #ffffff;
-    --text-main: #2b2b2b;
 
-    --accent-primary: #6b705c;   /* szałwia */
-    --accent-secondary: #a5a58d; /* jasne drewno */
-    --accent-danger: #b5838d;
+    /* Text */
+    --text-body: #2c2c2c;
+    --text-heading: #3f4c5a;
+    --text-muted: #8b8b8b;
+    --text-box: #2f2f2f;
 
-    --shadow-primary: 0 6px 18px rgba(0,0,0,0.08);
-    --shadow-secondary: 0 2px 8px rgba(0,0,0,0.06);
+    /* Accents */
+    --accent-primary: #3f4c5a;   /* grafit */
+    --accent-secondary: #d2ad7f; /* ciepłe złoto */
+    --accent-danger: #b35b5b;
 
+    /* Shadows */
+    --shadow-primary: 0 18px 45px rgba(0,0,0,0.08);
+    --shadow-secondary: 0 6px 14px rgba(0,0,0,0.06);
+
+    /* Fonts */
     --font-body: 'Inter', sans-serif;
-    --font-heading: 'Playfair Display', serif;
+    --font-heading: 'Poppins', sans-serif;
 
-    background-image:
-        radial-gradient(circle, rgba(0,0,0,0.03) 1px, transparent 1px);
-    background-size: 6px 6px;
+
+    /* =========================
+       PREMIUM BACKGROUND
+       ========================= */
+    background:
+        linear-gradient(
+            160deg,
+            #f6f2ec 0%,
+            #f3efe9 40%,
+            #ece5dc 100%
+        );
 }
 
-/* Headings */
+/* =========================
+   TYPOGRAPHY
+   ========================= */
+body.theme-scandi {
+    color: var(--text-body);
+}
+
 body.theme-scandi h1,
 body.theme-scandi h2,
 body.theme-scandi h3 {
-    font-family: 'Playfair Display', serif;
-    letter-spacing: 0.5px;
+    color: var(--text-heading);
+    font-family: var(--font-heading);
+    letter-spacing: 0.35px;
     text-shadow: none;
 }
 
-/* Inputs */
+/* elegancki, cienki akcent pod h3 */
+body.theme-scandi h3::after {
+    content: "";
+    display: block;
+    width: 52px;
+    height: 2px;
+    margin: 10px auto 0;
+    background: linear-gradient(
+        90deg,
+        var(--accent-secondary),
+        rgba(210,173,127,0.3)
+    );
+}
+
+/* =========================
+   INPUTS / TEXTAREA / SELECT
+   ========================= */
 body.theme-scandi input,
-body.theme-scandi textarea {
-    background: #fafafa;
-    color: #2e2e2e;
+body.theme-scandi textarea,
+body.theme-scandi select {
+    background: #ffffff;
+    color: var(--text-body);
     border: 1px solid #ddd;
+    border-radius: 12px;
+    padding: 11px 14px;
+    font-family: var(--font-body);
     box-shadow: none;
+    transition: border 0.2s ease, box-shadow 0.2s ease;
+}
+
+body.theme-scandi input::placeholder,
+body.theme-scandi textarea::placeholder {
+    color: var(--text-muted);
 }
 
 body.theme-scandi input:focus,
-body.theme-scandi textarea:focus {
+body.theme-scandi textarea:focus,
+body.theme-scandi select:focus {
+    outline: none;
     border-color: var(--accent-primary);
-    box-shadow: 0 0 0 2px rgba(123,138,122,0.15);
+    box-shadow: 0 0 0 3px rgba(63,76,90,0.18);
 }
 
-/* Buttons */
+/* =========================
+   BUTTONS
+   ========================= */
+body.theme-scandi button {
+    border-radius: 999px;
+    font-weight: 600;
+    font-family: var(--font-body);
+    padding: 10px 20px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* primary */
 body.theme-scandi button.primary {
-    background: var(--accent-primary);
-    color: #fff;
+    background: linear-gradient(
+        135deg,
+        #3f4c5a,
+        #566878
+    );
+    color: #ffffff;
 }
 
+/* secondary */
 body.theme-scandi button.secondary {
-    border: 1px solid var(--accent-primary);
+    background: transparent;
     color: var(--accent-primary);
+    border: 1px solid var(--accent-primary);
 }
 
 body.theme-scandi button:hover {
-    box-shadow: var(--shadow-primary);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-secondary);
 }
 
-/* Recipe box */
+/* =========================
+   RECIPE BOX
+   ========================= */
 body.theme-scandi .recipe-box {
-    background: #fff;
-    border: 1px solid #e5e5e5;
-    box-shadow: var(--shadow-primary);
-}
-
-body.theme-scandi .recipe-box:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0,0,0,0.08);
-}
-
-/* Toasts */
-body.theme-scandi .toast {
     background: #ffffff;
-    color: #2e2e2e;
-    border: 1px solid #ddd;
+    color: var(--text-box);
+    border-radius: 20px;
+    border: 1px solid #e6e1db;
     box-shadow: var(--shadow-primary);
-    font-family: 'Inter', sans-serif;
+    position: relative;
+    overflow: hidden;
 }
 
-body.theme-scandi .toast.success {
-    border-left: 4px solid var(--accent-primary);
+/* delikatny, skośny akcent (jak w CV, ale subtelniej) */
+body.theme-scandi .recipe-box::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: -40px;
+    width: 140px;
+    height: 100%;
+    background: linear-gradient(
+        135deg,
+        rgba(210,173,127,0.25),
+        rgba(210,173,127,0.05)
+    );
+    transform: skewX(-12deg);
 }
 
-body.theme-scandi .toast.error {
-    border-left: 4px solid var(--accent-danger);
+body.theme-scandi .recipe-box h3 {
+    color: var(--text-heading);
+    margin-bottom: 10px;
 }
 
-/* Modals */
+/* =========================
+   INGREDIENTS – CLEAN LIST
+   ========================= */
+body.theme-scandi .ingredients-list {
+    margin-top: 10px;
+    gap: 6px;
+}
+
+body.theme-scandi .ingredient {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    background: transparent; /* 🔥 bez tabletki */
+    padding: 6px 2px;
+
+    border-bottom: 1px dashed rgba(0,0,0,0.08);
+    font-size: 15px;
+}
+
+body.theme-scandi .ingredient:last-child {
+    border-bottom: none;
+}
+
+body.theme-scandi .ingredient span {
+    color: var(--text-body);
+}
+
+/* checkbox elegancki */
+body.theme-scandi .ingredient input[type="checkbox"] {
+    accent-color: var(--accent-primary);
+}
+
+/* =========================
+   MODALS
+   ========================= */
 body.theme-scandi .modal-content {
     background: #ffffff;
-    border: 1px solid #ddd;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+    border-radius: 26px;
+    border: none;
+    box-shadow: 0 30px 70px rgba(0,0,0,0.2);
+    color: var(--text-body);
 }
 
-/* Divider */
+/* =========================
+   TOASTS
+   ========================= */
+body.theme-scandi .toast {
+    background: #ffffff;
+    color: var(--text-body);
+    border-left: 6px solid var(--accent-secondary);
+    border-radius: 16px;
+    box-shadow: var(--shadow-primary);
+}
+
+/* =========================
+   DIVIDER
+   ========================= */
 body.theme-scandi .divider {
-    background: linear-gradient(90deg, transparent, #d6d0c6, transparent);
+    height: 1px;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(63,76,90,0.35),
+        transparent
+    );
+}
+
+body.theme-scandi .modal-slider {
+   background: #b0b0b0;
+}
+
+body.theme-scandi {
+    --done-slider-bg: #b0b0b0;
 }

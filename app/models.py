@@ -14,6 +14,7 @@ class Recipe(Base):
     ingredients = Column(String, nullable=True)  # prosty JSON/string
     created_at = Column(DateTime, default=datetime.utcnow)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    is_public = Column(Boolean, default=False)
     author = relationship("User")
 
 
@@ -23,7 +24,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
-    role = Column(String, default="user")
+    role = Column(String, nullable=False, default="user")
     created_at = Column(DateTime, default=datetime.utcnow)
 
 

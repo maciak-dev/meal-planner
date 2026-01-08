@@ -23,16 +23,41 @@
 
 <body class="theme-cyber">
 <main class="app">
-<header>
-<h1>Recipe Manager</h1>
+<header class="topbar">
+    <div class="topbar-left">
+        <h1>Recipe Manager</h1>
 
-<div style="text-align:right; margin-bottom:15px;">
-    <form method="get" action="/logout" style="display:inline;">
-        <button type="button" class="secondary" onclick="toggleTheme()">Switch Theme</button>
-        <button type="submit" class="secondary">Logout</button>
-    </form>
-</div>
+        <div class="module-nav">
+            <button class="nav-tab active"
+                    data-module="recipes"
+                    onclick="showModule('recipes')">
+                Recipes
+            </button>
+
+            <button class="nav-tab"
+                    data-module="shopping"
+                    onclick="showModule('shopping')">
+                Shopping List
+            </button>
+        </div>
+    </div>
+
+    <div class="topbar-right">
+        <form method="get" action="/logout">
+            <button type="button"
+                    class="secondary"
+                    onclick="toggleTheme()">
+                Switch Theme
+            </button>
+
+            <button type="submit" class="secondary">
+                Logout
+            </button>
+        </form>
+    </div>
 </header>
+
+<section id="recipes-module">
 <section class="controls">
 
 <input id="search" placeholder="Search recipes..." oninput="filterRecipes()">
@@ -47,8 +72,33 @@
 </div>
 <div class="divider"></div>
 </section>
-<section id="recipes-container"></section>
 
+    <section id="recipes-container"></section>
+</section>
+<section id="shopping-module" style="display:none;">
+    <h2 id="shopping-title">Your shopping list</h2>
+    <button class="secondary" onclick="toggleShoppingMode()">
+    Shopping mode
+    </button>
+    <div class="shopping-input" id="shopping-input-box">
+        <input
+            type="text"
+            id="shopping-input"
+            placeholder="Add item..."
+        >
+        <button class="primary" onclick="addShoppingItem()">
+            Add
+        </button>
+    </div>
+
+    <div id="shopping-list"></div>
+
+    <div style="margin-top:15px;">
+        <button class="secondary" onclick="clearShoppingList()">
+            Clear list
+        </button>
+    </div>
+</section>
 </main>
 <!-- MODALS -->
 <div id="modal" class="modal">
@@ -79,6 +129,18 @@
             <button class="danger" onclick="confirmDeleteYes()">Delete</button>
         </div>
     </div>
+</div>
+
+<!-- CLEAR LIST MODAL -->
+<div id="clear-modal" class="modal">
+  <div class="modal-content">
+    <h2 id="clear-title">Clear shopping list</h2>
+    <p id="clear-text">Are you sure you want to clear the entire shopping list?</p>
+    <div class="modal-buttons">
+      <button class="primary" onclick="confirmClearYes()">Yes</button>
+      <button class="secondary" onclick="closeClearModal()">No</button>
+    </div>
+  </div>
 </div>
 
 <div id="toast" class="toast"></div>
