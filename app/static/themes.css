@@ -236,10 +236,10 @@ body.theme-scandi .divider {
     );
 }
 
-body.theme-scandi .modal-slider {
-   background: #b0b0b0;
-}
+
 
 body.theme-scandi {
     --done-slider-bg: #b0b0b0;
+    --done-slider-checked-bg: #8faeb0;   /* spokojny scandi */
 }
+
