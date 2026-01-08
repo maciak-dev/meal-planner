@@ -54,10 +54,38 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
         raise HTTPException(status_code=401, detail="Not authenticated")
 
 
-def require_admin(current_user: models.User = Depends(get_current_user)):
-    if current_user.role != "admin":
+
+def require_admin(current_user = Depends(get_current_user)):
+    if not is_admin(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin privileges required"
         )
     return current_user
+
+def require_super_admin(current_user = Depends(get_current_user)):
+    if not is_super_admin(current_user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Super admin privileges required"
+        )
+    return current_user
+
+def require_owner_or_admin(resource, current_user):
+    if resource.user_id == current_user.id:
+        return
+
+    if is_super_admin(current_user):
+        return
+
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Not enough permissions"
+    )
+    
+def is_admin(user) -> bool:
+    return user.role in ("admin", "super_admin")
+
+
+def is_super_admin(user) -> bool:
+    return user.role == "super_admin"

@@ -1,8 +1,11 @@
+import os
 from pydantic import BaseModel
 from fastapi import FastAPI, Request, Response, Depends, Form, HTTPException
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
+from fastapi.openapi.docs import get_swagger_ui_html
+from fastapi.openapi.utils import get_openapi
 from sqlalchemy.orm import Session
 
 from app import models
@@ -11,8 +14,13 @@ from app.models import Recipe, User
 from app.core import security
 from app.core.config import ENV,COOKIE_SECURE
 from app.recipes.routers import router as recipes_router
+
 # --- Tworzymy aplikację ---
-app = FastAPI()
+app = FastAPI(
+    docs_url=None,
+    redoc_url=None,
+    openapi_url=None
+)
 if ENV == "dev":
     Base.metadata.create_all(bind=engine)
 
@@ -46,7 +54,7 @@ class UserCreate(BaseModel):
 
 @app.on_event("startup")
 def startup_event():
-    if ENV != "dev":
+    if os.getenv("BOOTSTRAP_ADMIN") != "1":
         return
 
     db = SessionLocal()
@@ -115,6 +123,20 @@ def recipes_ui(
             "recipes": recipes,
             "ingredients_map": ingredients_map
         }
+    )
+@app.get("/openapi.json", dependencies=[Depends(security.require_admin)])
+def openapi():
+    return get_openapi(
+        title="Recipe API",
+        version="1.0.0",
+        routes=app.routes,
+    )
+
+@app.get("/docs", dependencies=[Depends(security.require_admin)])
+def swagger_ui():
+    return get_swagger_ui_html(
+        openapi_url="/openapi.json",
+        title="Recipe API – Admin Docs"
     )
 
 # --- LOGOUT ---
