@@ -14,3 +14,6 @@ venv/
 .idea/
 # DB
 *.db
+
+app/static/uploads/*
+!app/static/uploads/.gitkeep

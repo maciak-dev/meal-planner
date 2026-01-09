@@ -8,6 +8,7 @@ class RecipeBase(BaseModel):
     ingredients: Optional[str] = None
     instructions: Optional[str] = None
     is_public: bool = False
+    image: Optional[str] = None
 
 class RecipeCreate(RecipeBase):
     pass
