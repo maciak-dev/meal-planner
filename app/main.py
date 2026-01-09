@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from app import models
 from app.database import Base, engine, get_db, SessionLocal
-from app.models import Recipe, User
+from app.models import Recipe, User, LoginLog
 from app.core import security
 from app.core.config import ENV,COOKIE_SECURE
 from app.recipes.routers import router as recipes_router
@@ -81,12 +81,19 @@ def login(
 ):
     user = db.query(User).filter(User.username == username).first()
 
+    ip = request.client.host
+    agent = request.headers.get("user-agent")
+
     if not user or not security.verify_password(password, user.hashed_password):
+        log_login(db, None, username, ip, agent, False)
+
         return templates.TemplateResponse(
             "login.html",
             {"request": request, "error": "Invalid credentials"},
             status_code=401
         )
+
+    log_login(db, user.id, user.username, ip, agent, True)
 
     token = security.create_access_token({"sub": user.id})
     response = RedirectResponse(url="/recipes-ui", status_code=302)
@@ -100,6 +107,34 @@ def login(
     )
     return response
 
+@app.get("/auth/me")
+def read_me(current_user=Depends(security.get_current_user)):
+    return {
+        "id": current_user.id,
+        "username": current_user.username,
+        "role": current_user.role
+    }
+
+def log_login(db, user_id, username, ip, agent, success):
+    log = LoginLog(
+        user_id=user_id,
+        username=username,
+        ip_address=ip,
+        user_agent=agent,
+        success=success
+    )
+    db.add(log)
+    db.commit()
+
+@app.get("/admin/login-logs")
+def login_logs(
+    db: Session = Depends(get_db),
+    current_user=Depends(security.get_current_user)
+):
+    if current_user.role != "super_admin":
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    return db.query(LoginLog).order_by(LoginLog.created_at.desc()).limit(200).all()
 
 # --- ENDPOINT RECIPE UI ---
 @app.get("/recipes-ui")
@@ -137,6 +172,27 @@ def swagger_ui():
     return get_swagger_ui_html(
         openapi_url="/openapi.json",
         title="Recipe API – Admin Docs"
+    )
+
+# admin panel
+@app.get("/admin")
+def admin_panel(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user=Depends(security.get_current_user)
+):
+    if current_user.role != "super_admin":
+        raise HTTPException(status_code=403)
+
+    logs = db.query(LoginLog).order_by(LoginLog.created_at.desc()).limit(200).all()
+
+    return templates.TemplateResponse(
+        "admin_panel.html",
+        {
+            "request": request,
+            "user": current_user,
+            "logs": logs
+        }
     )
 
 # --- LOGOUT ---

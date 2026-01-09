@@ -243,3 +243,21 @@ body.theme-scandi {
     --done-slider-checked-bg: #8faeb0;   /* spokojny scandi */
 }
 
+body.theme-scandi .recipe-image {
+    border: 1px solid rgba(0,0,0,0.05);
+}
+
+body.theme-scandi .user-badge {
+    border: 1px solid var(--accent-secondary);
+    color: var(--accent-primary);
+
+    background: rgba(210,173,127,0.12);
+
+    font-family: var(--font-body);
+    font-weight: 600;
+
+    text-shadow: none;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+
+    border-radius: 999px;
+}

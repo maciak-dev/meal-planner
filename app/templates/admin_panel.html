@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Admin Panel</title>
+<link rel="stylesheet" href="/static/main.css">
+<link rel="stylesheet" href="/static/themes.css">
+</head>
+
+<body class="theme-cyber">
+<main class="app">
+
+<header class="topbar">
+    <h1>Admin Panel</h1>
+    <button class="secondary small" onclick="location.href='/recipes-ui'">
+        Back
+    </button>
+</header>
+
+<section class="admin-section">
+
+<h2>Login logs</h2>
+
+<table class="admin-table">
+<tr>
+    <th>User</th>
+    <th>IP</th>
+    <th>Status</th>
+    <th>Date</th>
+</tr>
+
+{% for log in logs %}
+<tr class="{{ 'ok' if log.success else 'fail' }}">
+    <td>{{ log.username }}</td>
+    <td>{{ log.ip_address }}</td>
+    <td>{{ "OK" if log.success else "FAIL" }}</td>
+    <td>{{ log.created_at }}</td>
+</tr>
+{% endfor %}
+</table>
+
+</section>
+
+</main>
+</body>
+</html>

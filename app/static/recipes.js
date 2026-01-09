@@ -44,12 +44,14 @@ async function loadRecipes() {
 function displayRecipes(recipes) {
     const container = document.getElementById("recipes-container");
     container.innerHTML = "";
-
+    /*
     recipes.forEach(r => {
         const box = document.createElement("div");
         box.className = "recipe-box";
         box.innerHTML = `
     <h3>${r.name}</h3>
+    ${r.image ? `<img src="${r.image}" class="recipe-image">` : ""}
+
     <p><strong>Description:</strong> ${r.description}</p>
 
     <p><strong>Ingredients:</strong></p>
@@ -77,6 +79,53 @@ function displayRecipes(recipes) {
 `;
         container.appendChild(box);
     });
+*/
+recipes.forEach(r => {
+    const box = document.createElement("div");
+    box.className = "recipe-box";
+    box.innerHTML = `
+<h3>${r.name}</h3>
+
+<div class="recipe-body">
+
+    <div class="recipe-text">
+        <p><strong>Description:</strong> ${r.description}</p>
+
+        <p><strong>Ingredients:</strong></p>
+        <div class="ingredients-list">
+            ${renderIngredients(r.ingredients)}
+        </div>
+    </div>
+
+    ${r.image ? `
+    <div class="recipe-image-wrap">
+        <img src="${r.image}" class="recipe-image">
+    </div>
+    ` : ""}
+
+</div>
+
+<div class="recipe-actions">
+    <button class="secondary"
+        onclick="showInstructions('${r.instructions.replace(/'/g, "\\'").replace(/\n/g, "<br>")}')">
+        View Instructions
+    </button>
+
+    <button class="secondary add-to-list"
+        data-recipe-id="${r.id}"
+        onclick="addRecipeToShoppingList(this)">
+        + Add to list
+    </button>
+
+    <button class="secondary" onclick="openEdit(${r.id})">Edit</button>
+    <button class="danger" onclick="openDeleteModal(${r.id}, '${r.name.replace(/'/g,"\\'")}')">Delete</button>
+    ${renderVisibilitySwitch(r)}
+</div>
+`;
+    container.appendChild(box);
+});
+
+
 }
 
 async function toggleVisibility(recipeId, checkbox) {
@@ -117,9 +166,8 @@ function renderVisibilitySwitch(recipe) {
     `;
 }
 
+// ADD RECIPE
 
-
-// === ADD RECIPE ===
 async function addRecipe() {
     const recipe = {
         name: document.getElementById("name").value,
@@ -134,45 +182,82 @@ async function addRecipe() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(recipe)
         });
+
         if (res.ok) {
+            const data = await res.json();   // 👈 TU
+            await uploadRecipeImage(data.id, "add-image"); // 👈 TU
+
             loadRecipes();
             ["name","description","ingredients","instructions"].forEach(id=>document.getElementById(id).value="");
+            document.getElementById("add-preview").style.display="none";
+
             showToast("Recipe saved","success");
-        } else showToast("Failed to save recipe","error");
-    } catch (err) { console.error(err); showToast("Server error","warn"); }
+        } else {
+            showToast("Failed to save recipe","error");
+        }
+
+    } catch (err) {
+        console.error(err);
+        showToast("Server error","warn");
+    }
 }
 
-// === EDIT RECIPE ===
+// EDIT RECIPE 
 let editingId = null;
+
 function openEdit(id) {
+    const recipe = recipesCache.find(r => r.id === id);
+    if(!recipe) return;
+
     editingId = id;
-    fetch(`/recipes/${id}`).then(r=>r.json()).then(r=>{
-        document.getElementById("edit-name").value = r.name;
-        document.getElementById("edit-description").value = r.description;
-        document.getElementById("edit-ingredients").value = r.ingredients;
-        document.getElementById("edit-instructions").value = r.instructions;
-        document.getElementById("edit-modal").style.display="block";
-    });
+    document.body.classList.add("modal-open");
+    document.getElementById("edit-name").value = recipe.name || "";
+    document.getElementById("edit-description").value = recipe.description || "";
+    document.getElementById("edit-ingredients").value = recipe.ingredients || "";
+    document.getElementById("edit-instructions").value = recipe.instructions || "";
+    document.getElementById("edit-preview").src = recipe.image || "";
+    document.getElementById("edit-preview").style.display = recipe.image ? "block" : "none";
+
+    document.getElementById("edit-modal").style.display = "block";
 }
-function closeEdit() { document.getElementById("edit-modal").style.display="none"; }
 
 async function saveEdit() {
     if(!editingId) return;
+
     const recipe = {
         name: document.getElementById("edit-name").value,
         description: document.getElementById("edit-description").value,
         ingredients: document.getElementById("edit-ingredients").value,
         instructions: document.getElementById("edit-instructions").value
     };
+
     try {
         const res = await fetch(`/recipes/${editingId}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(recipe)
         });
-        if(res.ok){ closeEdit(); loadRecipes(); showToast("Recipe updated","success"); }
-        else showToast("Failed to update recipe","error");
-    } catch(err){ console.error(err); showToast("Server error","warn"); }
+
+        if(res.ok){
+            await uploadRecipeImage(editingId, "edit-image");
+
+            editingId = null; // wyczyść
+            closeEdit();
+            loadRecipes();
+            showToast("Recipe updated","success");
+        } else {
+            showToast("Failed to update recipe","error");
+        }
+
+    } catch(err){
+        console.error(err);
+        showToast("Server error","warn");
+    }
+}
+function closeEdit() {
+    document.body.classList.remove("modal-open");
+    document.getElementById("edit-modal").style.display = "none";
+    editingId = null;
 }
 
 // === DELETE RECIPE ===
@@ -479,3 +564,38 @@ function updateShoppingTitle() {
         : "Your shopping list";
 }
 
+function setupImagePreview(inputId, previewId) {
+    const input = document.getElementById(inputId);
+    const preview = document.getElementById(previewId);
+
+    input.addEventListener("change", () => {
+        const file = input.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = e => {
+            preview.src = e.target.result;
+            preview.style.display = "block";
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+setupImagePreview("add-image", "add-preview");
+setupImagePreview("edit-image", "edit-preview");
+
+async function uploadRecipeImage(recipeId, inputId) {
+    const input = document.getElementById(inputId);
+
+    if (!input.files.length) return;
+
+    const formData = new FormData();
+    formData.append("file", input.files[0]);
+
+    await fetch(`/recipes/${recipeId}/image`, {
+        method: "POST",
+        body: formData
+    });
+
+     input.value = "";
+}

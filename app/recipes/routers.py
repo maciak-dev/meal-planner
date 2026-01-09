@@ -1,6 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+import uuid, os
+UPLOAD_DIR = "app/static/uploads"
+
+
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
+
+
 
 from app.database import get_db
 from app.models import Recipe
@@ -138,3 +144,31 @@ def toggle_recipe_visibility(
     db.commit()
     db.refresh(recipe)
     return recipe
+
+
+@router.post("/{recipe_id}/image")
+def upload_image(
+    recipe_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user)
+):
+    recipe = db.query(Recipe).filter(
+        Recipe.id == recipe_id,
+        Recipe.user_id == user.id
+    ).first()
+
+    if not recipe:
+        raise HTTPException(404)
+
+    ext = file.filename.split(".")[-1].lower()
+    filename = f"{uuid.uuid4()}.{ext}"
+    path = os.path.join(UPLOAD_DIR, filename)
+
+    with open(path, "wb") as f:
+        f.write(file.file.read())
+
+    recipe.image = f"/static/uploads/{filename}"
+    db.commit()
+
+    return {"image": recipe.image}
