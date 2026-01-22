@@ -1,9 +1,13 @@
 from pydantic import BaseModel
+
+# Tworzenie użytkownika
 class UserCreate(BaseModel):
     username: str
     password: str
-    role: str = "user"  # domyślnie user
+    role: str = "user"  # domyślna rola
 
+
+# Odczyt użytkownika
 class UserRead(BaseModel):
     id: int
     username: str
@@ -12,4 +16,3 @@ class UserRead(BaseModel):
     model_config = {
         "from_attributes": True
     }
-

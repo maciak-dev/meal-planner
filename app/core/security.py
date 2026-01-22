@@ -3,9 +3,9 @@ from jose import jwt, JWTError
 from passlib.context import CryptContext
 from fastapi import Request, HTTPException, status, Depends
 from sqlalchemy.orm import Session
-from app.database import get_db
+from app.core.database import get_db
 from app.core.config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
-from app import models
+from app.db.models.user import User
 
 # --- CONFIG ---
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -21,7 +21,7 @@ def verify_password(password: str, hashed: str) -> bool:
 def create_access_token(data: dict, expires_minutes: int = ACCESS_TOKEN_EXPIRE_MINUTES):
     to_encode = data.copy()
 
-    # ⬇️ KLUCZOWE
+    #  KLUCZOWE
     if "sub" in to_encode:
         to_encode["sub"] = str(to_encode["sub"])
 
@@ -43,17 +43,24 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
         if not user_id:
             raise HTTPException(status_code=401, detail="Not authenticated")
 
-        user = db.query(models.User).filter(models.User.id == int(user_id)).first()
+        user = db.query(User).filter(User.id == int(user_id)).first()
         if not user:
             raise HTTPException(status_code=401, detail="Not authenticated")
 
         return user
 
     except JWTError as e:
-        print("JWT ERROR:", e)  # ⬅️ bardzo ważne do debugowania
+        print("JWT ERROR:", e)  #  bardzo ważne do debugowania
         raise HTTPException(status_code=401, detail="Not authenticated")
 
-
+def get_current_user_optional(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    try:
+        return get_current_user(request, db)
+    except:
+        return None
 
 def require_admin(current_user = Depends(get_current_user)):
     if not is_admin(current_user):
