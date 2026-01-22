@@ -20,3 +20,4 @@ app/static/uploads/*
 
 # temp / control files
 
+.tables
