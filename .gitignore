@@ -17,3 +17,6 @@ venv/
 
 app/static/uploads/*
 !app/static/uploads/.gitkeep
+
+# temp / control files
+
