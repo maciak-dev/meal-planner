@@ -41,30 +41,31 @@
             </button>
         </div>
     </div>
-    <div class="topbar-right">
-    <form method="get" action="/logout" style="display:flex; gap:10px; align-items:center;">
-        <button type="button"
-                class="secondary"
-                onclick="toggleTheme()">
-            Switch Theme
-        </button>
+<div class="topbar-right">
 
-        <button type="submit" class="secondary small">
-            Logout
-        </button>
+    {% if user.role == "super_admin" %}
+    <span class="user-badge clickable"
+          onclick="location.href='/admin'">
+        {{ user.username }}
+    </span>
+    {% else %}
+    <span class="user-badge">
+        {{ user.username }}
+    </span>
+    {% endif %}
 
-        {% if user.role == "super_admin" %}
-        <span class="user-badge clickable"
-            onclick="location.href='/admin'">
-            {{ user.username }}
-        </span>
-        {% else %}
-        <span class="user-badge">
-            {{ user.username }}
-        </span>
-        {% endif %}
-    </form>
+    <button class="secondary small burger-btn" onclick="toggleBurger()">☰</button>
+    
 </div>
+<div id="burger-menu" class="burger-menu">
+        <button class="secondary small" onclick="toggleTheme()">Switch Theme</button>
+        <button class="secondary small" onclick="openIngredientsModal()">Ingredients</button>
+
+        <form method="get" action="/logout">
+            <button type="submit" class="burger-item danger">Logout</button>
+        </form>
+    </div>
+
 
 </header>
 
@@ -76,8 +77,12 @@
 
 <div id="add-recipe-form" class="content">
     <input id="name" placeholder="Name">
+
     <input type="file" id="add-image" accept="image/*">
-<img id="add-preview" class="recipe-image-preview">
+        <div class="image-preview-wrapper">
+    <img id="add-preview" class="recipe-image-preview">
+    <span class="image-remove-btn" onclick="removeAddImage()">✖</span>
+    </div>
     <input id="description" placeholder="Description">
     <textarea id="ingredients" rows="5" placeholder="Ingredients (one per line)"></textarea>
     <textarea id="instructions" rows="5" placeholder="Instructions"></textarea>
@@ -126,9 +131,11 @@
         <span class="close" onclick="closeEdit()">&times;</span>
         <h3>Edit Recipe</h3>
         <input id="edit-name" placeholder="Name">
+        <div class="image-preview-wrapper">
+            <img id="edit-preview" class="recipe-image-preview">
+            <span class="image-remove-btn" onclick="removeImage()">✖</span>
+        </div>
         <input type="file" id="edit-image" accept="image/*">
-        <img id="edit-preview" class="recipe-image-preview">
-
         <input id="edit-description" placeholder="Description">
         <textarea id="edit-ingredients" rows="5" placeholder="Ingredients"></textarea>
         <textarea id="edit-instructions" rows="5" placeholder="Instructions"></textarea>
@@ -146,6 +153,7 @@
         </div>
     </div>
 </div>
+
 
 <!-- CLEAR LIST MODAL -->
 <div id="clear-modal" class="modal">

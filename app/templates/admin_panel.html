@@ -27,6 +27,7 @@
     <th>IP</th>
     <th>Status</th>
     <th>Date</th>
+    <th>Agent</th>
 </tr>
 
 {% for log in logs %}
@@ -35,6 +36,7 @@
     <td>{{ log.ip_address }}</td>
     <td>{{ "OK" if log.success else "FAIL" }}</td>
     <td>{{ log.created_at }}</td>
+    <td>{{ log.user_agent[:40] }}...</td>
 </tr>
 {% endfor %}
 </table>
