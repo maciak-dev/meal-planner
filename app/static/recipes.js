@@ -34,7 +34,7 @@ function renderIngredients(ingredients) {
 async function loadRecipes() {
     try {
         await loadIngredientsMap();
-        const res = await fetch("/recipes/");
+        const res = await fetch("/api/v1/recipes/");
         const data = await res.json();
         recipesCache = data;
         displayRecipes(data);
@@ -44,42 +44,7 @@ async function loadRecipes() {
 function displayRecipes(recipes) {
     const container = document.getElementById("recipes-container");
     container.innerHTML = "";
-    /*
-    recipes.forEach(r => {
-        const box = document.createElement("div");
-        box.className = "recipe-box";
-        box.innerHTML = `
-    <h3>${r.name}</h3>
-    ${r.image ? `<img src="${r.image}" class="recipe-image">` : ""}
 
-    <p><strong>Description:</strong> ${r.description}</p>
-
-    <p><strong>Ingredients:</strong></p>
-    <div class="ingredients-list">
-        ${renderIngredients(r.ingredients)}
-    </div>
-
-
-    <div class="recipe-actions">
-        <button class="secondary"
-        onclick="showInstructions('${r.instructions
-            .replace(/'/g, "\\'")
-            .replace(/\n/g, "<br>")}')">
-        View Instructions
-    </button>
-            <button class="secondary add-to-list"
-        data-recipe-id="${r.id}"
-        onclick="addRecipeToShoppingList(this)">
-        + Add to list
-    </button>
-        <button class="secondary" onclick="openEdit(${r.id})">Edit</button>
-        <button class="danger" onclick="openDeleteModal(${r.id}, '${r.name.replace(/'/g,"\\'")}')">Delete</button>
-        ${renderVisibilitySwitch(r)}
-    </div>
-`;
-        container.appendChild(box);
-    });
-*/
 recipes.forEach(r => {
     const box = document.createElement("div");
     box.className = "recipe-box";
@@ -132,7 +97,7 @@ async function toggleVisibility(recipeId, checkbox) {
     const newValue = checkbox.checked;
 
     try {
-        const res = await fetch(`/recipes/${recipeId}/visibility`, {
+        const res = await fetch(`/api/v1/recipes/${recipeId}/visibility`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ is_public: newValue })
@@ -177,7 +142,7 @@ async function addRecipe() {
     };
 
     try {
-        const res = await fetch("/recipes/", {
+        const res = await fetch("/api/v1/recipes/", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(recipe)
@@ -206,23 +171,29 @@ async function addRecipe() {
 let editingId = null;
 
 function openEdit(id) {
+    console.log("open CLICKED");
     const recipe = recipesCache.find(r => r.id === id);
     if(!recipe) return;
 
     editingId = id;
-    document.body.classList.add("modal-open");
+
     document.getElementById("edit-name").value = recipe.name || "";
     document.getElementById("edit-description").value = recipe.description || "";
     document.getElementById("edit-ingredients").value = recipe.ingredients || "";
     document.getElementById("edit-instructions").value = recipe.instructions || "";
+
     document.getElementById("edit-preview").src = recipe.image || "";
     document.getElementById("edit-preview").style.display = recipe.image ? "block" : "none";
 
+ /*   document.getElementById("edit-image").value = ""; // 🔥 TO JEST KLUCZ */
+    const file = document.getElementById("edit-image");
+if (file) file.value = "";
     document.getElementById("edit-modal").style.display = "block";
 }
 
 async function saveEdit() {
-    if(!editingId) return;
+    console.log("SAVE CLICKED");
+    if (!editingId) return;
 
     const recipe = {
         name: document.getElementById("edit-name").value,
@@ -232,28 +203,30 @@ async function saveEdit() {
     };
 
     try {
-        const res = await fetch(`/recipes/${editingId}`, {
+        // 1️⃣ Aktualizacja danych JSON
+        const res = await fetch(`/api/v1/recipes/${editingId}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(recipe)
         });
 
-        if(res.ok){
-            await uploadRecipeImage(editingId, "edit-image");
+        if (res.ok) {
+            // 2️⃣ Aktualizacja obrazka jeśli wybrano nowy plik
+            await updateRecipeImage(editingId, "edit-image");
 
             editingId = null; // wyczyść
             closeEdit();
             loadRecipes();
-            showToast("Recipe updated","success");
+            showToast("Recipe updated", "success");
         } else {
-            showToast("Failed to update recipe","error");
+            showToast("Failed to update recipe", "error");
         }
-
-    } catch(err){
+    } catch (err) {
         console.error(err);
-        showToast("Server error","warn");
+        showToast("Server error", "warn");
     }
 }
+
 function closeEdit() {
     document.body.classList.remove("modal-open");
     document.getElementById("edit-modal").style.display = "none";
@@ -272,7 +245,7 @@ function closeDeleteModal(){ deleteRecipeId=null; document.getElementById("delet
 async function confirmDeleteYes(){
     if(!deleteRecipeId) return;
     try{
-        const res=await fetch(`/recipes/${deleteRecipeId}`,{method:"DELETE"});
+        const res=await fetch(`/api/v1/recipes/${deleteRecipeId}`,{method:"DELETE"});
         if(res.ok){ closeDeleteModal(); loadRecipes(); showToast("Recipe deleted","success"); }
         else showToast("Failed to delete recipe","error");
     }catch(err){ console.error(err); showToast("Server error","warn"); }
@@ -394,10 +367,22 @@ function addShoppingItem() {
     input.value = "";
     renderShoppingList();
 }
+function getPositions() {
+    const items = document.querySelectorAll(".shopping-item");
+    const map = new Map();
+
+    items.forEach(el => {
+        map.set(el.dataset.key, el.getBoundingClientRect());
+    });
+
+    return map;
+}
 
 function renderShoppingList() {
     const listEl = document.getElementById("shopping-list");
     const list = getShoppingList();
+
+    const oldPositions = getPositions();
 
     listEl.innerHTML = "";
 
@@ -407,49 +392,58 @@ function renderShoppingList() {
     }
 
     list.forEach((item, index) => {
-const div = document.createElement("div");
-
-div.className = `shopping-item ${item.done ? "done" : ""}`;
-div.style.opacity = "0";
-
-
+        const div = document.createElement("div");
+        div.className = `shopping-item ${item.done ? "done" : ""}`;
+        div.dataset.key = item.name;
 
         div.innerHTML = `
             <div class="shopping-main">
                 <label class="done-switch" style="${shoppingMode ? "" : "display:none"}">
-                    <input type="checkbox" ${item.done ? "checked" : ""} 
-                        onchange="event.stopPropagation();toggleDone(${index})"
-                        ${!shoppingMode ? "disabled" : ""}>
+                    <input type="checkbox" ${item.done ? "checked" : ""}
+                        onchange="event.stopPropagation();toggleDone(${index})">
                     <span class="done-slider"></span>
                 </label>
-
                 <span class="item-name">${item.name}</span>
             </div>
 
             <span class="item-qty">${item.qty}</span>
-           
-            <div class="qty-controls">
-            ${shoppingMode ? "" : `
-            <button class="qty-btn"
-                onclick="event.stopPropagation(); decreaseQty(${index})"
-                ${item.done || shoppingMode ? "disabled" : ""}>
-                -
-            </button>
 
-            <button class="qty-btn"
-                onclick="event.stopPropagation(); increaseQty(${index})"
-                ${item.done || shoppingMode ? "disabled" : ""}>
-                +
-            </button>
-            
+            ${shoppingMode ? "" : `
+            <div class="qty-controls">
+                <button class="qty-btn"
+                    onclick="event.stopPropagation(); decreaseQty(${index})"
+                    ${item.done ? "disabled" : ""}>-</button>
+                <button class="qty-btn"
+                    onclick="event.stopPropagation(); increaseQty(${index})"
+                    ${item.done ? "disabled" : ""}>+</button>
             </div>
             `}
         `;
 
         listEl.appendChild(div);
-        setTimeout(() => {
-            div.style.opacity = "1";
-        }, 10);
+    });
+
+    // --- FLIP ---
+    requestAnimationFrame(() => {
+        const newItems = document.querySelectorAll(".shopping-item");
+
+        newItems.forEach(el => {
+            const old = oldPositions.get(el.dataset.key);
+            if (!old) return;
+
+            const newPos = el.getBoundingClientRect();
+            const dy = old.top - newPos.top;
+
+            if (dy !== 0) {
+                el.style.transform = `translateY(${dy}px)`;
+                el.style.transition = "none";
+
+                requestAnimationFrame(() => {
+                    el.style.transition = "transform 300ms ease";
+                    el.style.transform = "";
+                });
+            }
+        });
     });
 }
 
@@ -586,16 +580,141 @@ setupImagePreview("edit-image", "edit-preview");
 
 async function uploadRecipeImage(recipeId, inputId) {
     const input = document.getElementById(inputId);
-
     if (!input.files.length) return;
 
     const formData = new FormData();
     formData.append("file", input.files[0]);
 
-    await fetch(`/recipes/${recipeId}/image`, {
-        method: "POST",
+    await fetch(`/api/v1/recipes/${recipeId}/image`, {
+        method: "PUT",
         body: formData
     });
 
-     input.value = "";
+    input.value = "";
 }
+
+async function updateRecipeImage(recipeId, inputId) {
+    const input = document.getElementById(inputId);
+    if (!input.files.length) return; // jeśli nie zmieniono obrazka, nie robimy requestu
+
+    const formData = new FormData();
+    formData.append("file", input.files[0]);
+
+    try {
+        const res = await fetch(`/api/v1/recipes/${recipeId}/image`, {
+            method: "PUT",
+            body: formData
+        });
+
+        if (!res.ok) showToast("Failed to update image", "error");
+    } catch (err) {
+        console.error(err);
+        showToast("Server error", "warn");
+    }
+}
+
+
+
+function removeAddImage(){
+    const preview = document.getElementById("add-preview");
+    const input = document.getElementById("add-image");
+
+    preview.src = "";
+    preview.style.display = "none";
+    input.value = "";
+}
+
+function removeImage() {
+    if (!editingId) return;
+
+    fetch(`/api/v1/recipes/${editingId}/image`, {
+        method: "DELETE"
+    })
+    .then(res => {
+        if (!res.ok) throw new Error("Failed to delete image");
+        return res.json();
+    })
+    .then(() => {
+        const preview = document.getElementById("edit-preview");
+        preview.src = "";
+        preview.style.display = "none";
+
+        document.getElementById("edit-image").value = "";
+
+        showToast("Image removed", "success");
+    })
+    .catch(err => {
+        console.error(err);
+        showToast(err.message, "error");
+    });
+}
+
+
+function openIngredientsModal(){
+    showToast("Ingredients feature coming soon","info");
+}
+
+
+/*
+function toggleBurger() {
+    const burger = document.getElementById("burger-menu");
+    burger.style.display = burger.style.display === "block" ? "none" : "block";
+}
+
+
+
+
+
+document.addEventListener("click", e => {
+    const burger = document.getElementById("burger-menu");
+    const burgerBtn = document.querySelector(".burger-btn");
+
+    if (!burger || burger.style.display !== "block") return;
+
+    if (
+        burger.contains(e.target) ||
+        burgerBtn.contains(e.target)
+    ) return;
+
+    closeBurger();
+});
+
+
+function closeBurger() {
+    const burger = document.getElementById("burger-menu");
+    burger.style.display = "none";
+}
+*/
+
+function toggleBurger() {
+    const burger = document.getElementById("burger-menu");
+    const burgerBtn = document.querySelector(".burger-btn");
+
+    // Toggle widoczności menu
+    if (burger.style.display === "block") {
+        burger.style.display = "none";
+        burgerBtn.classList.remove("active"); // usuń kolor po zamknięciu
+    } else {
+        burger.style.display = "block";
+        burgerBtn.classList.add("active"); // dodaj kolor po otwarciu
+    }
+}
+
+function closeBurger() {
+    const burger = document.getElementById("burger-menu");
+    const burgerBtn = document.querySelector(".burger-btn");
+
+    burger.style.display = "none";
+    burgerBtn.classList.remove("active"); // usuń kolor
+}
+
+document.addEventListener("click", e => {
+    const burger = document.getElementById("burger-menu");
+    const burgerBtn = document.querySelector(".burger-btn");
+
+    if (!burger || burger.style.display !== "block") return;
+
+    if (burger.contains(e.target) || burgerBtn.contains(e.target)) return;
+
+    closeBurger();
+});
