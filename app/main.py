@@ -1,6 +1,6 @@
 import os
 from pydantic import BaseModel
-from fastapi import FastAPI, Request, Response, Depends, Form, HTTPException
+from fastapi import FastAPI, Request, Depends, Form, HTTPException
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
@@ -8,66 +8,89 @@ from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.openapi.utils import get_openapi
 from sqlalchemy.orm import Session
 
-from app import models
-from app.database import Base, engine, get_db, SessionLocal
-from app.models import Recipe, User, LoginLog
+# =========================
+# CORE
+# =========================
+from app.core.database import Base, engine, get_db, SessionLocal
+from app.core.config import ENV, COOKIE_SECURE
 from app.core import security
-from app.core.config import ENV,COOKIE_SECURE
-from app.recipes.routers import router as recipes_router
+from app.core.middleware import IPBlockMiddleware
 
-# --- Tworzymy aplikację ---
+# =========================
+# MODELS
+# =========================
+from app.db.models.user import User
+from app.db.models.recipe import Recipe
+from app.db.models.login_log import LoginLog
+from app.db.models.ingredient import Ingredient
+
+# =========================
+# SERVICES
+# =========================
+from app.services.user_service import create_user as create_user_service
+from app.services.auth_service import login_user
+from app.services.admin_service import get_login_logs
+
+# =========================
+# ROUTERS
+# =========================
+from app.api.v1.router import api_router
+from app.api.v1.auth import router as auth_router
+from app.api.v1.admin import router as admin_router
+from app.api.v1.recipes import router as recipes_router  # poprawny import recipes
+
+# =========================
+# USERS
+# =========================
+from app.schemas.user import UserCreate
+
+
+# =========================
+# FASTAPI APP
+# =========================
 app = FastAPI(
     docs_url=None,
     redoc_url=None,
     openapi_url=None
 )
+
+# Tworzenie tabel tylko w DEV
 if ENV == "dev":
     Base.metadata.create_all(bind=engine)
 
-
-app.include_router(recipes_router)
-# --- Templates ---
+# =========================
+# STATIC & TEMPLATES
+# =========================
 templates = Jinja2Templates(directory="app/templates")
-
-# --- Static ---
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
-# --- ADMIN BOOTSTRAP ---
 
-def ensure_admin(db: Session):
-    admin = db.query(User).filter(User.username == "admin").first()
-    if admin:
-        return  # 👈 KLUCZOWE: nic nie robimy
+# =========================
+# INCLUDE ROUTERS
+# =========================
+app.include_router(api_router, prefix="/api/v1")
 
-    admin = User(
-        username="admin",
-        hashed_password=security.hash_password("admin"),
-        role="admin"
-    )
-    db.add(admin)
-    db.commit()
 
-class UserCreate(BaseModel):
-    username: str
-    password: str
-    role: str = "user"
+# =========================
+# IP BLOCK
+# =========================
+app.add_middleware(IPBlockMiddleware)
 
-@app.on_event("startup")
-def startup_event():
-    if os.getenv("BOOTSTRAP_ADMIN") != "1":
-        return
 
-    db = SessionLocal()
-    try:
-        ensure_admin(db)
-    finally:
-        db.close()
-
+# =========================
+# ROOT
+# =========================
 @app.get("/", include_in_schema=False)
-def root():
-    return RedirectResponse(url="/login")
-
-# --- ENDPOINTY LOGOWANIA ---
+def root(
+    request: Request,
+    user=Depends(security.get_current_user_optional)
+):
+    if user:
+        return RedirectResponse("/recipes-ui")
+    return RedirectResponse("/login")
+# =========================
+# AUTH
+# =========================
 @app.get("/login")
 def login_page(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
@@ -79,23 +102,18 @@ def login(
     password: str = Form(...),
     db: Session = Depends(get_db)
 ):
-    user = db.query(User).filter(User.username == username).first()
-
     ip = request.client.host
     agent = request.headers.get("user-agent")
 
-    if not user or not security.verify_password(password, user.hashed_password):
-        log_login(db, None, username, ip, agent, False)
-
+    user = login_user(db, username, password, ip, agent)
+    if not user:
         return templates.TemplateResponse(
             "login.html",
             {"request": request, "error": "Invalid credentials"},
             status_code=401
         )
 
-    log_login(db, user.id, user.username, ip, agent, True)
-
-    token = security.create_access_token({"sub": user.id})
+    token = security.create_access_token({"sub": str(user.id)})
     response = RedirectResponse(url="/recipes-ui", status_code=302)
     response.set_cookie(
         key="access_token",
@@ -107,6 +125,12 @@ def login(
     )
     return response
 
+@app.get("/logout")
+def logout():
+    response = RedirectResponse(url="/login", status_code=302)
+    response.delete_cookie("access_token", path="/")
+    return response
+
 @app.get("/auth/me")
 def read_me(current_user=Depends(security.get_current_user)):
     return {
@@ -115,66 +139,23 @@ def read_me(current_user=Depends(security.get_current_user)):
         "role": current_user.role
     }
 
-def log_login(db, user_id, username, ip, agent, success):
-    log = LoginLog(
-        user_id=user_id,
-        username=username,
-        ip_address=ip,
-        user_agent=agent,
-        success=success
-    )
-    db.add(log)
-    db.commit()
-
-@app.get("/admin/login-logs")
-def login_logs(
-    db: Session = Depends(get_db),
-    current_user=Depends(security.get_current_user)
-):
-    if current_user.role != "super_admin":
-        raise HTTPException(status_code=403, detail="Forbidden")
-
-    return db.query(LoginLog).order_by(LoginLog.created_at.desc()).limit(200).all()
-
-# --- ENDPOINT RECIPE UI ---
-@app.get("/recipes-ui")
-def recipes_ui(
-    request: Request,
-    user=Depends(security.get_current_user),
+# =========================
+# USER MANAGEMENT================
+@app.post("/users")
+def create_user(
+    user: UserCreate,
+    current_user=Depends(security.require_admin),
     db: Session = Depends(get_db)
 ):
-    recipes = db.query(Recipe).all()
-
-    ingredients_map = {
-        i.name.lower(): i.is_essential
-        for i in db.query(models.Ingredient).all()
+    new_user = create_user_service(db, user.username, user.password, user.role)
+    return {
+        "id": new_user.id,
+        "username": new_user.username,
+        "role": new_user.role
     }
-
-    return templates.TemplateResponse(
-        "recipes.html",
-        {
-            "request": request,
-            "user": user,
-            "recipes": recipes,
-            "ingredients_map": ingredients_map
-        }
-    )
-@app.get("/openapi.json", dependencies=[Depends(security.require_admin)])
-def openapi():
-    return get_openapi(
-        title="Recipe API",
-        version="1.0.0",
-        routes=app.routes,
-    )
-
-@app.get("/docs", dependencies=[Depends(security.require_admin)])
-def swagger_ui():
-    return get_swagger_ui_html(
-        openapi_url="/openapi.json",
-        title="Recipe API – Admin Docs"
-    )
-
-# admin panel
+# =========================
+# ADMIN PANEL
+# =========================
 @app.get("/admin")
 def admin_panel(
     request: Request,
@@ -195,42 +176,66 @@ def admin_panel(
         }
     )
 
-# --- LOGOUT ---
-@app.get("/logout")
-def logout():
-    response = RedirectResponse(url="/login", status_code=302)
-    response.delete_cookie("access_token", path="/")
-    return response
+@app.get("/admin/login-logs")
+def login_logs(
+    db: Session = Depends(get_db),
+    current_user=Depends(security.get_current_user)
+):
+    return get_login_logs(db, current_user)
 
-# --- NEW USER ---
-@app.post("/users")
-def create_user(
-    user: UserCreate,
-    current_user=Depends(security.require_admin),
+# =========================
+# RECIPE UI
+# =========================
+@app.get("/recipes-ui")
+def recipes_ui(
+    request: Request,
+    user=Depends(security.get_current_user_optional),
     db: Session = Depends(get_db)
 ):
-    existing = db.query(User).filter(User.username == user.username).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="Username already exists")
+    if not user:
+        return RedirectResponse("/login", status_code=302)
 
-    new_user = User(
-        username=user.username,
-        hashed_password=security.hash_password(user.password),
-        role=user.role
-    )
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
+    recipes = db.query(Recipe).all()
 
-    return {
-        "id": new_user.id,
-        "username": new_user.username,
-        "role": new_user.role
+    ingredients_map = {
+        i.name.lower(): i.is_essential
+        for i in db.query(Ingredient).all()
     }
 
+    return templates.TemplateResponse(
+        "recipes.html",
+        {
+            "request": request,
+            "user": user,
+            "recipes": recipes,
+            "ingredients_map": ingredients_map
+        }
+    )
+
+# =========================
+# INGREDIENTS
+# =========================
 @app.get("/ingredients/map")
 def ingredients_map(db: Session = Depends(get_db)):
     return {
         i.name.lower(): i.is_essential
-        for i in db.query(models.Ingredient).all()
+        for i in db.query(Ingredient).all()
     }
+
+# =========================
+# DOCS (ADMIN ONLY)
+# =========================
+@app.get("/openapi.json", dependencies=[Depends(security.require_admin)])
+def openapi():
+    return get_openapi(
+        title="Recipe API",
+        version="1.0.0",
+        routes=app.routes,
+    )
+
+@app.get("/docs", dependencies=[Depends(security.require_admin)])
+def swagger_ui():
+    return get_swagger_ui_html(
+        openapi_url="/openapi.json",
+        title="Recipe API – Admin Docs"
+    )
