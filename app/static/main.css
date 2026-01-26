@@ -768,15 +768,20 @@ body.shopping-active #shopping-input-box {
 
 
 
-@media (max-width: 700px) {
-    .recipe-body {
-        flex-direction: column;
-    }
 
-    .recipe-image-wrap {
-        width: 100%;
-    }
+
+.item-qty.bump {
+  animation: bump 0.25s ease;
 }
+
+@keyframes bump {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.3); color: var(--accent-secondary); }
+  100% { transform: scale(1); }
+}
+
+
+
 
 .user-badge.clickable {
     cursor: pointer;
@@ -990,7 +995,17 @@ input[type="file"]::file-selector-button {
 }
 
 /* === MOBILE HEADER BEHAVIOR === */
+/*
 @media (max-width: 700px) {
+
+
+    .recipe-body {
+        flex-direction: column;
+    }
+
+    .recipe-image-wrap {
+        width: 100%;
+    }
 
     .topbar {
         flex-direction: row;
@@ -1004,7 +1019,7 @@ input[type="file"]::file-selector-button {
         #shopping-module.shopping-active {
         padding-top: 0;
     }
-    /* chowamy zakładki */
+    /* chowamy zakładki 
     .module-nav {
         display: none;
         position: absolute;
@@ -1037,13 +1052,13 @@ body.shopping-active #shopping-input-box {
     overflow: hidden;
 }
 
-    /* kiedy aktywne */
+    /* kiedy aktywne 
     .module-nav.open {
         display: flex;
         margin-top: 10px;
         flex-direction: column;
         gap: 8px;
-                background: rgba(0, 0, 0, 0.35); /* lub rgba(255,255,255,0.2) zależnie od theme */
+                background: rgba(0, 0, 0, 0.35); /* lub rgba(255,255,255,0.2) zależnie od theme 
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
 
@@ -1057,11 +1072,11 @@ body.shopping-active #shopping-input-box {
 }
 
     .topbar-left h1 {
-        font-size: 1.15rem; /* nie łamie się */
+        font-size: 1.15rem; /* nie łamie się 
         padding: 4px 8px;
         border: 1px solid var(--accent-secondary);
         border-radius: 8px;
-        white-space: nowrap; /* absolutnie NIE łam */
+        white-space: nowrap; /* absolutnie NIE łam 
         box-shadow: var(--shadow-secondary);
         line-height: 1.2;        height: 32px;
 
@@ -1103,4 +1118,176 @@ body.shopping-active #shopping-input-box {
     body.shopping-active button {margin-left: auto;
   display: flex;}
 
+
+
+
 }
+
+*/
+
+@media (max-width: 700px) {
+
+    /* ===== RECIPE LAYOUT ===== */
+
+    .recipe-body {
+        flex-direction: column;
+    }
+
+    .recipe-image-wrap {
+        width: 100%;
+    }
+
+    /* ===== TOPBAR ===== */
+
+    .topbar {
+        flex-direction: row;
+        align-items: center;
+    }
+
+    main.app {
+        margin-top: 10px;
+    }
+
+    #shopping-module.shopping-active {
+        padding-top: 0;
+    }
+
+    /* chowamy zakładki */
+    .module-nav {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+
+        width: 100%;
+        padding: 10px;
+        background: var(--bg-panel);
+        border: 1px solid var(--accent-secondary);
+        border-radius: 10px;
+        box-shadow: var(--shadow-primary), var(--shadow-secondary);
+        z-index: 50;
+        animation: burgerSlide .25s ease forwards;
+    }
+
+    body.shopping-active .topbar {
+        display: none;
+    }
+
+    body.shopping-active #shopping-title, 
+    body.shopping-active #shopping-input-box {
+        opacity: 0;
+        pointer-events: none;
+        max-height: 0;
+        margin-top: 0;
+        margin-bottom: 0;
+        overflow: hidden;
+    }
+
+    /* kiedy aktywne */
+    .module-nav.open {
+        display: flex;
+        margin-top: 10px;
+        flex-direction: column;
+        gap: 8px;
+        background: rgba(0, 0, 0, 0.35);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        padding: 10px;
+        border-radius: 12px;
+    }
+
+    .theme-scandi .module-nav.open {
+        background: rgba(255, 255, 255, 0.65);
+        border: 1px solid rgba(0, 0, 0, 0.08);
+    }
+
+    .topbar-left h1 {
+        font-size: 1.15rem;
+        padding: 4px 8px;
+        border: 1px solid var(--accent-secondary);
+        border-radius: 8px;
+        white-space: nowrap;
+        box-shadow: var(--shadow-secondary);
+        line-height: 1.2;
+        height: 32px;
+
+        display: flex;
+        align-items: center;
+    }    
+
+    .user-badge,
+    .burger-btn {
+        height: 32px;
+        padding: 0 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .burger-btn {
+        min-width: 32px;
+    }
+
+    .recipe-actions {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .recipe-actions button {
+        width: 100%;
+    }
+
+    body {
+        overflow-x: hidden;
+    }
+
+    body.shopping-active button {
+        margin-left: auto;
+        display: flex;
+    }
+
+
+    /* ===== SHOPPING LIST – MOBILE UX BOOST ===== */
+
+    /* Większy wiersz */
+    .shopping-item {
+        padding: 14px 16px;
+        font-size: 1.05rem;
+    }
+
+    /* Nazwa produktu */
+    .item-name {
+        font-size: 1.05rem;
+    }
+
+    /* Ilość */
+    .item-qty {
+        font-size: 1.15rem;
+        min-width: 30px;
+    }
+
+    /* Przyciski + / - */
+    .qty-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 18px;
+    }
+
+    /* Done switch – wygodniejszy palcem */
+    .done-switch {
+        width: 64px;
+        height: 26px;
+    }
+
+    .done-slider::before {
+        width: 22px;
+        height: 22px;
+        top: 2px;
+        left: 2px;
+    }
+
+    .done-switch input:checked + .done-slider::before {
+        transform: translateX(38px);
+    }
+}
+
