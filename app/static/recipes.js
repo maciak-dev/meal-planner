@@ -294,6 +294,16 @@ document.addEventListener("DOMContentLoaded", () => {
     renderShoppingList();
     const saved = localStorage.getItem("theme") || "theme-cyber";
     setTheme(saved);
+
+        const shoppingInput = document.getElementById("shopping-input");
+    if (shoppingInput) {
+        shoppingInput.addEventListener("keydown", e => {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                addShoppingItem();
+            }
+        });
+    }
 });
 
 
@@ -324,6 +334,8 @@ function showModule(name) {
 
 let shoppingMode = false;
 let shoppingFocus = false;
+let pendingRemoveIndex = null;
+let pendingRemoveTimer = null;
 
 function toggleShoppingMode() {
     shoppingMode = !shoppingMode;
@@ -343,10 +355,22 @@ function toggleShoppingMode() {
 
 
 function getShoppingList() {
-    return JSON.parse(
-        localStorage.getItem("shoppingList") || "[]"
-    );
+    try {
+        const data = JSON.parse(localStorage.getItem("shoppingList") || "[]");
+
+        // normalizacja + zabezpieczenie na stare dane
+        return data.map(item => ({
+            name: typeof item.name === "string" ? item.name : "Unknown",
+            qty: typeof item.qty === "number" ? item.qty : 1,
+            done: !!item.done
+        }));
+    } catch (e) {
+        console.warn("Corrupted shoppingList, resetting…");
+        localStorage.removeItem("shoppingList");
+        return [];
+    }
 }
+
 
 function saveShoppingList(list) {
     localStorage.setItem("shoppingList", JSON.stringify(list));
@@ -430,6 +454,8 @@ function renderShoppingList() {
         `;
 
         listEl.appendChild(div);
+        div.classList.add("just-added");
+        setTimeout(() => div.classList.remove("just-added"), 600);
     });
 
     // --- FLIP animation ---
@@ -512,13 +538,37 @@ function addRecipeToShoppingList(buttonEl) {
     showToast("Selected ingredients added to shopping list 🛒");
 }
 
+/*
 function increaseQty(index) {
     const list = getShoppingList();
     list[index].qty += 1;
     saveShoppingList(list);
     renderShoppingList();
-}
 
+    const rows = document.querySelectorAll(".shopping-item");
+    const qty = rows[index]?.querySelector(".item-qty");
+    if (qty) {
+        qty.classList.add("bump");
+        setTimeout(() => qty.classList.remove("bump"), 300);
+    }
+}
+*/
+/*
+function increaseQty(index) {
+    const list = getShoppingList();
+    list[index].qty += 1;
+    saveShoppingList(list);
+    renderShoppingList();
+
+        const rows = document.querySelectorAll(".shopping-item");
+    const qty = rows[index]?.querySelector(".item-qty");
+    if (qty) {
+        qty.classList.add("bump");
+        setTimeout(() => qty.classList.remove("bump"), 300);
+    }
+}
+*/
+/*
 function decreaseQty(index) {
     const list = getShoppingList();
 
@@ -533,6 +583,75 @@ function decreaseQty(index) {
     renderShoppingList();
 }
 
+*/
+/*
+function decreaseQty(index) {
+    const list = getShoppingList();
+    const item = list[index];
+
+    if (item.qty > 1) {
+        item.qty -= 1;
+        saveShoppingList(list);
+        renderShoppingList();
+        return;
+    }
+
+    // qty == 1 → zabezpieczenie przed przypadkowym usunięciem
+    if (pendingRemoveIndex === index) {
+        // DRUGIE kliknięcie → usuwamy
+        list.splice(index, 1);
+        saveShoppingList(list);
+        renderShoppingList();
+        showToast(`${item.name} removed 🗑️`);
+
+        pendingRemoveIndex = null;
+        clearTimeout(pendingRemoveTimer);
+        pendingRemoveTimer = null;
+        return;
+    }
+
+    // PIERWSZE kliknięcie → ostrzegamy
+    pendingRemoveIndex = index;
+    showToast(`Tap again to remove ${item.name}`, "warn");
+
+    pendingRemoveTimer = setTimeout(() => {
+        pendingRemoveIndex = null;
+    }, 2000); // 2 sekundy na decyzję
+}
+*/
+function decreaseQty(index) {
+    const list = getShoppingList();
+    const item = list[index];
+
+    if (item.qty > 1) {
+        item.qty -= 1;
+        saveShoppingList(list);
+        renderShoppingList();
+        return;
+    }
+
+    // qty == 1 → zabezpieczenie przed przypadkowym usunięciem
+    if (pendingRemoveIndex === index) {
+        // DRUGI klik → usuwamy
+        list.splice(index, 1);
+        saveShoppingList(list);
+        renderShoppingList();
+        showToast(`${item.name} removed 🗑️`);
+
+        pendingRemoveIndex = null;
+        clearTimeout(pendingRemoveTimer);
+        pendingRemoveTimer = null;
+        return;
+    }
+
+    // PIERWSZY klik → ostrzegamy
+    pendingRemoveIndex = index;
+    showToast(`Tap again to remove ${item.name}`, "warn");
+
+    pendingRemoveTimer = setTimeout(() => {
+        pendingRemoveIndex = null;
+    }, 2000);
+}
 function toggleDone(index) {
     const list = getShoppingList();
 
@@ -550,6 +669,28 @@ function toggleDone(index) {
     saveShoppingList(list);
     renderShoppingList();
 }
+
+function increaseQty(index) {
+    const list = getShoppingList();
+    const item = list[index];
+
+    item.qty += 1;
+    saveShoppingList(list);
+    renderShoppingList();
+
+    // 👇 po renderze znajdź TEN konkretny element po nazwie
+    requestAnimationFrame(() => {
+        const row = document.querySelector(
+            `.shopping-item[data-key="${item.name}"] .item-qty`
+        );
+
+        if (row) {
+            row.classList.add("bump");
+            setTimeout(() => row.classList.remove("bump"), 300);
+        }
+    });
+}
+
 
 function updateShoppingTitle() {
     const title = document.getElementById("shopping-title");
