@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from app.core.database import Base, engine, get_db, SessionLocal
 from app.core.config import ENV, COOKIE_SECURE
 from app.core import security
+from app.core.request_log_middleware import RequestLogMiddleware
 from app.core.middleware import IPBlockMiddleware
 
 # =========================
@@ -75,6 +76,7 @@ app.include_router(api_router, prefix="/api/v1")
 # IP BLOCK
 # =========================
 app.add_middleware(IPBlockMiddleware)
+app.add_middleware(RequestLogMiddleware)
 
 
 # =========================

@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Recipe Manager</title>
 
 <!-- FAVICONS -->
@@ -25,23 +26,23 @@
 <main class="app">
 <header class="topbar">
     <div class="topbar-left">
-        <h1>Recipe Manager</h1>
+        <h1 onclick="toggleModuleNav()">Recipe Manager</h1>
 
         <div class="module-nav">
             <button class="nav-tab active"
                     data-module="recipes"
-                    onclick="showModule('recipes')">
+                    onclick="showModule('recipes'); closeAllMenus();">
                 Recipes
             </button>
 
             <button class="nav-tab"
                     data-module="shopping"
-                    onclick="showModule('shopping')">
+                    onclick="showModule('shopping'); closeAllMenus();">
                 Shopping List
             </button>
         </div>
-    </div>
-<div class="topbar-right">
+</div>
+    <div class="topbar-right">
 
     {% if user.role == "super_admin" %}
     <span class="user-badge clickable"
@@ -53,10 +54,10 @@
         {{ user.username }}
     </span>
     {% endif %}
-
     <button class="secondary small burger-btn" onclick="toggleBurger()">☰</button>
     
 </div>
+
 <div id="burger-menu" class="burger-menu">
         <button class="secondary small" onclick="toggleTheme()">Switch Theme</button>
         <button class="secondary small" onclick="openIngredientsModal()">Ingredients</button>

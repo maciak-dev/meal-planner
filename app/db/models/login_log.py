@@ -12,3 +12,15 @@ class LoginLog(Base):
     user_agent = Column(String)
     success = Column(Boolean)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+class RequestLog(Base):
+    __tablename__ = "request_log"
+
+    id = Column(Integer, primary_key=True)
+    ip_address = Column(String)
+    method = Column(String)
+    path = Column(String)
+    status_code = Column(Integer)
+    user_agent = Column(String)
+    is_suspicious = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)

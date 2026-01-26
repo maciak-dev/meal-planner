@@ -527,18 +527,7 @@ body.modal-open {
 
 
 
-    /* TOP BAR */
 
-    .topbar-left {
-        display: flex;
-        align-items: center;
-        gap: 20px;
-    }
-
-    .topbar-left h1 {
-        margin: 0;
-        font-size: 1.4rem;
-    }
 
     /* MODULE NAV */
 
@@ -568,8 +557,18 @@ body.modal-open {
         
     }
 
+/*
+body.shopping-active .topbar {
+    display: none;
+}
 
-
+body.shopping-active #shopping-title,
+body.shopping-active #shopping-input-box {
+    opacity: 0;
+    pointer-events: none;
+    max-height: 0;
+    overflow: hidden;
+}
     /* SHOPPING LIST */
 
     .shopping-input {
@@ -740,6 +739,9 @@ body.modal-open {
     background: var(--accent-secondary);
 }
 
+
+
+
 .user-label {
     font-size: 0.85rem;
     opacity: 0.85;
@@ -780,7 +782,7 @@ body.modal-open {
     cursor: pointer;
     text-decoration: underline;
 }
-
+/*
 .admin-table {
     width: 100%;
     border-collapse: collapse;
@@ -801,7 +803,7 @@ body.modal-open {
     color: #ff5f5f;
 }
 
-
+*/
 
 .image-preview-wrapper {
   position: relative;
@@ -845,21 +847,35 @@ body.modal-open {
   font-size: 0.8rem;
 }
 
-.topbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 20px;
-    margin-bottom: 20px;
-    position: relative;   /* KLUCZ */
-}
 
-/* prawa strona */
-.topbar-right {
-    display: flex;
-    align-items: center;
-    gap: 10px;   /* odstęp user ↔ burger */
-}
+/* TOP BAR */
+
+    .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        margin-bottom: 20px;
+        position: relative;
+    }
+
+    .topbar-left {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .topbar-left h1 {
+        margin: 0;
+        font-size: 1.4rem;
+    }
+    .topbar-right {
+        display: flex;
+        align-items: center;
+        gap: 10px;   /* odstęp user ↔ burger */
+    }
+
+
 
 /* === BURGER MENU === */
 
@@ -900,7 +916,9 @@ body.modal-open {
     margin-bottom: 0;
 }
 
-
+.burger-menu.open {
+    display: flex;
+}
 
 
 @keyframes burgerSlide{
@@ -969,4 +987,120 @@ input[type="file"]::file-selector-button {
 
 .burger-btn.active {
   border-color: var(--accent-secondary); /* dopasowanie borderu */
+}
+
+/* === MOBILE HEADER BEHAVIOR === */
+@media (max-width: 700px) {
+
+    .topbar {
+        flex-direction: row;
+        align-items: center;
+    }
+
+        main.app {
+        margin-top: 10px;
+    }
+
+        #shopping-module.shopping-active {
+        padding-top: 0;
+    }
+    /* chowamy zakładki */
+    .module-nav {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+
+        width: 100%;
+        padding: 10px;
+        background: var(--bg-panel);
+        border: 1px solid var(--accent-secondary);
+        border-radius: 10px;
+        box-shadow: var(--shadow-primary), var(--shadow-secondary);
+        z-index: 50;
+        animation: burgerSlide .25s ease forwards;
+    }
+
+
+
+body.shopping-active .topbar {
+    display: none;
+}
+
+ body.shopping-active #shopping-title, 
+body.shopping-active #shopping-input-box {
+    opacity: 0;
+    pointer-events: none;
+    max-height: 0;
+    margin-top: 0px;
+     margin-bottom: 0px;
+    overflow: hidden;
+}
+
+    /* kiedy aktywne */
+    .module-nav.open {
+        display: flex;
+        margin-top: 10px;
+        flex-direction: column;
+        gap: 8px;
+                background: rgba(0, 0, 0, 0.35); /* lub rgba(255,255,255,0.2) zależnie od theme */
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+
+        padding: 10px;
+        border-radius: 12px;
+    }
+
+    .theme-scandi .module-nav.open {
+    background: rgba(255, 255, 255, 0.65);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+    .topbar-left h1 {
+        font-size: 1.15rem; /* nie łamie się */
+        padding: 4px 8px;
+        border: 1px solid var(--accent-secondary);
+        border-radius: 8px;
+        white-space: nowrap; /* absolutnie NIE łam */
+        box-shadow: var(--shadow-secondary);
+        line-height: 1.2;        height: 32px;
+
+        display: flex;
+        align-items: center;
+
+        border: 1px solid var(--accent-secondary);
+        border-radius: 8px;
+        white-space: nowrap;
+
+    }    
+
+    .user-badge,
+    .burger-btn {
+        height: 32px;
+        padding: 0 8px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .burger-btn {
+        min-width: 32px;
+    }
+        .recipe-actions {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .recipe-actions button {
+        width: 100%;
+    }
+
+    body {
+        overflow-x: hidden;
+    }
+
+    body.shopping-active button {margin-left: auto;
+  display: flex;}
+
 }
