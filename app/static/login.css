@@ -10,7 +10,8 @@ body.login {
 }
 
 form.login-form {
-    width: 320px;
+    width: 90%;
+    max-width: 320px;
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -42,3 +43,5 @@ button.theme-btn {
     border: 1px solid var(--accent-primary);
     color: var(--accent-primary);
 }
+
+

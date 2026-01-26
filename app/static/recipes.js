@@ -323,21 +323,24 @@ function showModule(name) {
 
 
 let shoppingMode = false;
+let shoppingFocus = false;
 
 function toggleShoppingMode() {
     shoppingMode = !shoppingMode;
+    shoppingFocus = shoppingMode;
 
-
-    document.getElementById("shopping-input-box").style.display =
-        shoppingMode ? "none" : "flex";
-
+    const module = document.getElementById("shopping-module");
+    module.classList.toggle("shopping-active", shoppingMode);
+    document.body.classList.toggle("shopping-active", shoppingMode); 
     updateShoppingTitle();
     renderShoppingList();
+
     showToast(
         shoppingMode ? "Shopping mode ON 🛒" : "Shopping mode OFF",
         "success"
     );
 }
+
 
 function getShoppingList() {
     return JSON.parse(
@@ -382,16 +385,22 @@ function renderShoppingList() {
     const listEl = document.getElementById("shopping-list");
     const list = getShoppingList();
 
-    const oldPositions = getPositions();
+    // --- FLIP: zapamiętujemy stare pozycje ---
+    const oldPositions = new Map();
+    listEl.querySelectorAll(".shopping-item").forEach(el => {
+        oldPositions.set(el.dataset.key, el.getBoundingClientRect());
+    });
+
+    // --- sortujemy kupione na dół ---
+    const sortedList = [...list].sort((a, b) => a.done - b.done);
 
     listEl.innerHTML = "";
-
-    if (list.length === 0) {
+    if (sortedList.length === 0) {
         listEl.innerHTML = `<p class="muted">Your shopping list is empty 🛒</p>`;
         return;
     }
 
-    list.forEach((item, index) => {
+    sortedList.forEach((item, index) => {
         const div = document.createElement("div");
         div.className = `shopping-item ${item.done ? "done" : ""}`;
         div.dataset.key = item.name;
@@ -400,7 +409,7 @@ function renderShoppingList() {
             <div class="shopping-main">
                 <label class="done-switch" style="${shoppingMode ? "" : "display:none"}">
                     <input type="checkbox" ${item.done ? "checked" : ""}
-                        onchange="event.stopPropagation();toggleDone(${index})">
+                        onchange="event.stopPropagation(); toggleDone(${index})">
                     <span class="done-slider"></span>
                 </label>
                 <span class="item-name">${item.name}</span>
@@ -423,10 +432,9 @@ function renderShoppingList() {
         listEl.appendChild(div);
     });
 
-    // --- FLIP ---
+    // --- FLIP animation ---
     requestAnimationFrame(() => {
-        const newItems = document.querySelectorAll(".shopping-item");
-
+        const newItems = listEl.querySelectorAll(".shopping-item");
         newItems.forEach(el => {
             const old = oldPositions.get(el.dataset.key);
             if (!old) return;
@@ -447,12 +455,6 @@ function renderShoppingList() {
     });
 }
 
-/*function clearShoppingList() {
-    if (!confirm("Clear shopping list?")) return;
-    saveShoppingList([]);
-    renderShoppingList();
-}
-*/
 function clearShoppingList() {
     const modal = document.getElementById("clear-modal");
         document.getElementById("clear-title").innerText = "Clear shopping list";
@@ -556,6 +558,37 @@ function updateShoppingTitle() {
     title.textContent = shoppingMode
         ? "Shopping mode"
         : "Your shopping list";
+}
+
+
+function isMobile() {
+    return window.matchMedia("(max-width: 700px)").matches;
+}
+
+
+function toggleModuleNav() {
+    if (!isMobile()) return;
+
+    const nav = document.querySelector(".module-nav");
+    const isOpen = nav.classList.contains("open");
+
+    closeAllMenus();
+
+    if (!isOpen) {
+        nav.classList.add("open");
+    }
+}
+
+function closeAllMenus() {
+    if (isMobile()) {
+        document.querySelector(".module-nav")?.classList.remove("open");
+    }
+
+    const burger = document.getElementById("burger-menu");
+    const burgerBtn = document.querySelector(".burger-btn");
+
+    burger?.classList.remove("open");
+    burgerBtn?.classList.remove("active");
 }
 
 function setupImagePreview(inputId, previewId) {
@@ -686,35 +719,48 @@ function closeBurger() {
 }
 */
 
+
 function toggleBurger() {
     const burger = document.getElementById("burger-menu");
     const burgerBtn = document.querySelector(".burger-btn");
+    const isOpen = burger.classList.contains("open");
 
-    // Toggle widoczności menu
-    if (burger.style.display === "block") {
-        burger.style.display = "none";
-        burgerBtn.classList.remove("active"); // usuń kolor po zamknięciu
-    } else {
-        burger.style.display = "block";
-        burgerBtn.classList.add("active"); // dodaj kolor po otwarciu
+    closeAllMenus();
+
+    if (!isOpen) {
+        burger.classList.add("open");
+        burgerBtn.classList.add("active");
     }
 }
 
-function closeBurger() {
-    const burger = document.getElementById("burger-menu");
-    const burgerBtn = document.querySelector(".burger-btn");
 
-    burger.style.display = "none";
-    burgerBtn.classList.remove("active"); // usuń kolor
-}
 
 document.addEventListener("click", e => {
+    if (!isMobile()) return;
+
     const burger = document.getElementById("burger-menu");
     const burgerBtn = document.querySelector(".burger-btn");
+    const moduleNav = document.querySelector(".module-nav");
+    const title = document.querySelector(".topbar-left h1");
 
-    if (!burger || burger.style.display !== "block") return;
+    if (
+        burger?.contains(e.target) ||
+        burgerBtn?.contains(e.target) ||
+        moduleNav?.contains(e.target) ||
+        title?.contains(e.target)
+    ) return;
 
-    if (burger.contains(e.target) || burgerBtn.contains(e.target)) return;
+    closeAllMenus();
+});
 
-    closeBurger();
+document.querySelector(".module-nav")?.addEventListener("click", e => {
+    if (isMobile() && e.target.closest("button")) {
+        closeAllMenus();
+    }
+});
+
+document.getElementById("burger-menu")?.addEventListener("click", e => {
+    if (e.target.closest("button")) {
+        closeAllMenus();
+    }
 });
