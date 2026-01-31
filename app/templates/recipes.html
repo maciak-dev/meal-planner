@@ -59,7 +59,12 @@
 </div>
 
 <div id="burger-menu" class="burger-menu">
-        <button class="secondary small" onclick="toggleTheme()">Switch Theme</button>
+        <button
+            id="theme-toggle"
+            class="secondary small"
+            >
+            Switch Theme
+            </button>
         <button class="secondary small" onclick="openIngredientsModal()">Ingredients</button>
 
         <form method="get" action="/logout">
@@ -87,7 +92,7 @@
     <input id="description" placeholder="Description">
     <textarea id="ingredients" rows="5" placeholder="Ingredients (one per line)"></textarea>
     <textarea id="instructions" rows="5" placeholder="Instructions"></textarea>
-    <button class="primary" onclick="addRecipe()">Add Recipe</button>
+    <button class="primary" data-action="create-recipe">Save</button>
 </div>
 <div class="divider"></div>
 </section>
@@ -140,7 +145,7 @@
         <input id="edit-description" placeholder="Description">
         <textarea id="edit-ingredients" rows="5" placeholder="Ingredients"></textarea>
         <textarea id="edit-instructions" rows="5" placeholder="Instructions"></textarea>
-        <button class="primary" onclick="saveEdit()">Save</button>
+        <button class="primary" data-action="update-recipe">Save</button>
     </div>
 </div>
 

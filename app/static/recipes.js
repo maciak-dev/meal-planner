@@ -1,4 +1,690 @@
-let recipesCache = [];
+const Api = {
+    async request(url, options = {}) {
+        const res = await fetch(url, options);
+
+        if (!res.ok) {
+            let msg = "API error";
+            try {
+                msg = await res.text();
+            } catch { }
+            throw new Error(msg || "API error");
+        }
+
+        return res;
+    },
+
+    get(url) {
+        return this.request(url);
+    },
+
+    post(url, data) {
+        return this.request(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        });
+    },
+
+    put(url, data) {
+        return this.request(url, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        });
+    },
+
+    patch(url, data) {
+        return this.request(url, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        });
+    },
+
+    delete(url) {
+        return this.request(url, { method: "DELETE" });
+    },
+
+    upload(url, formData) {
+        return this.request(url, {
+            method: "PUT",
+            body: formData
+        });
+    }
+};
+
+const UI = {
+    toast(msg, type = "success", timeout = 2500) {
+        const toast = document.getElementById("toast");
+        if (!toast) return;
+
+        toast.textContent = msg;
+        toast.className = `toast ${type} show`;
+
+        clearTimeout(this._toastTimer);
+        this._toastTimer = setTimeout(
+            () => toast.classList.remove("show"),
+            timeout
+        );
+    },
+
+    openModal(id) {
+        document.body.classList.add("modal-open");
+        document.getElementById(id)?.classList.add("open");
+    },
+
+    closeModal(id) {
+        document.body.classList.remove("modal-open");
+        document.getElementById(id)?.classList.remove("open");
+    },
+
+    theme: {
+        set(theme) {
+            document.body.classList.remove("theme-cyber", "theme-scandi");
+            document.body.classList.add(theme);
+            localStorage.setItem("theme", theme);
+        },
+
+        toggle() {
+            const current = document.body.classList.contains("theme-scandi")
+                ? "theme-scandi"
+                : "theme-cyber";
+            this.set(current === "theme-scandi" ? "theme-cyber" : "theme-scandi");
+        },
+
+        load() {
+            this.set(localStorage.getItem("theme") || "theme-cyber");
+        }
+    }
+
+};
+
+const RecipesUI = {
+    add: {
+        name: () => document.getElementById("name"),
+        description: () => document.getElementById("description"),
+        ingredients: () => document.getElementById("ingredients"),
+        instructions: () => document.getElementById("instructions"),
+        preview: () => document.getElementById("add-preview"),
+        image: () => document.getElementById("add-image"),
+        form: () => document.getElementById("add-recipe-form")
+    },
+    edit: {
+        name: () => document.getElementById("edit-name"),
+        description: () => document.getElementById("edit-description"),
+        ingredients: () => document.getElementById("edit-ingredients"),
+        instructions: () => document.getElementById("edit-instructions"),
+        preview: () => document.getElementById("edit-preview"),
+        image: () => document.getElementById("edit-image"),
+        modal: () => document.getElementById("edit-modal")
+    },
+    list: () => document.getElementById("recipes-container")
+};
+
+function clearForm(fields) {
+    Object.values(fields)
+        .map(fn => fn())
+        .filter(el => el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA"))
+        .forEach(el => el.value = "");
+}
+
+
+const Recipes = {
+    state: {
+        cache: [],
+        ingredientsMap: {}
+    },
+
+    async load() {
+        try {
+            const mapRes = await Api.get("/ingredients/map");
+            this.state.ingredientsMap = await mapRes.json();
+
+            const res = await Api.get("/api/v1/recipes/");
+            const data = await res.json();
+
+            this.state.cache = data;
+            this.render(data);
+
+        } catch (err) {
+            console.error("Error loading recipes:", err);
+        }
+    },
+
+    render(recipes) {
+        const container = RecipesUI.list();
+        container.innerHTML = "";
+        recipes.forEach(r => {
+            const box = document.createElement("div");
+            box.className = "recipe-box";
+            box.innerHTML = `
+            <h3>${r.name}</h3>
+            <div class="recipe-body">
+            <div class="recipe-text">
+                <p><strong>Description:</strong> ${r.description}</p>
+                <p><strong>Ingredients:</strong></p>
+                <div class="ingredients-list">
+                    ${this.renderIngredients(r.ingredients)}
+                </div>
+            </div>
+            ${r.image ? `
+            <div class="recipe-image-wrap">
+                <img src="${r.image}" class="recipe-image">
+            </div>
+            ` : ""}
+            </div>
+            <div class="recipe-actions">
+            <button class="secondary"
+                data-action="instructions"
+                data-instructions="${r.instructions}">
+                View Instructions
+            </button>
+            <button class="secondary add-to-list"
+                data-action="add-to-list"
+                data-id="${r.id}">
+                + Add to list
+            </button>
+            <button class="secondary" data-action="edit" data-id="${r.id}">Edit</button>
+            <button class="danger"
+                data-action="delete"
+                data-id="${r.id}"
+                data-name="${r.name}">
+                Delete
+            </button>
+
+            ${renderVisibilitySwitch(r)}
+            </div>
+            `;
+            container.appendChild(box);
+        });
+    },
+
+    renderIngredients(ingredients) {
+        return ingredients.split("\n").map(ing => {
+            const key = ing.trim().toLowerCase();
+            const essential = this.state.ingredientsMap[key] ?? true;
+
+            return `
+          <label class="ingredient" style="display:flex; align-items:center; gap:6px;">
+            <input type="checkbox" class="shopping-item" ${essential ? "checked" : ""}>
+            <span>${ing}</span>
+          </label>
+        `;
+        }).join("");
+    },
+
+    actions: {
+        edit(id) {
+            Recipes.actions.openEdit(id);
+        },
+
+        delete(id, name) {
+            openDeleteModal(id, name);
+        },
+
+        addToList(btn) {
+            addRecipeToShoppingList(btn);
+        },
+
+        instructions(text) {
+            showInstructions(text);
+        },
+
+        create() {
+            const recipe = {
+                name: RecipesUI.add.name().value,
+                description: RecipesUI.add.description().value,
+                ingredients: RecipesUI.add.ingredients().value,
+                instructions: RecipesUI.add.instructions().value
+            };
+
+            Api.post("/api/v1/recipes/", recipe)
+                .then(res => res.json())
+                .then(data => uploadRecipeImage(data.id, "add-image"))
+                .then(() => {
+                    Recipes.load();
+                    clearForm(RecipesUI.add);
+                    RecipesUI.add.preview().style.display = "none";
+                    RecipesUI.add.image().value = "";
+
+                    UI.toast("Recipe saved", "success");
+                })
+                .catch(err => {
+                    console.error(err);
+                    UI.toast("Server error", "warn");
+                });
+        },
+        openEdit(id) {
+            const recipe = Recipes.state.cache.find(r => r.id === id);
+            if (!recipe) return;
+
+            editingId = id;
+
+            RecipesUI.edit.name().value = recipe.name || "";
+            RecipesUI.edit.description().value = recipe.description || "";
+            RecipesUI.edit.ingredients().value = recipe.ingredients || "";
+            RecipesUI.edit.instructions().value = recipe.instructions || "";
+
+            const preview = RecipesUI.edit.preview();
+            preview.src = recipe.image || "";
+            preview.style.display = recipe.image ? "block" : "none";
+
+            const file = RecipesUI.edit.image();
+            if (file) file.value = "";
+
+            UI.openModal("edit-modal");
+        },
+        async update() {
+            if (!editingId) return;
+
+            try {
+                const recipe = {
+                    name: RecipesUI.edit.name().value,
+                    description: RecipesUI.edit.description().value,
+                    ingredients: RecipesUI.edit.ingredients().value,
+                    instructions: RecipesUI.edit.instructions().value
+                };
+
+                await Api.put(`/api/v1/recipes/${editingId}`, recipe);
+                await updateRecipeImage(editingId, "edit-image");
+
+                editingId = null;
+                closeEdit();
+                await Recipes.load();
+
+                UI.toast("Recipe updated", "success");
+            } catch (err) {
+                console.error(err);
+                UI.toast("Server error", "warn");
+            }
+        },
+
+        toggleVisibility(id, checkbox) {
+            Api.patch(`/api/v1/recipes/${id}/visibility`, { is_public: checkbox.checked })
+                .catch(() => {
+                    checkbox.checked = !checkbox.checked;
+                    UI.toast("You cannot change visibility of this recipe");
+                });
+        }
+
+    },
+
+    handleClick(e) {
+        const btn = e.target.closest("button");
+        if (!btn) return;
+
+        const action = btn.dataset.action;
+        if (!action) return;
+
+        const map = {
+            edit: () => this.actions.edit(Number(btn.dataset.id)),
+            delete: () => this.actions.delete(Number(btn.dataset.id), btn.dataset.name),
+            "add-to-list": () => this.actions.addToList(btn),
+            instructions: () => this.actions.instructions(btn.dataset.instructions || "")
+        };
+
+        map[action]?.();
+    },
+
+    handleChange(e) {
+        const input = e.target;
+        const action = input.dataset.action;
+        if (!action) return;
+
+        if (action === "visibility") {
+            this.actions.toggleVisibility(Number(input.dataset.id), input);
+        }
+    },
+    handleFormClick(e) {
+        const btn = e.target.closest("button");
+        if (!btn) return;
+
+        const action = btn.dataset.action;
+        if (!action) return;
+
+        const map = {
+            "create-recipe": () => this.actions.create(),
+            "update-recipe": () => this.actions.update()
+        };
+
+        map[action]?.();
+    }
+
+
+
+};
+
+
+const ShoppingUI = {
+    list: () => document.getElementById("shopping-list"),
+    input: () => document.getElementById("shopping-input"),
+    title: () => document.getElementById("shopping-title"),
+    module: () => document.getElementById("shopping-module"),
+    clearModal: () => document.getElementById("clear-modal")
+};
+
+
+const Shopping = {
+    state: {
+        mode: false,
+        focus: false,
+        pendingRemoveId: null,
+        pendingRemoveTimer: null
+    },
+    getList() {
+        try {
+            const data = JSON.parse(localStorage.getItem("shoppingList") || "[]");
+            return data.map(item => ({
+                id: item.id || crypto.randomUUID(),
+                name: typeof item.name === "string" ? item.name : "Unknown",
+                qty: typeof item.qty === "number" ? item.qty : 1,
+                done: !!item.done
+            }));
+        } catch (e) {
+            console.warn("Corrupted shoppingList, resetting…");
+            localStorage.removeItem("shoppingList");
+            return [];
+        }
+    },
+    saveList(list) {
+        localStorage.setItem("shoppingList", JSON.stringify(list));
+    },
+    render() {
+        const listEl = ShoppingUI.list();
+        const list = this.getList();
+        const oldPositions = new Map();
+        listEl.querySelectorAll(".shopping-item").forEach(el => {
+            oldPositions.set(el.dataset.id, el.getBoundingClientRect());
+        });
+        const sortedList = [...list].sort((a, b) => a.done - b.done);
+        listEl.innerHTML = "";
+        if (sortedList.length === 0) {
+            listEl.innerHTML = `<p class="muted">Your shopping list is empty 🛒</p>`;
+            return;
+        }
+        sortedList.forEach(item => {
+            const div = document.createElement("div");
+            div.className = `shopping-item ${item.done ? "done" : ""}`;
+            div.dataset.id = item.id;
+            div.innerHTML = `
+                <div class="shopping-main">
+                    <label class="done-switch" style="${this.state.mode ? "" : "display:none"}">
+                        <input type="checkbox" ${item.done ? "checked" : ""}
+                            data-action="toggle-done"
+                            data-id="${item.id}">
+                        <span class="done-slider"></span>
+                    </label>
+                    <span class="item-name">${item.name}</span>
+                </div>
+                <span class="item-qty">${item.qty}</span>
+                ${this.state.mode ? "" : `
+                <div class="qty-controls">
+                    <button class="qty-btn"
+                        data-action="decrease"
+                        data-id="${item.id}"
+                        ${item.done ? "disabled" : ""}>-</button>
+
+                    <button class="qty-btn"
+                        data-action="increase"
+                        data-id="${item.id}"
+                        ${item.done ? "disabled" : ""}>+</button>
+                </div>
+                `}
+            `;
+
+            listEl.appendChild(div);
+            div.classList.add("just-added");
+            setTimeout(() => div.classList.remove("just-added"), 600);
+        });
+
+        // --- FLIP animation ---
+        requestAnimationFrame(() => {
+            const newItems = listEl.querySelectorAll(".shopping-item");
+            newItems.forEach(el => {
+                const old = oldPositions.get(el.dataset.id);
+                if (!old) return;
+
+                const newPos = el.getBoundingClientRect();
+                const dy = old.top - newPos.top;
+
+                if (dy !== 0) {
+                    el.style.transform = `translateY(${dy}px)`;
+                    el.style.transition = "none";
+
+                    requestAnimationFrame(() => {
+                        el.style.transition = "transform 300ms ease";
+                        el.style.transform = "";
+                    });
+                }
+            });
+        });
+    },
+    actions: {
+        increase(id) {
+            const list = Shopping.getList();
+            const item = list.find(i => i.id === id);
+            if (!item) return;
+
+            item.qty += 1;
+            Shopping.saveList(list);
+            Shopping.render();
+
+            requestAnimationFrame(() => {
+                const row = document.querySelector(
+                    `.shopping-item[data-id="${id}"] .item-qty`
+                );
+
+                if (row) {
+                    row.classList.add("bump");
+                    setTimeout(() => row.classList.remove("bump"), 300);
+                }
+            });
+        },
+
+        decrease(id) {
+            const list = Shopping.getList();
+            const index = list.findIndex(i => i.id === id);
+            if (index === -1) return;
+
+            const item = list[index];
+
+            if (item.qty > 1) {
+                item.qty -= 1;
+                Shopping.saveList(list);
+                Shopping.render();
+                return;
+            }
+
+            // zabezpieczenie przed przypadkowym usunięciem
+            if (Shopping.state.pendingRemoveId === id) {
+                list.splice(index, 1);
+                Shopping.saveList(list);
+                Shopping.render();
+                UI.toast(`${item.name} removed 🗑️`);
+
+                Shopping.state.pendingRemoveId = null;
+                clearTimeout(Shopping.state.pendingRemoveTimer);
+                Shopping.state.pendingRemoveTimer = null;
+                return;
+            }
+
+            Shopping.state.pendingRemoveId = id;
+            UI.toast(`Tap again to remove ${item.name}`, "warn");
+
+            Shopping.state.pendingRemoveTimer = setTimeout(() => {
+                Shopping.state.pendingRemoveId = null;
+            }, 2000);
+        },
+
+        toggleDone(id) {
+            const list = Shopping.getList();
+            const index = list.findIndex(i => i.id === id);
+            if (index === -1) return;
+
+            const item = list[index];
+            item.done = !item.done;
+
+            const moved = list.splice(index, 1)[0];
+
+            if (item.done) {
+                list.push(moved);
+            } else {
+                list.unshift(moved);
+            }
+
+            Shopping.saveList(list);
+            Shopping.render();
+        }
+    },
+    handleClick(e) {
+        const btn = e.target.closest("button");
+        if (!btn) return;
+
+        const action = btn.dataset.action;
+        if (!action) return;
+
+        const map = {
+            increase: id => this.actions.increase(id),
+            decrease: id => this.actions.decrease(id)
+        };
+
+        const handler = map[action];
+        if (handler) {
+            handler(btn.dataset.id);
+        }
+    },
+
+    handleChange(e) {
+        const input = e.target;
+        const action = input.dataset.action;
+        if (!action) return;
+
+        const map = {
+            "toggle-done": id => this.actions.toggleDone(id)
+        };
+
+        const handler = map[action];
+        if (handler) {
+            handler(input.dataset.id);
+        }
+    },
+    toggleMode() {
+        Shopping.state.mode = !Shopping.state.mode;
+        Shopping.state.focus = Shopping.state.mode;
+
+        ShoppingUI.module().classList.toggle(
+            "shopping-active",
+            Shopping.state.mode
+        );
+        document.body.classList.toggle(
+            "shopping-active",
+            Shopping.state.mode
+        );
+
+        Shopping.updateTitle();
+        Shopping.render();
+
+        UI.toast(
+            Shopping.state.mode ? "Shopping mode ON 🛒" : "Shopping mode OFF",
+            "success"
+        );
+    },
+
+    updateTitle() {
+        ShoppingUI.title().textContent =
+            Shopping.state.mode ? "Shopping mode" : "Your shopping list";
+    },
+    clear() {
+        this.saveList([]);
+        this.render();
+        UI.toast("Shopping list cleared 🧹");
+    }
+};
+
+
+const App = {
+    init() {
+        UI.theme.load();
+        Recipes.load();
+        Shopping.render();
+        this.bindEvents();
+    },
+
+
+    handleGlobalClick(e) {
+        if (!isMobile()) return;
+
+        const burger = document.getElementById("burger-menu");
+        const burgerBtn = document.querySelector(".burger-btn");
+        const moduleNav = document.querySelector(".module-nav");
+        const title = document.querySelector(".topbar-left h1");
+
+        if (
+            burger?.contains(e.target) ||
+            burgerBtn?.contains(e.target) ||
+            moduleNav?.contains(e.target) ||
+            title?.contains(e.target)
+        ) {
+            return;
+        }
+
+        closeAllMenus();
+    },
+
+    bindEvents() {
+        // shopping input (Enter)
+        const shoppingInput = document.getElementById("shopping-input");
+        if (shoppingInput) {
+            shoppingInput.addEventListener("keydown", e => {
+                if (e.key === "Enter") {
+                    e.preventDefault();
+                    Shopping.addItem();
+                }
+            });
+        }
+
+        // shopping list
+        const shoppingList = document.getElementById("shopping-list");
+        if (shoppingList) {
+            shoppingList.addEventListener("click", e => Shopping.handleClick(e));
+            shoppingList.addEventListener("change", e => Shopping.handleChange(e));
+        }
+
+        // recipes list
+        const recipesContainer = document.getElementById("recipes-container");
+        if (recipesContainer) {
+            recipesContainer.addEventListener("click", e => Recipes.handleClick(e));
+            recipesContainer.addEventListener("change", e => Recipes.handleChange(e));
+        }
+
+        // recipe forms
+        const addForm = document.getElementById("add-recipe-form");
+        if (addForm) {
+            addForm.addEventListener("click", e =>
+                Recipes.handleFormClick(e)
+            );
+        }
+
+        const editForm = document.getElementById("edit-modal");
+        if (editForm) {
+            editForm.addEventListener("click", e =>
+                Recipes.handleFormClick(e)
+            );
+        }
+
+        const themeBtn = document.getElementById("theme-toggle");
+        if (themeBtn) {
+            themeBtn.addEventListener("click", () => UI.theme.toggle());
+        }
+
+
+        document.addEventListener("click", e => App.handleGlobalClick(e));
+    }
+
+};
+
+
+
 
 
 // === COLLAPSIBLE FORM ===
@@ -10,105 +696,18 @@ addBtn.addEventListener("click", () => {
 });
 
 // === LOAD & DISPLAY RECIPES ===
-let ingredientsMap = {};
 
-async function loadIngredientsMap() {
-    const res = await fetch("/ingredients/map");
-    ingredientsMap = await res.json();
-}
-
-function renderIngredients(ingredients) {
-    return ingredients.split("\n").map(ing => {
-        const key = ing.trim().toLowerCase();
-        const essential = ingredientsMap[key] ?? true; // domyślnie ważne
-
-        return `
-          <label class="ingredient" style="display:flex; align-items:center; gap:6px;">
-            <input type="checkbox" class="shopping-item" ${essential ? "checked" : ""}>
-            <span>${ing}</span>
-          </label>
-        `;
-    }).join("");
-}
-
-async function loadRecipes() {
-    try {
-        await loadIngredientsMap();
-        const res = await fetch("/api/v1/recipes/");
-        const data = await res.json();
-        recipesCache = data;
-        displayRecipes(data);
-    } catch (err) { console.error("Error loading recipes:", err); }
-}
-
-function displayRecipes(recipes) {
-    const container = document.getElementById("recipes-container");
-    container.innerHTML = "";
-
-recipes.forEach(r => {
-    const box = document.createElement("div");
-    box.className = "recipe-box";
-    box.innerHTML = `
-<h3>${r.name}</h3>
-
-<div class="recipe-body">
-
-    <div class="recipe-text">
-        <p><strong>Description:</strong> ${r.description}</p>
-
-        <p><strong>Ingredients:</strong></p>
-        <div class="ingredients-list">
-            ${renderIngredients(r.ingredients)}
-        </div>
-    </div>
-
-    ${r.image ? `
-    <div class="recipe-image-wrap">
-        <img src="${r.image}" class="recipe-image">
-    </div>
-    ` : ""}
-
-</div>
-
-<div class="recipe-actions">
-    <button class="secondary"
-        onclick="showInstructions('${r.instructions.replace(/'/g, "\\'").replace(/\n/g, "<br>")}')">
-        View Instructions
-    </button>
-
-    <button class="secondary add-to-list"
-        data-recipe-id="${r.id}"
-        onclick="addRecipeToShoppingList(this)">
-        + Add to list
-    </button>
-
-    <button class="secondary" onclick="openEdit(${r.id})">Edit</button>
-    <button class="danger" onclick="openDeleteModal(${r.id}, '${r.name.replace(/'/g,"\\'")}')">Delete</button>
-    ${renderVisibilitySwitch(r)}
-</div>
-`;
-    container.appendChild(box);
-});
-
-
-}
 
 async function toggleVisibility(recipeId, checkbox) {
     const newValue = checkbox.checked;
 
     try {
-        const res = await fetch(`/api/v1/recipes/${recipeId}/visibility`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ is_public: newValue })
-        });
+        await Api.patch(`/api/v1/recipes/${recipeId}/visibility`, { is_public: newValue });
 
-        if (!res.ok) {
-            throw new Error("Forbidden");
-        }
+
     } catch (err) {
         checkbox.checked = !newValue; // 👈 cofamy
-        showToast("You cannot change visibility of this recipe");
+        UI.toast("You cannot change visibility of this recipe");
     }
 }
 
@@ -117,11 +716,13 @@ function renderVisibilitySwitch(recipe) {
 
     return `
         <label class="visibility-switch ${disabled}">
-            <input type="checkbox"
+           <input type="checkbox"
                 ${recipe.is_public ? "checked" : ""}
                 ${disabled}
-                onchange="toggleVisibility(${recipe.id}, this)"
+                data-action="visibility"
+                data-id="${recipe.id}"
             >
+
             <span class="slider"></span>
             <span class="labels">
                 <span class="private">PRIVATE</span>
@@ -133,152 +734,60 @@ function renderVisibilitySwitch(recipe) {
 
 // ADD RECIPE
 
-async function addRecipe() {
-    const recipe = {
-        name: document.getElementById("name").value,
-        description: document.getElementById("description").value,
-        ingredients: document.getElementById("ingredients").value,
-        instructions: document.getElementById("instructions").value
-    };
 
-    try {
-        const res = await fetch("/api/v1/recipes/", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(recipe)
-        });
 
-        if (res.ok) {
-            const data = await res.json();   // 👈 TU
-            await uploadRecipeImage(data.id, "add-image"); // 👈 TU
-
-            loadRecipes();
-            ["name","description","ingredients","instructions"].forEach(id=>document.getElementById(id).value="");
-            document.getElementById("add-preview").style.display="none";
-
-            showToast("Recipe saved","success");
-        } else {
-            showToast("Failed to save recipe","error");
-        }
-
-    } catch (err) {
-        console.error(err);
-        showToast("Server error","warn");
-    }
-}
 
 // EDIT RECIPE 
 let editingId = null;
 
-function openEdit(id) {
-    console.log("open CLICKED");
-    const recipe = recipesCache.find(r => r.id === id);
-    if(!recipe) return;
-
-    editingId = id;
-
-    document.getElementById("edit-name").value = recipe.name || "";
-    document.getElementById("edit-description").value = recipe.description || "";
-    document.getElementById("edit-ingredients").value = recipe.ingredients || "";
-    document.getElementById("edit-instructions").value = recipe.instructions || "";
-
-    document.getElementById("edit-preview").src = recipe.image || "";
-    document.getElementById("edit-preview").style.display = recipe.image ? "block" : "none";
-
- /*   document.getElementById("edit-image").value = ""; // 🔥 TO JEST KLUCZ */
-    const file = document.getElementById("edit-image");
-if (file) file.value = "";
-    document.getElementById("edit-modal").style.display = "block";
-}
-
-async function saveEdit() {
-    console.log("SAVE CLICKED");
-    if (!editingId) return;
-
-    const recipe = {
-        name: document.getElementById("edit-name").value,
-        description: document.getElementById("edit-description").value,
-        ingredients: document.getElementById("edit-ingredients").value,
-        instructions: document.getElementById("edit-instructions").value
-    };
-
-    try {
-        // 1️⃣ Aktualizacja danych JSON
-        const res = await fetch(`/api/v1/recipes/${editingId}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(recipe)
-        });
-
-        if (res.ok) {
-            // 2️⃣ Aktualizacja obrazka jeśli wybrano nowy plik
-            await updateRecipeImage(editingId, "edit-image");
-
-            editingId = null; // wyczyść
-            closeEdit();
-            loadRecipes();
-            showToast("Recipe updated", "success");
-        } else {
-            showToast("Failed to update recipe", "error");
-        }
-    } catch (err) {
-        console.error(err);
-        showToast("Server error", "warn");
-    }
-}
 
 function closeEdit() {
-    document.body.classList.remove("modal-open");
-    document.getElementById("edit-modal").style.display = "none";
+    UI.closeModal("edit-modal");
     editingId = null;
 }
 
-// === DELETE RECIPE ===
-let deleteRecipeId=null;
-function openDeleteModal(id,name){
-    deleteRecipeId=id;
-    document.getElementById("delete-text").innerText=`Are you sure you want to delete "${name}"?`;
-    document.getElementById("delete-modal").style.display="block";
-}
-function closeDeleteModal(){ deleteRecipeId=null; document.getElementById("delete-modal").style.display="none"; }
 
-async function confirmDeleteYes(){
-    if(!deleteRecipeId) return;
-    try{
-        const res=await fetch(`/api/v1/recipes/${deleteRecipeId}`,{method:"DELETE"});
-        if(res.ok){ closeDeleteModal(); loadRecipes(); showToast("Recipe deleted","success"); }
-        else showToast("Failed to delete recipe","error");
-    }catch(err){ console.error(err); showToast("Server error","warn"); }
+// === DELETE RECIPE ===
+let deleteRecipeId = null;
+function openDeleteModal(id, name) {
+    deleteRecipeId = id;
+    document.getElementById("delete-text").innerText = `Are you sure you want to delete "${name}"?`;
+    UI.openModal("delete-modal");
+}
+function closeDeleteModal() { deleteRecipeId = null; UI.closeModal("delete-modal"); }
+
+async function confirmDeleteYes() {
+    if (!deleteRecipeId) return;
+    try {
+        await Api.delete(`/api/v1/recipes/${deleteRecipeId}`);
+
+
+        closeDeleteModal();
+        Recipes.load();
+        UI.toast("Recipe deleted", "success");
+
+    } catch (err) { console.error(err); UI.toast("Server error", "warn"); }
 }
 
 // === INSTRUCTIONS MODAL ===
-function showInstructions(html){ 
-    document.getElementById("modal-text").innerHTML = html;
-    document.getElementById("modal").style.display = "block";
+function showInstructions(text) {
+    const modalText = document.getElementById("modal-text");
+
+    // zamieniamy newline na <br> TUTAJ, bez hacków w HTML
+    modalText.innerHTML = text
+        .split("\n")
+        .map(line => line.trim())
+        .join("<br>");
+
+    UI.openModal("modal");
 }
 
-function closeModal(){
-    document.getElementById("modal").style.display = "none";
+function closeModal() {
+    UI.closeModal("modal");
+
 }
 
-// === TOAST ===
-function showToast(msg,type="success"){
-    const toast=document.getElementById("toast");
-    toast.textContent=msg;
-    toast.className=`toast ${type} show`;
-    setTimeout(()=>{ toast.classList.remove("show"); },2500);
-}
 
-// === THEME ===
-function setTheme(theme){
-    document.body.classList.remove("theme-cyber","theme-scandi");
-    document.body.classList.add(theme);
-    localStorage.setItem("theme",theme);
-}
-function toggleTheme(){
-    const current=document.body.classList.contains("theme-scandi")?"theme-scandi":"theme-cyber";
-    setTheme(current==="theme-scandi"?"theme-cyber":"theme-scandi");
-}
 function filterRecipes() {
     const query = document.getElementById("search").value.toLowerCase();
     const recipes = document.querySelectorAll(".recipe-box");
@@ -288,22 +797,11 @@ function filterRecipes() {
         box.style.display = text.includes(query) ? "block" : "none";
     });
 }
+
+
 // === ON LOAD ===
 document.addEventListener("DOMContentLoaded", () => {
-    loadRecipes();
-    renderShoppingList();
-    const saved = localStorage.getItem("theme") || "theme-cyber";
-    setTheme(saved);
-
-        const shoppingInput = document.getElementById("shopping-input");
-    if (shoppingInput) {
-        shoppingInput.addEventListener("keydown", e => {
-            if (e.key === "Enter") {
-                e.preventDefault();
-                addShoppingItem();
-            }
-        });
-    }
+    App.init();
 });
 
 
@@ -324,166 +822,53 @@ function showModule(name) {
         .classList.add("active");
 
     if (name === "shopping") {
-        renderShoppingList();
+        Shopping.render();
     }
 }
 
 /* SHOPPING LIST – TEMP */
 
-
-
-let shoppingMode = false;
-let shoppingFocus = false;
-let pendingRemoveIndex = null;
-let pendingRemoveTimer = null;
-
 function toggleShoppingMode() {
-    shoppingMode = !shoppingMode;
-    shoppingFocus = shoppingMode;
+    Shopping.state.mode = !Shopping.state.mode;
+    Shopping.state.focus = Shopping.state.mode;
 
     const module = document.getElementById("shopping-module");
-    module.classList.toggle("shopping-active", shoppingMode);
-    document.body.classList.toggle("shopping-active", shoppingMode); 
+    module.classList.toggle("shopping-active", Shopping.state.mode);
+    document.body.classList.toggle("shopping-active", Shopping.state.mode);
     updateShoppingTitle();
-    renderShoppingList();
+    Shopping.render();
 
-    showToast(
-        shoppingMode ? "Shopping mode ON 🛒" : "Shopping mode OFF",
+    UI.toast(
+        Shopping.state.mode ? "Shopping mode ON 🛒" : "Shopping mode OFF",
         "success"
     );
 }
 
 
-function getShoppingList() {
-    try {
-        const data = JSON.parse(localStorage.getItem("shoppingList") || "[]");
-
-        // normalizacja + zabezpieczenie na stare dane
-        return data.map(item => ({
-            name: typeof item.name === "string" ? item.name : "Unknown",
-            qty: typeof item.qty === "number" ? item.qty : 1,
-            done: !!item.done
-        }));
-    } catch (e) {
-        console.warn("Corrupted shoppingList, resetting…");
-        localStorage.removeItem("shoppingList");
-        return [];
-    }
-}
-
-
-function saveShoppingList(list) {
-    localStorage.setItem("shoppingList", JSON.stringify(list));
-}
-
-
 function addShoppingItem() {
-    const input = document.getElementById("shopping-input");
+    const input = ShoppingUI.input();
     const value = input.value.trim();
     if (!value) return;
 
-    const list = getShoppingList();
+    const list = Shopping.getList();
     const existing = list.find(i => i.name === value);
 
     if (existing) {
         existing.qty += 1;
     } else {
-        list.push({ name: value, qty: 1 });
+        list.push({ id: crypto.randomUUID(), name: value, qty: 1, done: false });
     }
-    saveShoppingList(list);
+    Shopping.saveList(list);
     input.value = "";
-    renderShoppingList();
-}
-function getPositions() {
-    const items = document.querySelectorAll(".shopping-item");
-    const map = new Map();
-
-    items.forEach(el => {
-        map.set(el.dataset.key, el.getBoundingClientRect());
-    });
-
-    return map;
+    Shopping.render();
 }
 
-function renderShoppingList() {
-    const listEl = document.getElementById("shopping-list");
-    const list = getShoppingList();
 
-    // --- FLIP: zapamiętujemy stare pozycje ---
-    const oldPositions = new Map();
-    listEl.querySelectorAll(".shopping-item").forEach(el => {
-        oldPositions.set(el.dataset.key, el.getBoundingClientRect());
-    });
 
-    // --- sortujemy kupione na dół ---
-    const sortedList = [...list].sort((a, b) => a.done - b.done);
-
-    listEl.innerHTML = "";
-    if (sortedList.length === 0) {
-        listEl.innerHTML = `<p class="muted">Your shopping list is empty 🛒</p>`;
-        return;
-    }
-
-    sortedList.forEach((item, index) => {
-        const div = document.createElement("div");
-        div.className = `shopping-item ${item.done ? "done" : ""}`;
-        div.dataset.key = item.name;
-
-        div.innerHTML = `
-            <div class="shopping-main">
-                <label class="done-switch" style="${shoppingMode ? "" : "display:none"}">
-                    <input type="checkbox" ${item.done ? "checked" : ""}
-                        onchange="event.stopPropagation(); toggleDone(${index})">
-                    <span class="done-slider"></span>
-                </label>
-                <span class="item-name">${item.name}</span>
-            </div>
-
-            <span class="item-qty">${item.qty}</span>
-
-            ${shoppingMode ? "" : `
-            <div class="qty-controls">
-                <button class="qty-btn"
-                    onclick="event.stopPropagation(); decreaseQty(${index})"
-                    ${item.done ? "disabled" : ""}>-</button>
-                <button class="qty-btn"
-                    onclick="event.stopPropagation(); increaseQty(${index})"
-                    ${item.done ? "disabled" : ""}>+</button>
-            </div>
-            `}
-        `;
-
-        listEl.appendChild(div);
-        div.classList.add("just-added");
-        setTimeout(() => div.classList.remove("just-added"), 600);
-    });
-
-    // --- FLIP animation ---
-    requestAnimationFrame(() => {
-        const newItems = listEl.querySelectorAll(".shopping-item");
-        newItems.forEach(el => {
-            const old = oldPositions.get(el.dataset.key);
-            if (!old) return;
-
-            const newPos = el.getBoundingClientRect();
-            const dy = old.top - newPos.top;
-
-            if (dy !== 0) {
-                el.style.transform = `translateY(${dy}px)`;
-                el.style.transition = "none";
-
-                requestAnimationFrame(() => {
-                    el.style.transition = "transform 300ms ease";
-                    el.style.transform = "";
-                });
-            }
-        });
-    });
-}
 
 function clearShoppingList() {
     const modal = document.getElementById("clear-modal");
-        document.getElementById("clear-title").innerText = "Clear shopping list";
+    document.getElementById("clear-title").innerText = "Clear shopping list";
     document.getElementById("clear-text").innerText =
         "Are you sure you want to clear the entire shopping list?";
 
@@ -492,16 +877,10 @@ function clearShoppingList() {
 }
 
 function confirmClearYes() {
-    const modal = document.getElementById("clear-modal");
-
-    if (modal.dataset.action === "clear") {
-        saveShoppingList([]);
-        renderShoppingList();
-        showToast("Shopping list cleared 🧹");
-    }
-
+    Shopping.clear();
     closeClearModal();
 }
+
 
 function closeClearModal() {
     const modal = document.getElementById("clear-modal");
@@ -517,7 +896,7 @@ function addRecipeToShoppingList(buttonEl) {
         ".ingredients-list input[type='checkbox']:checked"
     );
 
-    const list = getShoppingList();
+    const list = Shopping.getList();
 
     checkboxes.forEach(cb => {
         const ingredientText = cb.nextElementSibling.textContent
@@ -529,174 +908,20 @@ function addRecipeToShoppingList(buttonEl) {
         if (existing) {
             existing.qty += 1;
         } else {
-            list.push({ name: ingredientText, qty: 1 });
+            list.push({ id: crypto.randomUUID(), name: ingredientText, qty: 1, done: false });
         }
     });
 
-    saveShoppingList(list);
-    renderShoppingList();
-    showToast("Selected ingredients added to shopping list 🛒");
+    Shopping.saveList(list);
+    Shopping.render();
+    UI.toast("Selected ingredients added to shopping list 🛒");
 }
-
-/*
-function increaseQty(index) {
-    const list = getShoppingList();
-    list[index].qty += 1;
-    saveShoppingList(list);
-    renderShoppingList();
-
-    const rows = document.querySelectorAll(".shopping-item");
-    const qty = rows[index]?.querySelector(".item-qty");
-    if (qty) {
-        qty.classList.add("bump");
-        setTimeout(() => qty.classList.remove("bump"), 300);
-    }
-}
-*/
-/*
-function increaseQty(index) {
-    const list = getShoppingList();
-    list[index].qty += 1;
-    saveShoppingList(list);
-    renderShoppingList();
-
-        const rows = document.querySelectorAll(".shopping-item");
-    const qty = rows[index]?.querySelector(".item-qty");
-    if (qty) {
-        qty.classList.add("bump");
-        setTimeout(() => qty.classList.remove("bump"), 300);
-    }
-}
-*/
-/*
-function decreaseQty(index) {
-    const list = getShoppingList();
-
-    if (list[index].qty > 1) {
-        list[index].qty -= 1;
-    } else {
-        // jeśli qty = 1 → usuwamy pozycję
-        list.splice(index, 1);
-    }
-
-    saveShoppingList(list);
-    renderShoppingList();
-}
-
-*/
-/*
-function decreaseQty(index) {
-    const list = getShoppingList();
-    const item = list[index];
-
-    if (item.qty > 1) {
-        item.qty -= 1;
-        saveShoppingList(list);
-        renderShoppingList();
-        return;
-    }
-
-    // qty == 1 → zabezpieczenie przed przypadkowym usunięciem
-    if (pendingRemoveIndex === index) {
-        // DRUGIE kliknięcie → usuwamy
-        list.splice(index, 1);
-        saveShoppingList(list);
-        renderShoppingList();
-        showToast(`${item.name} removed 🗑️`);
-
-        pendingRemoveIndex = null;
-        clearTimeout(pendingRemoveTimer);
-        pendingRemoveTimer = null;
-        return;
-    }
-
-    // PIERWSZE kliknięcie → ostrzegamy
-    pendingRemoveIndex = index;
-    showToast(`Tap again to remove ${item.name}`, "warn");
-
-    pendingRemoveTimer = setTimeout(() => {
-        pendingRemoveIndex = null;
-    }, 2000); // 2 sekundy na decyzję
-}
-*/
-function decreaseQty(index) {
-    const list = getShoppingList();
-    const item = list[index];
-
-    if (item.qty > 1) {
-        item.qty -= 1;
-        saveShoppingList(list);
-        renderShoppingList();
-        return;
-    }
-
-    // qty == 1 → zabezpieczenie przed przypadkowym usunięciem
-    if (pendingRemoveIndex === index) {
-        // DRUGI klik → usuwamy
-        list.splice(index, 1);
-        saveShoppingList(list);
-        renderShoppingList();
-        showToast(`${item.name} removed 🗑️`);
-
-        pendingRemoveIndex = null;
-        clearTimeout(pendingRemoveTimer);
-        pendingRemoveTimer = null;
-        return;
-    }
-
-    // PIERWSZY klik → ostrzegamy
-    pendingRemoveIndex = index;
-    showToast(`Tap again to remove ${item.name}`, "warn");
-
-    pendingRemoveTimer = setTimeout(() => {
-        pendingRemoveIndex = null;
-    }, 2000);
-}
-function toggleDone(index) {
-    const list = getShoppingList();
-
-    const item = list[index];
-    item.done = !item.done;
-
-    const moved = list.splice(index, 1)[0];
-
-    if (item.done) {
-        list.push(moved);
-    } else {
-        list.unshift(moved);
-    }
-
-    saveShoppingList(list);
-    renderShoppingList();
-}
-
-function increaseQty(index) {
-    const list = getShoppingList();
-    const item = list[index];
-
-    item.qty += 1;
-    saveShoppingList(list);
-    renderShoppingList();
-
-    // 👇 po renderze znajdź TEN konkretny element po nazwie
-    requestAnimationFrame(() => {
-        const row = document.querySelector(
-            `.shopping-item[data-key="${item.name}"] .item-qty`
-        );
-
-        if (row) {
-            row.classList.add("bump");
-            setTimeout(() => row.classList.remove("bump"), 300);
-        }
-    });
-}
-
 
 function updateShoppingTitle() {
     const title = document.getElementById("shopping-title");
     if (!title) return;
 
-    title.textContent = shoppingMode
+    title.textContent = Shopping.state.mode
         ? "Shopping mode"
         : "Your shopping list";
 }
@@ -759,10 +984,8 @@ async function uploadRecipeImage(recipeId, inputId) {
     const formData = new FormData();
     formData.append("file", input.files[0]);
 
-    await fetch(`/api/v1/recipes/${recipeId}/image`, {
-        method: "PUT",
-        body: formData
-    });
+    await Api.upload(`/api/v1/recipes/${recipeId}/image`, formData);
+
 
     input.value = "";
 }
@@ -775,21 +998,16 @@ async function updateRecipeImage(recipeId, inputId) {
     formData.append("file", input.files[0]);
 
     try {
-        const res = await fetch(`/api/v1/recipes/${recipeId}/image`, {
-            method: "PUT",
-            body: formData
-        });
+        await Api.upload(`/api/v1/recipes/${recipeId}/image`, formData);
 
-        if (!res.ok) showToast("Failed to update image", "error");
     } catch (err) {
         console.error(err);
-        showToast("Server error", "warn");
+        UI.toast("Failed to update image", "error");
     }
 }
 
 
-
-function removeAddImage(){
+function removeAddImage() {
     const preview = document.getElementById("add-preview");
     const input = document.getElementById("add-image");
 
@@ -798,67 +1016,30 @@ function removeAddImage(){
     input.value = "";
 }
 
-function removeImage() {
+
+async function removeImage() {
     if (!editingId) return;
 
-    fetch(`/api/v1/recipes/${editingId}/image`, {
-        method: "DELETE"
-    })
-    .then(res => {
-        if (!res.ok) throw new Error("Failed to delete image");
-        return res.json();
-    })
-    .then(() => {
+    try {
+        await Api.delete(`/api/v1/recipes/${editingId}/image`);
+
+
         const preview = document.getElementById("edit-preview");
         preview.src = "";
         preview.style.display = "none";
-
         document.getElementById("edit-image").value = "";
 
-        showToast("Image removed", "success");
-    })
-    .catch(err => {
+        UI.toast("Image removed", "success");
+    } catch (err) {
         console.error(err);
-        showToast(err.message, "error");
-    });
+        UI.toast(err.message, "error");
+    }
 }
 
 
-function openIngredientsModal(){
-    showToast("Ingredients feature coming soon","info");
+function openIngredientsModal() {
+    UI.toast("Ingredients feature coming soon", "info");
 }
-
-
-/*
-function toggleBurger() {
-    const burger = document.getElementById("burger-menu");
-    burger.style.display = burger.style.display === "block" ? "none" : "block";
-}
-
-
-
-
-
-document.addEventListener("click", e => {
-    const burger = document.getElementById("burger-menu");
-    const burgerBtn = document.querySelector(".burger-btn");
-
-    if (!burger || burger.style.display !== "block") return;
-
-    if (
-        burger.contains(e.target) ||
-        burgerBtn.contains(e.target)
-    ) return;
-
-    closeBurger();
-});
-
-
-function closeBurger() {
-    const burger = document.getElementById("burger-menu");
-    burger.style.display = "none";
-}
-*/
 
 
 function toggleBurger() {
@@ -874,25 +1055,6 @@ function toggleBurger() {
     }
 }
 
-
-
-document.addEventListener("click", e => {
-    if (!isMobile()) return;
-
-    const burger = document.getElementById("burger-menu");
-    const burgerBtn = document.querySelector(".burger-btn");
-    const moduleNav = document.querySelector(".module-nav");
-    const title = document.querySelector(".topbar-left h1");
-
-    if (
-        burger?.contains(e.target) ||
-        burgerBtn?.contains(e.target) ||
-        moduleNav?.contains(e.target) ||
-        title?.contains(e.target)
-    ) return;
-
-    closeAllMenus();
-});
 
 document.querySelector(".module-nav")?.addEventListener("click", e => {
     if (isMobile() && e.target.closest("button")) {
