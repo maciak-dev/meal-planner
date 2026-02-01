@@ -16,6 +16,8 @@ class RequestLogMiddleware(BaseHTTPMiddleware):
             error = e
             raise
         finally:
+            if getattr(request.state, "blocked", False):
+                return
             db = SessionLocal()
             try:
                 suspicious_paths = [
