@@ -28,10 +28,12 @@ def list_recipes(
     return [
         RecipeRead(
             **r.__dict__,
-            is_owner=(r.user_id == user.id)
+            is_owner=(r.user_id == user.id),
+            author_username=r.author.username if r.author else None
         )
         for r in recipes
     ]
+
 
 
 # =========================

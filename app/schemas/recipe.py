@@ -21,7 +21,7 @@ class RecipeRead(RecipeBase):
     user_id: int
     image: Optional[str] = None   # 👈 tylko ścieżka, nie plik
     is_owner: bool = False
-
+    author_username: Optional[str] = None
     model_config = {
         "from_attributes": True
     }
