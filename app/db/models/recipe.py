@@ -9,16 +9,16 @@ class Recipe(Base):
     id = Column(Integer, primary_key=True, index=True)
 
     # Podstawowe dane przepisu
-    name = Column(String, index=True)
-    description = Column(String, nullable=True)
-    instructions = Column(String, nullable=True)
-    ingredients = Column(String, nullable=True)  # JSON/string
+    name = Column(String, nullable=False, index=True)
+    description = Column(String, default="", nullable=False)
+    instructions = Column(String, default="", nullable=False)
+    ingredients = Column(String, default="", nullable=False)  # JSON/string
 
     # Metadane
-    created_at = Column(DateTime, default=datetime.utcnow)
-    is_public = Column(Boolean, default=False)
-    image = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    is_public = Column(Boolean, default=False, nullable=False)
+    image = Column(String, default="", nullable=False)
 
     # Autor
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     author = relationship("User")

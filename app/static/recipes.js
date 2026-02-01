@@ -151,14 +151,35 @@ const Recipes = {
         }
     },
 
+    renderRecipeBadge(recipe) {
+    if (recipe.is_owner) {
+        return `
+            <span class="recipe-badge mine ${recipe.is_public ? "public" : "private"}">
+                MY · ${recipe.is_public ? "PUBLIC" : "PRIVATE"}
+            </span>
+        `;
+    }
+
+    return `
+        <span class="recipe-badge foreign">
+            BY ${recipe.author_username ?? "USER"}
+        </span>
+    `;
+    },
+
+
     render(recipes) {
         const container = RecipesUI.list();
         container.innerHTML = "";
         recipes.forEach(r => {
+            const isOwner = r.is_owner === true;
             const box = document.createElement("div");
             box.className = "recipe-box";
             box.innerHTML = `
-            <h3>${r.name}</h3>
+            <div class="recipe-header">
+                <h3>${r.name}</h3>
+                ${this.renderRecipeBadge(r)}
+            </div>
             <div class="recipe-body">
             <div class="recipe-text">
                 <p><strong>Description:</strong> ${r.description}</p>
@@ -173,27 +194,39 @@ const Recipes = {
             </div>
             ` : ""}
             </div>
-            <div class="recipe-actions">
-            <button class="secondary"
-                data-action="instructions"
-                data-instructions="${r.instructions}">
-                View Instructions
-            </button>
-            <button class="secondary add-to-list"
-                data-action="add-to-list"
-                data-id="${r.id}">
-                + Add to list
-            </button>
-            <button class="secondary" data-action="edit" data-id="${r.id}">Edit</button>
-            <button class="danger"
-                data-action="delete"
-                data-id="${r.id}"
-                data-name="${r.name}">
-                Delete
-            </button>
+                <div class="recipe-actions">
+    <!-- ZAWSZE -->
+    <button class="secondary"
+        data-action="instructions"
+        data-instructions="${r.instructions}">
+        View Instructions
+    </button>
 
-            ${renderVisibilitySwitch(r)}
-            </div>
+    <button class="secondary add-to-list"
+        data-action="add-to-list"
+        data-id="${r.id}">
+        + Add to list
+    </button>
+
+    <!-- TYLKO WŁAŚCICIEL -->
+    ${isOwner ? `
+        <button class="secondary"
+            data-action="edit"
+            data-id="${r.id}">
+            Edit
+        </button>
+
+        <button class="danger"
+            data-action="delete"
+            data-id="${r.id}"
+            data-name="${r.name}">
+            Delete
+        </button>
+
+
+    ` : ""}
+</div>
+
             `;
             container.appendChild(box);
         });
@@ -261,10 +294,11 @@ const Recipes = {
             editingId = id;
 
             RecipesUI.edit.name().value = recipe.name || "";
+            document.getElementById("edit-is-public").checked = recipe.is_public;
             RecipesUI.edit.description().value = recipe.description || "";
             RecipesUI.edit.ingredients().value = recipe.ingredients || "";
             RecipesUI.edit.instructions().value = recipe.instructions || "";
-
+            
             const preview = RecipesUI.edit.preview();
             preview.src = recipe.image || "";
             preview.style.display = recipe.image ? "block" : "none";
@@ -280,6 +314,7 @@ const Recipes = {
             try {
                 const recipe = {
                     name: RecipesUI.edit.name().value,
+                    is_public: document.getElementById("edit-is-public").checked,
                     description: RecipesUI.edit.description().value,
                     ingredients: RecipesUI.edit.ingredients().value,
                     instructions: RecipesUI.edit.instructions().value
@@ -712,17 +747,15 @@ async function toggleVisibility(recipeId, checkbox) {
 }
 
 function renderVisibilitySwitch(recipe) {
-    const disabled = recipe.is_owner === false ? "disabled" : "";
+    if (recipe.is_owner !== true) return "";
 
     return `
-        <label class="visibility-switch ${disabled}">
-           <input type="checkbox"
+        <label class="visibility-switch">
+            <input type="checkbox"
                 ${recipe.is_public ? "checked" : ""}
-                ${disabled}
                 data-action="visibility"
                 data-id="${recipe.id}"
             >
-
             <span class="slider"></span>
             <span class="labels">
                 <span class="private">PRIVATE</span>
@@ -731,6 +764,7 @@ function renderVisibilitySwitch(recipe) {
         </label>
     `;
 }
+
 
 // ADD RECIPE
 
