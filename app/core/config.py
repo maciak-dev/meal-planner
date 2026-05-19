@@ -6,7 +6,8 @@ load_dotenv()
 
 ENV = os.getenv("ENV", "dev")  # dev lub prod
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret")
-DATABASE_URL = "sqlite:////home/vboxuser/fastapi-projekt/app/db/app.db"
+DATABASE_URL = "postgresql://fastapi_user:DatabaseError404@localhost:5432/fastapi_db"
+#DATABASE_URL = "sqlite:////home/vboxuser/fastapi-projekt/app/db/app.db"
 COOKIE_SECURE = ENV == "prod"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60

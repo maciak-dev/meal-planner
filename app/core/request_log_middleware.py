@@ -6,42 +6,41 @@ from app.db.models.login_log import RequestLog
 class RequestLogMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next):
+        db = SessionLocal()
         response = None
-        error = None
 
         try:
             response = await call_next(request)
             return response
-        except Exception as e:
-            error = e
-            raise
+
         finally:
-            if getattr(request.state, "blocked", False):
-                return
-            db = SessionLocal()
             try:
-                suspicious_paths = [
-                    "/wp-admin",
-                    "/admin.php",
-                    "/config.php",
-                    "/autodiscover",
-                    "/.env",
-                    "/phpmyadmin"
-                ]
+                if not getattr(request.state, "blocked", False) and response is not None:
 
-                path = request.url.path.lower()
-                is_suspicious = any(p in path for p in suspicious_paths)
+                    suspicious_paths = [
+                        "/wp-admin",
+                        "/admin.php",
+                        "/config.php",
+                        "/autodiscover",
+                        "/.env",
+                        "/phpmyadmin"
+                    ]
 
-                log = RequestLog(
-                    ip_address=request.client.host if request.client else None,
-                    method=request.method,
-                    path=request.url.path,
-                    status_code=response.status_code if response else 500,
-                    user_agent=request.headers.get("user-agent"),
-                    is_suspicious=is_suspicious,
-                )
+                    path = request.url.path.lower()
+                    is_suspicious = any(p in path for p in suspicious_paths)
 
-                db.add(log)
-                db.commit()
+                    log = RequestLog(
+                        ip_address=request.client.host if request.client else None,
+                        method=request.method,
+                        path=request.url.path,
+                        status_code=response.status_code,
+                        user_agent=request.headers.get("user-agent"),
+                        is_suspicious=is_suspicious,
+                    )
+
+                    db.add(log)
+                    db.commit()
+
             finally:
                 db.close()
+

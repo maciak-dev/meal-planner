@@ -95,8 +95,12 @@ def root(
 # =========================
 @app.get("/login")
 def login_page(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request})
-
+    ##return templates.TemplateResponse("login.html", {"request": request})
+    return templates.TemplateResponse(
+    request=request,
+    name="login.html",
+    context={}
+)
 @app.post("/login")
 def login(
     request: Request,
@@ -110,10 +114,13 @@ def login(
     user = login_user(db, username, password, ip, agent)
     if not user:
         return templates.TemplateResponse(
-            "login.html",
-            {"request": request, "error": "Invalid credentials"},
-            status_code=401
-        )
+    request=request,
+    name="login.html",
+    context={
+        "error": "Invalid credentials"
+    },
+    status_code=401
+)
 
     token = security.create_access_token({"sub": str(user.id)})
     response = RedirectResponse(url="/recipes-ui", status_code=302)
@@ -170,13 +177,13 @@ def admin_panel(
     logs = db.query(LoginLog).order_by(LoginLog.created_at.desc()).limit(200).all()
 
     return templates.TemplateResponse(
-        "admin_panel.html",
-        {
-            "request": request,
-            "user": current_user,
-            "logs": logs
-        }
-    )
+    request=request,
+    name="admin_panel.html",
+    context={
+        "user": current_user,
+        "logs": logs
+    }
+)
 
 @app.get("/admin/login-logs")
 def login_logs(
@@ -205,14 +212,14 @@ def recipes_ui(
     }
 
     return templates.TemplateResponse(
-        "recipes.html",
-        {
-            "request": request,
-            "user": user,
-            "recipes": recipes,
-            "ingredients_map": ingredients_map
-        }
-    )
+    request=request,
+    name="recipes.html",
+    context={
+        "user": user,
+        "recipes": recipes,
+        "ingredients_map": ingredients_map
+    }
+)
 
 # =========================
 # INGREDIENTS
