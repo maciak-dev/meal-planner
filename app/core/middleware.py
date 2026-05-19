@@ -9,6 +9,19 @@ class IPBlockMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         request.state.blocked = False
         path = request.url.path
+        if path.startswith(("/static", "/favicon.ico")):
+            return await call_next(request)
+
+        HARD_BLOCK_PATHS = (
+            "/.env",
+            "/wp-admin",
+            "/wordpress",
+            "/phpmyadmin",
+            "/autodiscover",
+        )
+        if any(path.lower().startswith(p) for p in HARD_BLOCK_PATHS):
+            request.state.blocked = True
+            return JSONResponse(status_code=404, content={"detail": "Not Found"})
 
         # 1️⃣ infrastruktura MUSI działać
         if path.startswith((
