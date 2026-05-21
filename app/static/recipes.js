@@ -395,7 +395,9 @@ const ShoppingUI = {
     input: () => document.getElementById("shopping-input"),
     title: () => document.getElementById("shopping-title"),
     module: () => document.getElementById("shopping-module"),
-    clearModal: () => document.getElementById("clear-modal")
+    clearModal: () => document.getElementById("clear-modal"),
+
+    importBtn: () => document.getElementById("open-shopping-import-btn")
 };
 
 
@@ -423,6 +425,17 @@ const Shopping = {
     },
     saveList(list) {
         localStorage.setItem("shoppingList", JSON.stringify(list));
+    },
+    updateImportButton() {
+    const btn = ShoppingUI.importBtn();
+
+    if (!btn) return;
+
+    const shouldShow = !Shopping.state.mode;
+
+    btn.style.display = shouldShow
+        ? "inline-flex"
+        : "none";
     },
     render() {
         const listEl = ShoppingUI.list();
@@ -619,6 +632,8 @@ const Shopping = {
         Shopping.updateTitle();
         Shopping.render();
 
+        Shopping.updateImportButton();
+
         UI.toast(
             Shopping.state.mode ? "Shopping mode ON 🛒" : "Shopping mode OFF",
             "success"
@@ -642,6 +657,7 @@ const App = {
         UI.theme.load();
         Recipes.load();
         Shopping.render();
+        Shopping.updateImportButton();
         this.bindEvents();
     },
 
@@ -861,7 +877,7 @@ function showModule(name) {
 }
 
 /* SHOPPING LIST – TEMP */
-
+/*
 function toggleShoppingMode() {
     Shopping.state.mode = !Shopping.state.mode;
     Shopping.state.focus = Shopping.state.mode;
@@ -877,7 +893,10 @@ function toggleShoppingMode() {
         "success"
     );
 }
-
+*/
+function toggleShoppingMode() {
+    Shopping.toggleMode();
+}
 
 function addShoppingItem() {
     const input = ShoppingUI.input();
@@ -1101,3 +1120,121 @@ document.getElementById("burger-menu")?.addEventListener("click", e => {
         closeAllMenus();
     }
 });
+
+function openShoppingImportModal() {
+    const modal = document.getElementById("shopping-import-modal");
+
+    if (!modal) {
+        console.error("shopping-import-modal not found");
+        return;
+    }
+
+    modal.classList.add("open");
+    document.body.classList.add("modal-open");
+}
+
+function closeShoppingImportModal() {
+    const modal = document.getElementById("shopping-import-modal");
+
+    if (!modal) {
+        console.error("shopping-import-modal not found");
+        return;
+    }
+
+    modal.classList.remove("open");
+    document.body.classList.remove("modal-open");
+}
+
+/* =========================
+   SHOPPING IMPORT EVENTS
+   ========================= */
+
+const openShoppingImportBtn = document.getElementById(
+    "open-shopping-import-btn"
+);
+
+if (openShoppingImportBtn) {
+    openShoppingImportBtn.addEventListener(
+        "click",
+        openShoppingImportModal
+    );
+}
+
+const closeShoppingImportBtn = document.getElementById(
+    "close-shopping-import-modal"
+);
+const confirmShoppingImportBtn = document.getElementById(
+    "confirm-shopping-import-btn"
+);
+
+if (confirmShoppingImportBtn) {
+    confirmShoppingImportBtn.addEventListener(
+        "click",
+        importShoppingList
+    );
+}
+
+if (closeShoppingImportBtn) {
+    closeShoppingImportBtn.addEventListener(
+        "click",
+        closeShoppingImportModal
+    );
+}
+
+function importShoppingList() {
+    const textarea = document.getElementById(
+        "shopping-import-textarea"
+    );
+
+    if (!textarea) {
+        console.error("shopping-import-textarea not found");
+        return;
+    }
+
+    const value = textarea.value.trim();
+
+    if (!value) {
+        UI.toast("Paste shopping list first", "warn");
+        return;
+    }
+
+    const lines = value
+        .split("\n")
+        .map(line => line.trim())
+        .filter(Boolean);
+
+    if (!lines.length) {
+        UI.toast("Nothing to import", "warn");
+        return;
+    }
+
+    const list = Shopping.getList();
+
+    lines.forEach(itemName => {
+        const normalized = itemName.toLowerCase();
+
+        const existing = list.find(
+            item => item.name.toLowerCase() === normalized
+        );
+
+        if (existing) {
+            existing.qty += 1;
+        } else {
+            list.push({
+                id: crypto.randomUUID(),
+                name: itemName,
+                qty: 1,
+                done: false
+            });
+        }
+    });
+
+    Shopping.saveList(list);
+    Shopping.render();
+
+    textarea.value = "";
+
+    closeShoppingImportModal();
+
+    UI.toast("Shopping list imported 🛒", "success");
+}

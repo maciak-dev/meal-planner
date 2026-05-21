@@ -120,6 +120,12 @@
         <button class="primary" onclick="addShoppingItem()">
             Add
         </button>
+        <button
+            id="open-shopping-import-btn"
+            class="btn btn-secondary"
+        >
+            Add List
+        </button>
     </div>
 
     <div id="shopping-list"></div>
@@ -191,6 +197,38 @@
 </div>
 
 <div id="toast" class="toast"></div>
+
+<div id="shopping-import-modal" class="modal">
+    <div class="modal-content">
+
+        <span
+            id="close-shopping-import-modal"
+            class="close"
+        >
+            &times;
+        </span>
+
+        <h3>Import Shopping List</h3>
+
+        <textarea
+            id="shopping-import-textarea"
+            placeholder="Paste shopping list here..."
+            style="
+                width:100%;
+                min-height:300px;
+                margin-top:16px;
+            "
+        ></textarea>
+        <div style="margin-top:16px; display:flex; justify-content:flex-end;">
+    <button
+        id="confirm-shopping-import-btn"
+        class="primary"
+    >
+        Import
+    </button>
+</div>
+    </div>
+</div>
 
 <script src="/static/recipes.js"></script>
 </body>
