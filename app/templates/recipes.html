@@ -110,7 +110,12 @@
     <h2 id="shopping-title">Your shopping list</h2>
     <button class="secondary" onclick="toggleShoppingMode()">
     Shopping mode
-    </button>
+    </button>        <button
+            id="open-shopping-import-btn"
+            class="secondary"
+        >
+            Add List
+        </button>
     <div class="shopping-input" id="shopping-input-box">
         <input
             type="text"
@@ -120,12 +125,7 @@
         <button class="primary" onclick="addShoppingItem()">
             Add
         </button>
-        <button
-            id="open-shopping-import-btn"
-            class="btn btn-secondary"
-        >
-            Add List
-        </button>
+
     </div>
 
     <div id="shopping-list"></div>
