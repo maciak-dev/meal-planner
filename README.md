@@ -12,7 +12,7 @@ GitHub: [https://github.com/maciak-dev/meal-planner](https://github.com/maciak-d
 - Create, view, edit recipes 
 - Automatic admin in development 
 - Environment-based config (`dev` / `prod`) 
-- Secure password hashing (bcrypt) 
+- Secure password hashing (bcrypt) f
 
 ---
 
