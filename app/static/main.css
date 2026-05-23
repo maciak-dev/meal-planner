@@ -1,59 +1,120 @@
-    /* =========================
-    RESET & VARIABLES
-    ========================= */
-    * { box-sizing: border-box; }
 
-    :root {
-        /* Fonts */
-        --font-body: 'Rajdhani', sans-serif;
-        --font-heading: 'Orbitron', sans-serif;
 
-        /* Backgrounds */
-        --bg-main: #1b1b1e;
-        --bg-panel: #121212;
+/* =========================
+THEMES
+========================= */
 
-        /* Text colors */
-        --text-body: #e2e2e2;
-        --text-heading: #ffffff;
-        --text-box: #b9ffff;
-        --text-muted: rgba(180, 255, 255, 0.55);
+body.theme-cyber {
+    --bg-main: #18191c;
+    --bg-panel: transparent;
+}
 
-        /* Accents */
-        --accent-primary: #00ffff;
-        --accent-secondary: #ff00ff;
-        --accent-danger: #ff0055;
-
-        /* Shadows */
-        --shadow-primary: 0 0 12px rgba(0,255,255,0.6);
-        --shadow-secondary: 0 0 14px rgba(255,0,255,0.45);
-
-        --done-slider-bg: #333;
-    }
-
-    /* =========================
-    THEMES
-    ========================= */
-    body.theme-cyber {
-        --bg-main: #1b1b1e;
-        --bg-panel: transparent;
-    }
-    body.theme-cyber {
+body.theme-cyber {
     --done-slider-bg: #333;
-    --done-slider-checked-bg: rgba(0,255,255,0.25);
+
+    --done-slider-checked-bg:
+        rgba(0,229,255,0.18);
+}
+
+/* =========================
+RESET & VARIABLES
+========================= */
+* { box-sizing: border-box; }
+
+:root {
+
+    /* Fonts */
+    --font-body: 'Rajdhani', sans-serif;
+    --font-heading: 'Orbitron', sans-serif;
+
+    /* =========================
+       BACKGROUNDS
+    ========================= */
+
+    --bg-main: #18191c;
+    --bg-panel: #111214;
+
+    /* =========================
+       TEXT COLORS
+    ========================= */
+
+    --text-body: #e4edf2;
+    --text-heading: #ffffff;
+
+    --text-box: #b8f7ff;
+
+    --text-muted: rgba(170, 240, 230, 0.52);
+
+    /* =========================
+       ACCENTS
+    ========================= */
+
+    /* MAIN CYAN */
+    --accent-primary: #00e5ff;
+
+    /* MINT ACCENT */
+    --accent-secondary: #44ffcc;
+
+    /* DANGER */
+    --accent-danger: #ff4d6d;
+
+    /* =========================
+       SHADOWS
+    ========================= */
+
+    /* CYAN GLOW */
+    --shadow-primary:
+        0 0 8px rgba(0,229,255,0.22);
+
+    /* MINT GLOW */
+    --shadow-secondary:
+        0 0 4px rgba(68,255,204,0.14);
+
+    /* =========================
+       SHOPPING
+    ========================= */
+
+    --done-slider-bg: #333;
+}
+
+/* =========================
+THEMES
+========================= */
+
+body.theme-cyber {
+    --bg-main: #18191c;
+    --bg-panel: transparent;
+}
+
+body.theme-cyber {
+
+    --done-slider-bg: #333;
+
+    --done-slider-checked-bg:
+        rgba(68,255,204,0.16);
 }
     /* =========================
     BODY / APP
     ========================= */
-    body {
-        margin: 0;
-        background-color: var(--bg-main);
-        background-image:
-            radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px),
-            radial-gradient(circle, rgba(255,255,255,0.03) 1px, transparent 1px);
-        background-size: 4px 4px, 2px 2px;
-        color: var(--text-body);
-        font-family: var(--font-body);
-    }
+body {
+
+    margin: 0;
+
+    background-color: var(--bg-main);
+
+    background-image:
+        radial-gradient(
+            circle,
+            rgba(255,255,255,0.022) 1px,
+            transparent 1px
+        );
+
+    background-size: 3px 3px;
+
+    color: var(--text-body);
+
+    font-family: var(--font-body);
+}
 
     .app {
         max-width: 900px;
@@ -70,8 +131,8 @@
         text-align: center;
         letter-spacing: 1px;
         text-shadow:
-            0 0 6px var(--accent-secondary),
-            0 0 10px var(--accent-primary);
+            0 0 2px var(--accent-secondary),
+            0 0 2px var(--accent-primary);
     }
 
     h1, h2 {
@@ -159,7 +220,7 @@
     }
 
     button.danger:hover {
-        box-shadow: 0 0 14px var(--accent-danger);
+        box-shadow: 0 0 10px var(--accent-danger);
     }
     button.nav-tab {
         
@@ -168,7 +229,7 @@
     }
 
     button.nav-tab:hover {
-    box-shadow: 0 0 14px var(--accent-secondary);
+    box-shadow: 0 0 10px var(--accent-secondary);
     /*border: 1px solid var(--accent-secondary); */
     border: 1px solid transparent;
 
@@ -750,7 +811,7 @@ body.modal-open {
     color: #2fffd8;
     font-family: var(--font-heading, Orbitron, sans-serif);
     font-size: 0.8rem;
-    text-shadow: 0 0 6px rgba(47,255,216,0.7);
+    text-shadow: 0 0 4px rgba(47,255,216,0.4);
     box-shadow: 0 0 10px rgba(47,255,216,0.4);
     white-space: nowrap;
 }
@@ -1172,29 +1233,66 @@ input[type="file"]::file-selector-button {
 }
 
 
+
 .recipe-badge {
+
     font-size: 10px;
-    letter-spacing: 0.6px;
-    padding: 3px 8px;
+
+    letter-spacing: 0.08em;
+
+    padding: 4px 10px;
+
     border-radius: 999px;
+
     white-space: nowrap;
-     transform: translateY(-2px);
+
+    transform: translateY(-1px);
+
+    border: 1px solid transparent;
+
+    backdrop-filter: blur(4px);
+
+    font-weight: 600;
 }
+
+/* PUBLIC */
 
 .recipe-badge.mine.public {
-    background: rgba(0, 255, 180, 0.15);
-    color: #00ffc3;
+
+    background:
+        rgba(68,255,204,0.08);
+
+    border-color:
+        rgba(68,255,204,0.18);
+
+    color:
+        #7dffd9;
 }
+
+/* PRIVATE */
 
 .recipe-badge.mine.private {
-    background: rgba(255, 0, 120, 0.15);
-    color: #ff4d9d;
+
+    background:
+        rgba(255,255,255,0.03);
+
+    border-color:
+        rgba(255,255,255,0.08);
+
+    color:
+        rgba(220,230,240,0.72);
 }
 
+/* FOREIGN */
+
 .recipe-badge.foreign {
-    background: rgba(120, 160, 255, 0.15);
-    color: #8fa8ff;
 
+    background:
+        rgba(0, 229, 255, 0.05);
 
-    
+    border-color:
+        rgba(0, 229, 255, 0.12);
+
+    color:
+        rgba(0, 229, 255, 0.72);
 }

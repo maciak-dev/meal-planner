@@ -4,56 +4,148 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin Panel</title>
+
 <link rel="stylesheet" href="/static/admin.css">
+
+<!-- ICONS -->
+<link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+/>
+
 </head>
 
 <body class="theme-cyber">
+
 <main class="app">
 
 <header class="topbar">
+
     <div class="topbar-left">
         <h1>Admin Panel</h1>
     </div>
+
     <div class="topbar-right">
-        <button class="secondary small" onclick="location.href='/recipes-ui'">
+        <button
+            class="secondary small"
+            onclick="location.href='/recipes-ui'">
+
+            <i class="fa-solid fa-arrow-left"></i>
             Back
         </button>
     </div>
+
 </header>
 
 <section class="admin-section">
 
-<h2>Login logs</h2>
+<h2>System Logs</h2>
 
 <div class="tabs">
-    <button class="primary" onclick="showTab('login')">Login Logs</button>
-    <button class="primary" onclick="showTab('request')">Request Logs</button>
-</div>
-<div class="filters">
-    <button onclick="changeRange('today')">Today</button>
-    <button onclick="changeRange('7d')">Last 7 days</button>
-    <button onclick="changeRange('all')">All</button>
+
+    <button
+        class="primary"
+        onclick="showTab('login')">
+
+        <i class="fa-solid fa-user-shield"></i>
+        Login Logs
+    </button>
+
+    <button
+        class="primary"
+        onclick="showTab('request')">
+
+        <i class="fa-solid fa-network-wired"></i>
+        Request Logs
+    </button>
+
 </div>
 
+<div class="filters">
+
+    <button onclick="changeRange('today')">
+
+        <i class="fa-regular fa-clock"></i>
+        Today
+    </button>
+
+    <button onclick="changeRange('7d')">
+
+        <i class="fa-regular fa-calendar"></i>
+        Last 7 days
+    </button>
+
+    <button onclick="changeRange('all')">
+
+        <i class="fa-solid fa-database"></i>
+        All
+    </button>
+
+</div>
 
 <div id="request-controls" style="display:none;">
+
     <div class="filters">
-        <button class="secondary small" onclick="filterRequests('all')">All</button>
-        <button class="secondary small" onclick="filterRequests('suspicious')">Suspicious</button>
-        <button class="secondary small" onclick="filterRequests('error')">Errors</button>
-        <button class="secondary small" onclick="filterRequests('blocked')">Blocked</button>
+
+        <button
+            class="secondary small"
+            onclick="filterRequests('all')">
+
+            <i class="fa-solid fa-layer-group"></i>
+            All
+        </button>
+
+        <button
+            class="secondary small"
+            onclick="filterRequests('suspicious')">
+
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            Suspicious
+        </button>
+
+        <button
+            class="secondary small"
+            onclick="filterRequests('error')">
+
+            <i class="fa-solid fa-fire"></i>
+            Errors
+        </button>
+
+        <button
+            class="secondary small"
+            onclick="filterRequests('blocked')">
+
+            <i class="fa-solid fa-ban"></i>
+            Blocked
+        </button>
+
     </div>
-
-
 
     <div class="legend">
-        <span class="legend-fail">❌ Login fail</span>
-        <span class="legend-suspicious">⚠ Suspicious</span>
-        <span class="legend-error">🔥 Server error</span>
+
+        <span class="legend-fail">
+            <i class="fa-solid fa-circle-xmark"></i>
+            Login fail
+        </span>
+
+        <span class="legend-suspicious">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            Suspicious
+        </span>
+
+        <span class="legend-error">
+            <i class="fa-solid fa-fire"></i>
+            Server error
+        </span>
+
     </div>
+
 </div>
+
 <div id="login-tab" class="tab-content">
+
     <table id="login-logs-table" class="admin-table">
+
         <tr>
             <th>User</th>
             <th>IP</th>
@@ -61,11 +153,18 @@
             <th>Date</th>
             <th>Agent</th>
         </tr>
+
     </table>
+
 </div>
 
-<div id="request-tab" class="tab-content" style="display:none;">
+<div
+    id="request-tab"
+    class="tab-content"
+    style="display:none;">
+
     <table id="request-logs-table" class="admin-table">
+
         <tr>
             <th>Path</th>
             <th>IP</th>
@@ -73,20 +172,25 @@
             <th>Date</th>
             <th>Agent</th>
         </tr>
+
     </table>
+
 </div>
 
 </section>
 
 <script>
-    let currentRequestRange = "today";
 
-    let requestLogsCache = [];
+let currentRequestRange = "today";
 
+let requestLogsCache = [];
 
+/* =========================
+   TABS
+========================= */
 
+function showTab(tab) {
 
-    function showTab(tab) {
     document.getElementById("login-tab").style.display =
         tab === 'login' ? 'block' : 'none';
 
@@ -101,127 +205,218 @@
     }
 }
 
-
+/* =========================
+   GROUPING
+========================= */
 
 function groupByDay(logs) {
+
     return logs.reduce((acc, log) => {
-        const day = new Date(log.created_at).toLocaleDateString();
+
+        const day =
+            new Date(log.created_at).toLocaleDateString();
+
         acc[day] ??= [];
+
         acc[day].push(log);
+
         return acc;
+
     }, {});
 }
 
+/* =========================
+   LOGIN LOGS
+========================= */
+
 async function loadLoginLogs(range = "today") {
-    const res = await fetch(`/api/v1/admin/login-logs?range=${range}`);
+
+    const res =
+        await fetch(`/api/v1/admin/login-logs?range=${range}`);
+
     const logs = await res.json();
 
-    const table = document.getElementById("login-logs-table");
-    table.querySelectorAll("tr:not(:first-child)").forEach(tr => tr.remove());
+    const table =
+        document.getElementById("login-logs-table");
+
+    table
+        .querySelectorAll("tr:not(:first-child)")
+        .forEach(tr => tr.remove());
 
     const grouped = groupByDay(logs);
 
     Object.entries(grouped).forEach(([day, dayLogs]) => {
+
         const header = document.createElement("tr");
+
         header.innerHTML = `
-            <td colspan="5" class="day-separator">📅 ${day}</td>
+            <td colspan="5" class="day-separator">
+                <i class="fa-regular fa-calendar-days"></i>
+                ${day}
+            </td>
         `;
+
         table.appendChild(header);
 
         dayLogs.forEach(log => {
+
             const tr = document.createElement("tr");
-            tr.className = log.success ? "ok" : "fail";
+
+            tr.className =
+                log.success ? "ok" : "fail";
+
             tr.innerHTML = `
                 <td>${log.username}</td>
+
                 <td>${log.ip_address}</td>
-                <td>${log.success ? "OK" : "FAIL"}</td>
-                <td>${new Date(log.created_at).toLocaleTimeString()}</td>
-                <td>${log.user_agent.slice(0,40)}...</td>
+
+                <td>
+                    ${
+                        log.success
+                        ? '<span class="status-ok"><i class="fa-solid fa-circle-check"></i> OK</span>'
+                        : '<span class="status-fail"><i class="fa-solid fa-circle-xmark"></i> FAIL</span>'
+                    }
+                </td>
+
+                <td>
+                    ${new Date(log.created_at).toLocaleTimeString()}
+                </td>
+
+                <td>
+                    ${log.user_agent.slice(0,40)}...
+                </td>
             `;
+
             table.appendChild(tr);
         });
     });
 }
 
+/* =========================
+   REQUEST LOGS
+========================= */
 
 async function loadRequestLogs(range = currentRequestRange) {
+
     currentRequestRange = range;
 
-    const res = await fetch(`/api/v1/admin/requests?range=${range}`);
+    const res =
+        await fetch(`/api/v1/admin/requests?range=${range}`);
+
     const logs = await res.json();
 
     requestLogsCache = logs;
+
     renderRequestLogs(logs);
 }
 
 function renderRequestLogs(logs) {
-    const table = document.getElementById("request-logs-table");
-    table.querySelectorAll("tr:not(:first-child)").forEach(tr => tr.remove());
+
+    const table =
+        document.getElementById("request-logs-table");
+
+    table
+        .querySelectorAll("tr:not(:first-child)")
+        .forEach(tr => tr.remove());
 
     logs.forEach(log => {
+
         const tr = document.createElement("tr");
 
-        if (log.is_suspicious) tr.classList.add("suspicious");
-        if (log.status >= 500) tr.classList.add("error");
-        if (log.status === 403) tr.classList.add("blocked");
+        if (log.is_suspicious)
+            tr.classList.add("suspicious");
+
+        if (log.status >= 500)
+            tr.classList.add("error");
+
+        if (log.status === 403)
+            tr.classList.add("blocked");
 
         tr.innerHTML = `
             <td>${log.path}</td>
+
             <td>${log.ip_address}</td>
+
             <td>${log.status}</td>
-            <td>${new Date(log.created_at).toLocaleString()}</td>
-            <td>${log.user_agent?.slice(0,40) || ""}</td>
+
+            <td>
+                ${new Date(log.created_at).toLocaleString()}
+            </td>
+
+            <td>
+                ${log.user_agent?.slice(0,40) || ""}
+            </td>
         `;
+
         table.appendChild(tr);
     });
 }
 
-
+/* =========================
+   FILTERS
+========================= */
 
 function filterRequests(type) {
+
     if (type === "all") {
+
         renderRequestLogs(requestLogsCache);
+
         return;
     }
 
     let filtered = [];
 
     if (type === "suspicious") {
-        filtered = requestLogsCache.filter(l => l.is_suspicious);
+        filtered =
+            requestLogsCache.filter(l => l.is_suspicious);
     }
 
     if (type === "error") {
-        filtered = requestLogsCache.filter(l => l.status >= 500);
+        filtered =
+            requestLogsCache.filter(l => l.status >= 500);
     }
 
     if (type === "blocked") {
-        filtered = requestLogsCache.filter(l => l.status === 403);
+        filtered =
+            requestLogsCache.filter(l => l.status === 403);
     }
 
     renderRequestLogs(filtered);
-
-
-
 }
 
-
+/* =========================
+   RANGE
+========================= */
 
 function changeRange(range) {
-    if (document.getElementById("login-tab").style.display === "block") {
+
+    if (
+        document.getElementById("login-tab").style.display
+        === "block"
+    ) {
+
         loadLoginLogs(range);
+
     } else {
+
         loadRequestLogs(range);
     }
 }
-// Na start
+
+/* =========================
+   INIT
+========================= */
+
 loadLoginLogs();
+
 loadRequestLogs();
+
 showTab('login');
 
 </script>
 
 </main>
-
 
 </body>
 </html>
