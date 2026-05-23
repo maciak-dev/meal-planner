@@ -213,15 +213,10 @@ const Recipes = {
         <button class="secondary"
             data-action="edit"
             data-id="${r.id}">
-            Edit
+            Manage
         </button>
 
-        <button class="danger"
-            data-action="delete"
-            data-id="${r.id}"
-            data-name="${r.name}">
-            Delete
-        </button>
+
 
 
     ` : ""}
@@ -371,19 +366,26 @@ const Recipes = {
         }
     },
     handleFormClick(e) {
-        const btn = e.target.closest("button");
-        if (!btn) return;
+    const btn = e.target.closest("button");
+    if (!btn) return;
 
-        const action = btn.dataset.action;
-        if (!action) return;
+    const action = btn.dataset.action;
+    if (!action) return;
 
-        const map = {
-            "create-recipe": () => this.actions.create(),
-            "update-recipe": () => this.actions.update()
-        };
+    const map = {
+        "create-recipe": () => this.actions.create(),
 
-        map[action]?.();
-    }
+        "update-recipe": () => this.actions.update(),
+
+        "delete": () =>
+            this.actions.delete(
+                editingId,
+                RecipesUI.edit.name().value
+            )
+    };
+
+    map[action]?.();
+}
 
 
 
@@ -813,6 +815,7 @@ async function confirmDeleteYes() {
 
 
         closeDeleteModal();
+        closeEdit();
         Recipes.load();
         UI.toast("Recipe deleted", "success");
 
