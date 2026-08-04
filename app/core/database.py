@@ -18,4 +18,4 @@ def get_db():
     finally:
         db.close()
 
-print("DB FILE:", engine.url)
+print("DB FILE:", engine.url.render_as_string(hide_password=True))
