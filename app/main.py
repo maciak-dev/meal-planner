@@ -12,7 +12,8 @@ from sqlalchemy.orm import Session
 # CORE
 # =========================
 from app.core.database import Base, engine, get_db, SessionLocal
-from app.core.config import ENV, COOKIE_SECURE
+from app.core.bootstrap import initialize_database_schema
+from app.core.config import COOKIE_SECURE
 from app.core import security
 from app.core.request_log_middleware import RequestLogMiddleware
 from app.core.middleware import IPBlockMiddleware
@@ -55,9 +56,7 @@ app = FastAPI(
     openapi_url=None
 )
 
-# Tworzenie tabel tylko w DEV
-if ENV == "dev":
-    Base.metadata.create_all(bind=engine)
+initialize_database_schema()
 
 # =========================
 # STATIC & TEMPLATES

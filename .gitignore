@@ -8,6 +8,8 @@ __pycache__/
 # Venv
 venv/
 .env
+.env.*
+!.env.example
 
 # IDEs
 .vscode/
