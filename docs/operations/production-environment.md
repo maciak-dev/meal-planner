@@ -30,6 +30,7 @@ Data aktualizacji: 2026-08-04
 - `Base.metadata.create_all()` aktywne przy starcie
 - `.env` wskazuje SQLite, choć runtime działa na PostgreSQL
 - brak health/ready endpointów
+- produkcja nie została zmieniona w Sprincie 0 na VPS; checkout i usługa pozostają bez restartu
 
 ## Polecenia tylko do odczytu
 
@@ -49,3 +50,19 @@ curl -kfsSI --resolve maciak.online:443:127.0.0.1 https://maciak.online/
 3. Przygotować i zachować świeży backup PostgreSQL.
 4. Mieć gotowy plan rollbacku i smoke testów po restarcie.
 5. Dopiero potem zaktualizować produkcyjny `.env` i wdrożyć kod bez hardcoded DSN.
+
+## Co zostało potwierdzone na RC przed rolloutem produkcyjnym
+
+- RC działa z checkoutu `/var/www/meal-planner-rc`
+- RC korzysta z PostgreSQL `fastapi_db_rc`
+- RC działa z `ENV=prod`
+- RC ustawia `COOKIE_SECURE=True`
+- RC nie wykonuje `Base.metadata.create_all()` (`AUTO_CREATE_SCHEMA=False`)
+- smoke niezalogowanej sesji przeszedł:
+  - `GET / -> 307`
+  - `GET /login -> 200`
+  - `GET /static/main.css -> 200`
+  - `GET /recipes-ui -> 302`
+  - `GET /admin -> 401`
+- `/admin -> 401` jest poprawnym wynikiem dla niezalogowanego użytkownika
+- do smoke należy używać `GET`, ponieważ endpointy nie obsługują `HEAD`

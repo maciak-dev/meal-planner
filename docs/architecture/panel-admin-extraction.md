@@ -91,6 +91,14 @@ to powinny zostać przy module Meal Planner, nie w globalnym panelu MAP.
 - duplikacja auth/admin między `main.py` i `app/api/v1/admin.py` utrudni wydzielenie,
 - brak odseparowanego kontraktu API i brak testów.
 
+## Weryfikacja po zmianach Sprint 0
+
+- zmiany Sprintu 0 nie modyfikują ścieżek `/admin`, `/admin/login-logs`, `/api/v1/admin/login-logs`, `/api/v1/admin/requests`,
+- ręczny start checkoutu RC na branchu `chore/meal-planner-sprint-0` zakończył się poprawnym startupem aplikacji,
+- import aplikacji z nową konfiguracją RC nie wykazał błędu zależności auth ani panelu,
+- smoke systemowej instancji RC potwierdził `GET /admin -> 401`, co jest poprawnym zachowaniem dla niezalogowanego użytkownika,
+- do smoke panelu należy używać `GET`, nie `HEAD`, bo endpointy nie obsługują `HEAD`.
+
 ## Rekomendowana kolejność migracji
 
 1. Ujednolicić auth/admin routing.

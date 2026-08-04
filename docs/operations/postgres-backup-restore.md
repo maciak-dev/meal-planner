@@ -53,11 +53,21 @@ pg_restore --clean --if-exists --no-owner --no-privileges \
   /home/deploy/backups/meal-planner/meal-planner-fastapi_db-20260804T193513Z.dump
 ```
 
+## Stan bazy RC po smoke
+
+- checkout RC używa `DATABASE_URL` wskazującego `fastapi_db_rc`
+- odczytowy test `psql` potwierdza aktywną bazę `fastapi_db_rc`
+- aplikacja RC działa z `ENV=prod`
+- `AUTO_CREATE_SCHEMA=False`, więc startup RC nie próbuje wykonać `create_all`
+- read-only smoke HTTP mógł zwiększyć liczbę rekordów w `request_log`, bo aplikacja loguje żądania także na RC
+
 ## Ograniczenia
 
 - nie potwierdzono automatycznego harmonogramu backupów,
 - historyczny `prod_postgres_backup.sql` ma `0 B` i nie jest wiarygodnym backupem,
-- restore do `fastapi_db_rc` został potwierdzony, ale wdrożony RC nadal nie został przełączony na tę bazę.
+- restore do `fastapi_db_rc` został potwierdzony,
+- nowe `DATABASE_URL` checkoutu RC łączy się już odczytowo z `fastapi_db_rc`,
+- aktywacja systemowej usługi RC nadal wymaga restartu przez administratora.
 
 ## Minimalna procedura przed restartem produkcji
 

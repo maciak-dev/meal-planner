@@ -70,6 +70,11 @@ Nie znaleziono osobnego brancha feature na `origin` poza `main`.
 
 - produkcja: tabela istnieje, ale jest pusta
 - po restore w `fastapi_db_rc`: tabela również pusta
+- odczytowy check RC po przepięciu `.env` potwierdził:
+  - `ingredients=0`
+  - kolumny: `id`, `name`, `is_essential`
+  - constraints: `ingredients_pkey`, `ingredients_name_key`
+- startup RC z `ENV=prod` nie próbował zmieniać schematu tabeli
 - brak dodatkowych tabel wspierających feature sklepu/alejek
 
 ## Problemy
@@ -93,7 +98,8 @@ Nie znaleziono osobnego brancha feature na `origin` poza `main`.
 
 - merge „na ślepo” nie istnieje, bo nie znaleziono osobnego brancha do merge,
 - dokańczanie feature bez migracji i bez trwałej shopping list pogłębi dług,
-- łatwo pomylić obecną pustą tabelę z martwym kodem, choć w historii widać intencję produktową.
+- łatwo pomylić obecną pustą tabelę z martwym kodem, choć w historii widać intencję produktową,
+- na dziś tabela nie jest legacy; to zalążek funkcji mapowania składników i ich późniejszego porządkowania.
 
 ## Rekomendacja
 
