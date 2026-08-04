@@ -1,10 +1,20 @@
+import os
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from app.db.models.user import User
 from app.db.models.recipe import Recipe
 
-SQLITE_URL = "sqlite:///app/db/app.db"
-POSTGRES_URL = "postgresql://fastapi_user:DatabaseError404@localhost:5432/fastapi_db"
+
+def require_env(name):
+    value = os.getenv(name)
+    if not value:
+        raise RuntimeError(f"Missing required environment variable: {name}")
+    return value
+
+
+SQLITE_URL = os.getenv("SQLITE_URL", "sqlite:///app/db/app.db")
+POSTGRES_URL = require_env("DATABASE_URL")
 
 sqlite_engine = create_engine(SQLITE_URL)
 postgres_engine = create_engine(POSTGRES_URL)
