@@ -1,16 +1,12 @@
 import importlib
 import os
-import sys
-import tempfile
 import unittest
-from pathlib import Path
 from unittest import mock
 
 
-ROOT = Path(__file__).resolve().parents[1]
-
-
 def purge_app_modules() -> None:
+    import sys
+
     for name in list(sys.modules):
         if name == "app" or name.startswith("app."):
             sys.modules.pop(name)
@@ -21,9 +17,14 @@ class ConfigTests(unittest.TestCase):
         purge_app_modules()
 
     def test_database_url_is_required_outside_dev_default(self) -> None:
-        with mock.patch.dict(os.environ, {"ENV": "prod", "SECRET_KEY": "secret"}, clear=True):
+        with mock.patch.dict(
+            os.environ,
+            {"DATABASE_URL": "postgresql://test:test@127.0.0.1:5432/meal_planner_test"},
+            clear=True,
+        ):
+            config = importlib.import_module("app.core.config")
             with self.assertRaisesRegex(RuntimeError, "DATABASE_URL environment variable is required"):
-                importlib.import_module("app.core.config")
+                config.load_settings(load_env_file=False, environ={"ENV": "prod", "SECRET_KEY": "secret"})
 
     def test_rc_instance_cannot_point_to_production_database(self) -> None:
         env = {
@@ -32,35 +33,70 @@ class ConfigTests(unittest.TestCase):
             "SECRET_KEY": "secret",
             "DATABASE_URL": "postgresql://user:pass@127.0.0.1:5432/fastapi_db",
         }
-        with mock.patch.dict(os.environ, env, clear=True):
+        with mock.patch.dict(
+            os.environ,
+            {"DATABASE_URL": "postgresql://test:test@127.0.0.1:5432/meal_planner_test"},
+            clear=True,
+        ):
+            config = importlib.import_module("app.core.config")
             with self.assertRaisesRegex(RuntimeError, "expected 'fastapi_db_rc'"):
-                importlib.import_module("app.core.config")
+                config.load_settings(load_env_file=False, environ=env)
 
     def test_prod_uses_secure_cookie_and_disables_auto_create(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            db_path = Path(tmpdir) / "prod.db"
-            env = {
+        config = importlib.import_module("app.core.config")
+        settings = config.load_settings(
+            load_env_file=False,
+            environ={
                 "ENV": "prod",
                 "APP_INSTANCE": "production",
                 "SECRET_KEY": "secret",
-                "DATABASE_URL": f"sqlite:///{db_path}",
-            }
-            with mock.patch.dict(os.environ, env, clear=True):
-                config = importlib.import_module("app.core.config")
-                self.assertTrue(config.COOKIE_SECURE)
-                self.assertFalse(config.AUTO_CREATE_SCHEMA)
+                "DATABASE_URL": "postgresql://test:test@127.0.0.1:5432/meal_planner_test",
+            },
+        )
+        self.assertTrue(settings.COOKIE_SECURE)
+        self.assertFalse(settings.AUTO_CREATE_SCHEMA)
+
+    def test_dev_uses_insecure_cookie_and_allows_auto_create(self) -> None:
+        config = importlib.import_module("app.core.config")
+        settings = config.load_settings(
+            load_env_file=False,
+            environ={
+                "ENV": "dev",
+                "APP_INSTANCE": "dev",
+                "SECRET_KEY": "secret",
+                "DATABASE_URL": "postgresql://test:test@127.0.0.1:5432/meal_planner_test",
+            },
+        )
+        self.assertFalse(settings.COOKIE_SECURE)
+        self.assertTrue(settings.AUTO_CREATE_SCHEMA)
 
     def test_expected_database_name_can_differ_between_instances(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            db_path = Path(tmpdir) / "rc.db"
-            env = {
+        config = importlib.import_module("app.core.config")
+        settings = config.load_settings(
+            load_env_file=False,
+            environ={
                 "ENV": "rc",
                 "APP_INSTANCE": "rc",
                 "SECRET_KEY": "secret",
-                "DATABASE_URL": f"sqlite:///{db_path}",
-                "EXPECTED_DATABASE_NAME": "rc.db",
-            }
-            with mock.patch.dict(os.environ, env, clear=True):
-                config = importlib.import_module("app.core.config")
-                self.assertEqual(config.DATABASE_NAME, "rc.db")
-                self.assertEqual(config.EXPECTED_DATABASE_NAME, "rc.db")
+                "DATABASE_URL": "postgresql://test:test@127.0.0.1:5432/meal_planner_rc_test",
+                "EXPECTED_DATABASE_NAME": "meal_planner_rc_test",
+            },
+        )
+        self.assertEqual(settings.DATABASE_NAME, "meal_planner_rc_test")
+        self.assertEqual(settings.EXPECTED_DATABASE_NAME, "meal_planner_rc_test")
+
+    def test_explicit_environment_ignores_dotenv_file(self) -> None:
+        config = importlib.import_module("app.core.config")
+        with mock.patch("app.core.config.dotenv_values", return_value={"DATABASE_URL": "sqlite:///wrong.db"}):
+            settings = config.load_settings(
+                load_env_file=False,
+                env_file="/tmp/should-not-be-read.env",
+                environ={
+                    "ENV": "prod",
+                    "APP_INSTANCE": "test",
+                    "SECRET_KEY": "secret",
+                    "DATABASE_URL": "postgresql://test:test@127.0.0.1:5432/meal_planner_test",
+                    "EXPECTED_DATABASE_NAME": "meal_planner_test",
+                },
+            )
+        self.assertEqual(settings.DATABASE_NAME, "meal_planner_test")
