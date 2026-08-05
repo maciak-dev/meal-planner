@@ -25,6 +25,7 @@ class BootstrapTests(unittest.TestCase):
                 "APP_INSTANCE": "dev",
                 "SECRET_KEY": "dev-secret",
                 "DATABASE_URL": f"sqlite:///{db_path}",
+                "MEAL_PLANNER_LOAD_ENV_FILE": "0",
             }
             with mock.patch.dict(os.environ, env, clear=True):
                 bootstrap = importlib.import_module("app.core.bootstrap")
@@ -40,6 +41,7 @@ class BootstrapTests(unittest.TestCase):
                 "APP_INSTANCE": "production",
                 "SECRET_KEY": "secret",
                 "DATABASE_URL": f"sqlite:///{db_path}",
+                "MEAL_PLANNER_LOAD_ENV_FILE": "0",
             }
             with mock.patch.dict(os.environ, env, clear=True):
                 bootstrap = importlib.import_module("app.core.bootstrap")
