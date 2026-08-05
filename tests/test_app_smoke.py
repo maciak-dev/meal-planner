@@ -27,6 +27,7 @@ class AppSmokeTests(unittest.TestCase):
                 "APP_INSTANCE": "dev",
                 "SECRET_KEY": "dev-secret",
                 "DATABASE_URL": f"sqlite:///{Path(tmpdir) / 'smoke.db'}",
+                "MEAL_PLANNER_LOAD_ENV_FILE": "0",
             }
             with mock.patch.dict(os.environ, env, clear=True):
                 main = importlib.import_module("app.main")

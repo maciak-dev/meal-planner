@@ -19,7 +19,10 @@ class ConfigTests(unittest.TestCase):
     def test_database_url_is_required_outside_dev_default(self) -> None:
         with mock.patch.dict(
             os.environ,
-            {"DATABASE_URL": "postgresql://test:test@127.0.0.1:5432/meal_planner_test"},
+            {
+                "DATABASE_URL": "postgresql://test:test@127.0.0.1:5432/meal_planner_test",
+                "MEAL_PLANNER_LOAD_ENV_FILE": "0",
+            },
             clear=True,
         ):
             config = importlib.import_module("app.core.config")
@@ -35,7 +38,10 @@ class ConfigTests(unittest.TestCase):
         }
         with mock.patch.dict(
             os.environ,
-            {"DATABASE_URL": "postgresql://test:test@127.0.0.1:5432/meal_planner_test"},
+            {
+                "DATABASE_URL": "postgresql://test:test@127.0.0.1:5432/meal_planner_test",
+                "MEAL_PLANNER_LOAD_ENV_FILE": "0",
+            },
             clear=True,
         ):
             config = importlib.import_module("app.core.config")
