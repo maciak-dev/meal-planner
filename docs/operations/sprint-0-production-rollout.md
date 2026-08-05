@@ -1,47 +1,37 @@
 # Sprint 0 Production Rollout
 
-Data aktualizacji: 2026-08-04
+Data aktualizacji: 2026-08-05
 
-## Cel
+Ten runbook opisuje wdrożenie Sprintu 0 na produkcję. Faza wykonywana przez Codex kończy się przed restartem usługi. Restart wykonuje ręcznie użytkownik z uprawnieniami `sudo` po otrzymaniu pozytywnego pre-checku.
 
-Wdrożyć Sprint 0 Meal Plannera na produkcję bez zmiany domeny, portu, uploadów ani danych PostgreSQL.
+## Docelowy stan
 
-Docelowy efekt:
-
-- produkcja pobiera `DATABASE_URL` z `.env`,
-- produkcja nadal używa PostgreSQL `fastapi_db`,
-- produkcja działa z `ENV=prod`,
+- produkcja pobiera `DATABASE_URL` z lokalnego `.env`,
+- baza pozostaje PostgreSQL `fastapi_db`,
+- `ENV=prod`,
+- `APP_INSTANCE=production`,
 - `COOKIE_SECURE=True`,
+- `AUTO_CREATE_SCHEMA=False`,
 - `Base.metadata.create_all()` nie wykonuje się przy starcie,
-- aplikacja nie może przełączyć się na SQLite.
+- brak fallbacku do SQLite,
+- port, domena, uploady i dane pozostają bez zmian.
 
 ## Prerequisites
 
-- istnieje zweryfikowany backup:
-  - `/home/deploy/backups/meal-planner/meal-planner-fastapi_db-20260804T193513Z.dump`
-- dostęp `sudo` do:
-  - `systemctl`
-  - odczytu logów
-- branch do wdrożenia: `chore/meal-planner-sprint-0`
-- commit do wdrożenia: `cf9f17c` lub nowszy zatwierdzony commit Sprintu 0
-- checkout produkcyjny jest rozpoznany i jego lokalne zmiany są zarchiwizowane
-- szczególnie zabezpieczony jest lokalny diff `app/core/config.py`
-- potwierdzony jest produkcyjny DSN do `fastapi_db`
-- potwierdzone działanie:
-  - `nginx`
-  - `meal-planner.service`
-  - `postgresql`
+- zweryfikowany backup PostgreSQL, np. `/home/deploy/backups/meal-planner/meal-planner-fastapi_db-20260804T193513Z.dump`,
+- dostęp użytkownika do `sudo systemctl`,
+- zatwierdzony commit branchu `chore/meal-planner-sprint-0`,
+- rozpoznane lokalne zmiany produkcji,
+- kopia produkcyjnego `app/core/config.py` i `.env` poza repozytorium,
+- potwierdzony DSN wskazujący `fastapi_db`,
+- działające `nginx`, PostgreSQL i `meal-planner.service`,
+- działający RC z tym samym commitem i osobną bazą `fastapi_db_rc`.
 
-## Pre-deployment Checks
+## Faza A — Codex bez sudo
 
-1. Sprawdzić stan checkoutu produkcyjnego:
+Codex wykonuje poniższe czynności bez restartowania produkcji.
 
-```bash
-git -C /var/www/meal-planner status --short --branch
-git -C /var/www/meal-planner log -1 --oneline
-```
-
-2. Jeżeli checkout jest brudny, zapisać kopie lokalnych plików przed zmianą:
+### 1. Backup i pre-check
 
 ```bash
 ts=$(date -u +%Y%m%dT%H%M%SZ)
@@ -49,176 +39,155 @@ dest=/home/deploy/backups/meal-planner/prod-predeploy-$ts
 mkdir -p "$dest"
 cp /var/www/meal-planner/app/core/config.py "$dest/app-core-config.py"
 cp /var/www/meal-planner/.env "$dest/prod.env"
+
+git -C /var/www/meal-planner status --short --branch
+git -C /var/www/meal-planner log -1 --oneline
+ss -lntp | rg ':8000\b'
+curl -sS -o /dev/null -w '/ -> %{http_code}\n' https://maciak.online/
+curl -sS -o /dev/null -w '/login -> %{http_code}\n' https://maciak.online/login
+curl -sS -o /dev/null -w '/static/main.css -> %{http_code}\n' https://maciak.online/static/main.css
+curl -sS -o /dev/null -w '/recipes-ui -> %{http_code}\n' https://maciak.online/recipes-ui
+curl -sS -o /dev/null -w '/admin -> %{http_code}\n' https://maciak.online/admin
 ```
 
-3. Wykonać świeży backup PostgreSQL:
+Wykonać świeży `pg_dump -Fc` faktycznie używanej bazy i sprawdzić go przez `ls`, `file` oraz `pg_restore -l`. Nie nadpisywać wcześniejszych dumpów.
+
+### 2. Zabezpieczenie lokalnych zmian
+
+Przed zmianą checkoutu zaklasyfikować każdy lokalny plik jako zachowany, zastąpiony wersją Sprintu 0, zarchiwizowany albo pominięty. Nie używać `git reset --hard` i nie stosować ślepego `rsync --delete`.
+
+Nie usuwać:
+
+- `.env`,
+- `venv/`,
+- `app/static/uploads/`,
+- backupów,
+- plików runtime,
+- lokalnych raportów audytowych.
+
+### 3. Checkout i konfiguracja
+
+Przełączyć produkcyjny checkout dokładnie na zatwierdzony commit Sprintu 0, zachowując `.env` i uploady. Uzupełnić lokalny `.env` o wartości:
+
+```text
+ENV=prod
+APP_INSTANCE=production
+DATABASE_URL=<produkcyjny DSN PostgreSQL do fastapi_db>
+EXPECTED_DATABASE_NAME=fastapi_db
+PRODUCTION_DATABASE_NAME=fastapi_db
+```
+
+DSN, hasła i `SECRET_KEY` nie mogą trafić do Git ani raportu. Nie kopiować `.env` z RC.
+
+### 4. Walidacja izolowana
+
+W branchu Sprintu 0 uruchomić:
 
 ```bash
-pg_dump -Fc -h localhost -p 5432 -U <masked_user> -d fastapi_db \
-  -f /home/deploy/backups/meal-planner/meal-planner-fastapi_db-$ts.dump
+scripts/test-sprint-0.sh
 ```
 
-4. Zweryfikować backup:
+Skrypt czyści środowisko procesu, ustawia fikcyjny DSN `meal_planner_test`, wyłącza dotenv, uruchamia compileall i testy, a następnie sprawdza brak aktywnego hardcoded DSN. Nie łączy się z bazą i nie otwiera socketu.
+
+Następnie zweryfikować rzeczywisty produkcyjny `.env` bez drukowania DSN:
 
 ```bash
-ls -lh /home/deploy/backups/meal-planner/meal-planner-fastapi_db-$ts.dump
-file /home/deploy/backups/meal-planner/meal-planner-fastapi_db-$ts.dump
-pg_restore -l /home/deploy/backups/meal-planner/meal-planner-fastapi_db-$ts.dump
+./scripts/validate-production-config.py --checkout /var/www/meal-planner
 ```
 
-5. Sprawdzić stan usługi i portów:
+Oczekiwany wynik:
+
+```text
+ENV=prod
+APP_INSTANCE=production
+DATABASE_NAME=fastapi_db
+COOKIE_SECURE=True
+AUTO_CREATE_SCHEMA=False
+```
+
+Opcjonalne połączenie odczytowe można wykonać wyłącznie jawnie:
 
 ```bash
-sudo systemctl status meal-planner --no-pager
-ss -lntp | rg ':8000|:443|:80|:5432'
+./scripts/validate-production-config.py \
+  --checkout /var/www/meal-planner \
+  --check-connection
 ```
 
-6. Potwierdzić aktywną bazę i produkcyjny DSN bez ujawniania sekretów:
+### 5. Start tymczasowy i smoke
 
-- `.env` ma zawierać `ENV=prod`
-- `.env` ma zawierać `DATABASE_URL` wskazujący `fastapi_db`
-- aplikacja nie może wskazywać `sqlite`
-
-7. Wykonać smoke przed wdrożeniem:
+Na wolnym porcie lokalnym uruchomić krótką instancję tego samego kodu, np. `127.0.0.1:8002`, z produkcyjnym `.env`. Nie wykonywać logowania ani CRUD.
 
 ```bash
-curl -fsS http://127.0.0.1:8000/ -o /dev/null -w '%{http_code}\n'
-curl -fsS http://127.0.0.1:8000/login -o /dev/null -w '%{http_code}\n'
-curl -fsS http://127.0.0.1:8000/static/main.css -o /dev/null -w '%{http_code}\n'
-curl -fsS http://127.0.0.1:8000/recipes-ui -o /dev/null -w '%{http_code}\n'
-curl -fsS http://127.0.0.1:8000/admin -o /dev/null -w '%{http_code}\n'
+/var/www/meal-planner/venv/bin/python -m uvicorn app.main:app \
+  --host 127.0.0.1 --port 8002
 ```
 
-Do smoke należy używać `GET`. Endpointy nie obsługują `HEAD`, więc `curl -I` może zwracać `405`.
+W drugim terminalu:
 
-## Deployment
+```bash
+scripts/smoke-local.sh 8002
+```
 
-1. Potwierdzić, że commit Sprintu 0 jest zatwierdzony i przetestowany na RC.
+Oczekiwane kody GET: `/` `307`, `/login` `200`, `/static/main.css` `200`, `/recipes-ui` `302`, `/admin` `401`. Po teście zatrzymać tylko proces tymczasowy.
 
-2. Przygotować produkcyjny checkout do dokładnie tego commita.
+### 6. Punkt zatrzymania
 
-Preferowany model:
+Codex zatrzymuje się po pozytywnym validatorze i smoke na `8002`, przed `daemon-reload`, `restart` i jakąkolwiek zmianą stanu usługi systemd. Użytkownik otrzymuje wynik pre-deployment oraz poniższe polecenia ręczne.
 
-- checkout produkcyjny ma wskazać commit Sprintu 0,
-- `.env` produkcji ma zostać zachowany lokalnie i poprawiony ręcznie,
-- uploady w `app/static/uploads` pozostają nietknięte.
+## Faza B — użytkownik wykonuje sudo
 
-3. Ustawić produkcyjny `.env` tak, aby zawierał co najmniej:
-
-- `ENV=prod`
-- `DATABASE_URL=<masked fastapi_db dsn>`
-- `SECRET_KEY=<existing secret>`
-- `PRODUCTION_DATABASE_NAME=fastapi_db`
-
-Opcjonalnie:
-
-- `APP_INSTANCE=production`
-- `EXPECTED_DATABASE_NAME=fastapi_db`
-
-4. Upewnić się, że w kodzie:
-
-- nie ma hardcoded DSN,
-- brak `DATABASE_URL` kończy start czytelnym błędem,
-- brak fallbacku do SQLite,
-- `AUTO_CREATE_SCHEMA=False` dla `ENV=prod`.
-
-5. Nie wykonywać migracji.
-
-## Restart
+Po zaakceptowaniu pre-checków użytkownik wykonuje:
 
 ```bash
 sudo systemctl daemon-reload
 sudo systemctl restart meal-planner
+sleep 3
 sudo systemctl status meal-planner --no-pager
-journalctl -u meal-planner -n 100 --no-pager
+```
+
+Następnie należy sprawdzić:
+
+```bash
 ss -lntp | rg ':8000\b'
+sudo journalctl -u meal-planner -n 100 --no-pager
 sudo systemctl status nginx --no-pager
 ```
 
-## Smoke po wdrożeniu
-
-Wszystkie kontrole robić żądaniami `GET`.
+Smoke HTTPS wykonuje się żądaniami `GET`, nie `curl -I`:
 
 ```bash
-curl -fsS http://127.0.0.1:8000/ -o /dev/null -w '%{http_code}\n'
-curl -fsS http://127.0.0.1:8000/login -o /dev/null -w '%{http_code}\n'
-curl -fsS http://127.0.0.1:8000/static/main.css -o /dev/null -w '%{http_code}\n'
-curl -fsS http://127.0.0.1:8000/recipes-ui -o /dev/null -w '%{http_code}\n'
-curl -fsS http://127.0.0.1:8000/admin -o /dev/null -w '%{http_code}\n'
-curl -fsS http://127.0.0.1:8000/api/v1/recipes/ -o /dev/null -w '%{http_code}\n'
+curl -sS -o /dev/null -w '/ -> %{http_code}\n' https://maciak.online/
+curl -sS -o /dev/null -w '/login -> %{http_code}\n' https://maciak.online/login
+curl -sS -o /dev/null -w '/static/main.css -> %{http_code}\n' https://maciak.online/static/main.css
+curl -sS -o /dev/null -w '/recipes-ui -> %{http_code}\n' https://maciak.online/recipes-ui
+curl -sS -o /dev/null -w '/admin -> %{http_code}\n' https://maciak.online/admin
 ```
 
-Do potwierdzenia:
+Po restarcie potwierdzić brak `500`, brak SQLite w logach, brak próby `create_all()`, połączenie z `fastapi_db`, dostępność uploadów i poprawne działanie HTTPS. Test cookie `Secure` wymaga bezpiecznego konta testowego; nie wykonywać CRUD na produkcji bez osobnej zgody.
 
-- `/` odpowiada poprawnym redirectem
-- `/login` działa
-- statyczne assety działają
-- `/recipes-ui` zachowuje się poprawnie dla niezalogowanej sesji
-- `/admin` nie zwraca `500`
-- chronione API zwraca kontrolowany `401`, nie `500`
-- cookie po logowaniu ma flagę `Secure`
-- runtime łączy się z `fastapi_db`
-- logi startowe nie pokazują `create_all`
-- brak odpowiedzi `500`
-- brak śladów użycia SQLite
+## Stop conditions
+
+Przerwać przed restartem, jeśli:
+
+- backup jest pusty, nieczytelny albo nieweryfikowalny,
+- checkout produkcji ma nierozpoznane zmiany,
+- validator odrzuca `ENV`, `APP_INSTANCE` lub nazwę bazy,
+- `DATABASE_URL` wskazuje SQLite albo inną bazę,
+- RC z tym samym commitem nie startuje,
+- `scripts/test-sprint-0.sh` nie przechodzi,
+- start na `8002` lub lokalny smoke nie przechodzi.
+
+Po restarcie przerwać i rollbackować kod, jeśli usługa nie startuje, wchodzi w restart loop, pojawia się traceback, `500`, SQLite, `COOKIE_SECURE=False`, `AUTO_CREATE_SCHEMA=True` albo brak portu `8000`.
 
 ## Rollback
 
-Rollback kodu i restore bazy to dwie różne operacje.
-
-### Rollback kodu
-
-Stosować, gdy:
-
-- aplikacja nie startuje,
-- smoke po wdrożeniu nie przechodzi,
-- występują regresje konfiguracyjne,
-- baza danych pozostała nienaruszona.
-
-Kroki:
+Rollback kodu i restore bazy są osobnymi operacjami. Przy regresji kodu:
 
 ```bash
 git -C /var/www/meal-planner checkout <previous_commit>
 cp /home/deploy/backups/meal-planner/prod-predeploy-<timestamp>/prod.env /var/www/meal-planner/.env
 cp /home/deploy/backups/meal-planner/prod-predeploy-<timestamp>/app-core-config.py /var/www/meal-planner/app/core/config.py
 sudo systemctl restart meal-planner
-sudo systemctl status meal-planner --no-pager
 ```
 
-Po rollbacku:
-
-- sprawdzić smoke produkcji,
-- potwierdzić połączenie z `fastapi_db`,
-- potwierdzić, że aplikacja nie używa SQLite.
-
-### Restore bazy
-
-Restore bazy rozważać tylko wtedy, gdy problem dotyczy danych lub schematu. Sam rollback kodu nie powinien wymagać restore bazy.
-
-Warunki użycia restore:
-
-- potwierdzona utrata lub uszkodzenie danych,
-- zwykły rollback kodu nie przywraca poprawnego działania,
-- istnieje zweryfikowany dump,
-- decyzja została świadomie zatwierdzona.
-
-## Stop Conditions
-
-Wdrożenie należy przerwać, jeśli:
-
-- backup nie jest poprawny,
-- checkout produkcji jest brudny i zmiany nie są rozpoznane,
-- `DATABASE_URL` wskazuje inną bazę niż `fastapi_db`,
-- test połączenia z PostgreSQL nie przechodzi,
-- aplikacja nie startuje na RC z tym samym commitem,
-- smoke produkcji przed wdrożeniem nie przechodzi,
-- po restarcie pojawiają się błędy `500`,
-- produkcja próbuje użyć SQLite.
-
-## Czynności wymagające sudo
-
-- `systemctl daemon-reload`
-- `systemctl restart meal-planner`
-- `systemctl status meal-planner --no-pager`
-- `systemctl status nginx --no-pager`
-- odczyt logów usługi, jeśli lokalna polityka tego wymaga
+Po rollbacku wykonać status usługi, logi i smoke HTTPS. Nie odtwarzać bazy przy zwykłym rollbacku kodu. Restore PostgreSQL rozważać dopiero po potwierdzeniu utraty lub uszkodzenia danych albo schematu i po osobnej decyzji operacyjnej.
