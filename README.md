@@ -6,6 +6,28 @@ GitHub: [https://github.com/maciak-dev/meal-planner](https://github.com/maciak-d
 
 ---
 
+## Documentation
+
+Product documentation is organised from product to implementation:
+
+```
+North Star → Vision → Modules → Integrations → Architecture → Operations
+```
+
+- [Documentation index](docs/README.md) — single entry point
+- [North Star](docs/north-star.md) — what Meal Planner is and is not; the
+  criterion every feature is judged against
+- [Product vision](docs/product/vision.md), [roadmap](docs/product/roadmap.md),
+  [backlog](docs/product/backlog.md)
+- [Integration with MAP](docs/integrations/map.md) — boundaries and contract
+- [Production Guardrails](docs/operations/production-guardrails.md) — read
+  before touching anything production-related
+
+The section below describes the current implementation, which is narrower than
+the product direction set out in the North Star.
+
+---
+
 ## Features
 
 - User login & role-based access (`user` / `admin`) 
