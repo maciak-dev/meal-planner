@@ -99,6 +99,21 @@ const UI = {
 
 };
 
+/**
+ * Tworzy element z klasą i tekstem.
+ *
+ * Treść przepisu (nazwa, opis, instrukcje, składniki) pochodzi od użytkownika i
+ * może być pokazana innym użytkownikom, gdy przepis jest publiczny. Nie wolno
+ * jej skleić w string i oddać do innerHTML - `textContent` nigdy nie parsuje
+ * HTML, więc znaczniki i handlery zdarzeń zostają zwykłym tekstem.
+ */
+function el(tag, className, text) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined && text !== null) node.textContent = String(text);
+    return node;
+}
+
 const RecipesUI = {
     add: {
         name: () => document.getElementById("name"),
@@ -107,6 +122,7 @@ const RecipesUI = {
         instructions: () => document.getElementById("instructions"),
         preview: () => document.getElementById("add-preview"),
         image: () => document.getElementById("add-image"),
+        isPublic: () => document.getElementById("add-is-public"),
         form: () => document.getElementById("add-recipe-form")
     },
     edit: {
@@ -116,6 +132,7 @@ const RecipesUI = {
         instructions: () => document.getElementById("edit-instructions"),
         preview: () => document.getElementById("edit-preview"),
         image: () => document.getElementById("edit-image"),
+        isPublic: () => document.getElementById("edit-is-public"),
         modal: () => document.getElementById("edit-modal")
     },
     list: () => document.getElementById("recipes-container")
@@ -125,7 +142,16 @@ function clearForm(fields) {
     Object.values(fields)
         .map(fn => fn())
         .filter(el => el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA"))
-        .forEach(el => el.value = "");
+        .forEach(el => {
+            // Checkboxa nie czyści się przez .value - trzeba go odznaczyć, inaczej
+            // przełącznik widoczności zostaje włączony po zapisaniu przepisu i
+            // następny przepis dostaje ustawienie, którego nikt nie wybrał.
+            if (el.type === "checkbox") {
+                el.checked = false;
+                return;
+            }
+            el.value = "";
+        });
 }
 
 
@@ -152,93 +178,117 @@ const Recipes = {
     },
 
     renderRecipeBadge(recipe) {
-    if (recipe.is_owner) {
-        return `
-            <span class="recipe-badge mine ${recipe.is_public ? "public" : "private"}">
-                MY · ${recipe.is_public ? "PUBLIC" : "PRIVATE"}
-            </span>
-        `;
-    }
+        if (recipe.is_owner) {
+            return el(
+                "span",
+                `recipe-badge mine ${recipe.is_public ? "public" : "private"}`,
+                `MY · ${recipe.is_public ? "PUBLIC" : "PRIVATE"}`
+            );
+        }
 
-    return `
-        <span class="recipe-badge foreign">
-            BY ${recipe.author_username ?? "USER"}
-        </span>
-    `;
+        // author_username przychodzi z bazy i trafia na kartę cudzego przepisu.
+        return el("span", "recipe-badge foreign", `BY ${recipe.author_username ?? "USER"}`);
     },
 
 
     render(recipes) {
         const container = RecipesUI.list();
-        container.innerHTML = "";
-        recipes.forEach(r => {
-            const isOwner = r.is_owner === true;
-            const box = document.createElement("div");
-            box.className = "recipe-box";
-            box.innerHTML = `
-            <div class="recipe-header">
-                <h3>${r.name}</h3>
-                ${this.renderRecipeBadge(r)}
-            </div>
-            <div class="recipe-body">
-            <div class="recipe-text">
-                <p><strong>Description:</strong> ${r.description}</p>
-                <p><strong>Ingredients:</strong></p>
-                <div class="ingredients-list">
-                    ${this.renderIngredients(r.ingredients)}
-                </div>
-            </div>
-            ${r.image ? `
-            <div class="recipe-image-wrap">
-                <img src="${r.image}" class="recipe-image">
-            </div>
-            ` : ""}
-            </div>
-                <div class="recipe-actions">
-    <!-- ZAWSZE -->
-    <button class="secondary"
-        data-action="instructions"
-        data-instructions="${r.instructions}">
-        View Instructions
-    </button>
+        container.replaceChildren();
+        recipes.forEach(r => container.appendChild(this.renderRecipeCard(r)));
+    },
 
-    <button class="secondary add-to-list"
-        data-action="add-to-list"
-        data-id="${r.id}">
-        + Add to list
-    </button>
+    /**
+     * Buduje kartę przepisu wyłącznie przez DOM API.
+     *
+     * Każde pole pochodzące od użytkownika (name, description, instructions,
+     * ingredients, author_username, image) wchodzi przez textContent, dataset
+     * albo właściwość elementu - nigdy przez sklejanie HTML-a. Nazwy klas i
+     * struktura są takie same jak w poprzedniej wersji szablonowej, żeby CSS i
+     * delegacja zdarzeń działały bez zmian.
+     */
+    renderRecipeCard(r) {
+        const box = el("div", "recipe-box");
 
-    <!-- TYLKO WŁAŚCICIEL -->
-    ${isOwner ? `
-        <button class="secondary"
-            data-action="edit"
-            data-id="${r.id}">
-            Manage
-        </button>
+        const header = el("div", "recipe-header");
+        header.appendChild(el("h3", null, r.name ?? ""));
+        header.appendChild(this.renderRecipeBadge(r));
+        box.appendChild(header);
 
+        const body = el("div", "recipe-body");
+        const textCol = el("div", "recipe-text");
 
+        const description = el("p");
+        description.appendChild(el("strong", null, "Description:"));
+        description.appendChild(document.createTextNode(` ${r.description ?? ""}`));
+        textCol.appendChild(description);
 
+        const ingredientsLabel = el("p");
+        ingredientsLabel.appendChild(el("strong", null, "Ingredients:"));
+        textCol.appendChild(ingredientsLabel);
 
-    ` : ""}
-</div>
+        textCol.appendChild(this.renderIngredients(r.ingredients));
+        body.appendChild(textCol);
 
-            `;
-            container.appendChild(box);
-        });
+        if (r.image) {
+            const imageWrap = el("div", "recipe-image-wrap");
+            const image = el("img", "recipe-image");
+            // .src jako właściwość: ścieżka nigdy nie jest parsowana jako HTML,
+            // więc nie da się nią wyjść z atrybutu.
+            image.src = r.image;
+            imageWrap.appendChild(image);
+            body.appendChild(imageWrap);
+        }
+        box.appendChild(body);
+
+        const actions = el("div", "recipe-actions");
+
+        const instructionsBtn = el("button", "secondary", "View Instructions");
+        instructionsBtn.dataset.action = "instructions";
+        // dataset zapisuje wartość atrybutu bez parsowania - cudzysłowy i znaczniki
+        // w instrukcjach nie mają jak z niego wyjść.
+        instructionsBtn.dataset.instructions = r.instructions ?? "";
+        actions.appendChild(instructionsBtn);
+
+        const addToListBtn = el("button", "secondary add-to-list", "+ Add to list");
+        addToListBtn.dataset.action = "add-to-list";
+        addToListBtn.dataset.id = String(r.id);
+        actions.appendChild(addToListBtn);
+
+        if (r.is_owner === true) {
+            const manageBtn = el("button", "secondary", "Manage");
+            manageBtn.dataset.action = "edit";
+            manageBtn.dataset.id = String(r.id);
+            actions.appendChild(manageBtn);
+        }
+
+        box.appendChild(actions);
+        return box;
     },
 
     renderIngredients(ingredients) {
-        return ingredients.split("\n").map(ing => {
+        const wrapper = el("div", "ingredients-list");
+
+        (ingredients ?? "").split("\n").forEach(ing => {
             const key = ing.trim().toLowerCase();
             const essential = this.state.ingredientsMap[key] ?? true;
 
-            return `
-          <label class="ingredient" style="display:flex; align-items:center; gap:6px;">
-            <input type="checkbox" class="shopping-item" ${essential ? "checked" : ""}>
-            <span>${ing}</span>
-          </label>
-        `;
-        }).join("");
+            const label = el("label", "ingredient");
+            label.style.display = "flex";
+            label.style.alignItems = "center";
+            label.style.gap = "6px";
+
+            const checkbox = el("input", "shopping-item");
+            checkbox.type = "checkbox";
+            checkbox.checked = essential;
+            label.appendChild(checkbox);
+
+            // Musi zostać <span> tuż za checkboxem - addRecipeToShoppingList()
+            // czyta nazwę składnika przez cb.nextElementSibling.textContent.
+            label.appendChild(el("span", null, ing));
+            wrapper.appendChild(label);
+        });
+
+        return wrapper;
     },
 
     actions: {
@@ -263,7 +313,10 @@ const Recipes = {
                 name: RecipesUI.add.name().value,
                 description: RecipesUI.add.description().value,
                 ingredients: RecipesUI.add.ingredients().value,
-                instructions: RecipesUI.add.instructions().value
+                instructions: RecipesUI.add.instructions().value,
+                // Bez tego formularz zbierał wartość przełącznika widoczności i
+                // ją wyrzucał - każdy nowy przepis wychodził prywatny.
+                is_public: RecipesUI.add.isPublic().checked
             };
 
             Api.post("/api/v1/recipes/", recipe)
@@ -289,7 +342,7 @@ const Recipes = {
             editingId = id;
 
             RecipesUI.edit.name().value = recipe.name || "";
-            document.getElementById("edit-is-public").checked = recipe.is_public;
+            RecipesUI.edit.isPublic().checked = recipe.is_public;
             RecipesUI.edit.description().value = recipe.description || "";
             RecipesUI.edit.ingredients().value = recipe.ingredients || "";
             RecipesUI.edit.instructions().value = recipe.instructions || "";
@@ -309,7 +362,7 @@ const Recipes = {
             try {
                 const recipe = {
                     name: RecipesUI.edit.name().value,
-                    is_public: document.getElementById("edit-is-public").checked,
+                    is_public: RecipesUI.edit.isPublic().checked,
                     description: RecipesUI.edit.description().value,
                     ingredients: RecipesUI.edit.ingredients().value,
                     instructions: RecipesUI.edit.instructions().value
@@ -447,40 +500,49 @@ const Shopping = {
             oldPositions.set(el.dataset.id, el.getBoundingClientRect());
         });
         const sortedList = [...list].sort((a, b) => a.done - b.done);
-        listEl.innerHTML = "";
+        listEl.replaceChildren();
         if (sortedList.length === 0) {
-            listEl.innerHTML = `<p class="muted">Your shopping list is empty 🛒</p>`;
+            listEl.appendChild(el("p", "muted", "Your shopping list is empty 🛒"));
             return;
         }
         sortedList.forEach(item => {
-            const div = document.createElement("div");
-            div.className = `shopping-item ${item.done ? "done" : ""}`;
+            // item.name to linia składnika przepisu, więc na liście zakupów ląduje
+            // ta sama niezaufana treść co na karcie przepisu.
+            const div = el("div", `shopping-item ${item.done ? "done" : ""}`);
             div.dataset.id = item.id;
-            div.innerHTML = `
-                <div class="shopping-main">
-                    <label class="done-switch" style="${this.state.mode ? "" : "display:none"}">
-                        <input type="checkbox" ${item.done ? "checked" : ""}
-                            data-action="toggle-done"
-                            data-id="${item.id}">
-                        <span class="done-slider"></span>
-                    </label>
-                    <span class="item-name">${item.name}</span>
-                </div>
-                <span class="item-qty">${item.qty}</span>
-                ${this.state.mode ? "" : `
-                <div class="qty-controls">
-                    <button class="qty-btn"
-                        data-action="decrease"
-                        data-id="${item.id}"
-                        ${item.done ? "disabled" : ""}>-</button>
 
-                    <button class="qty-btn"
-                        data-action="increase"
-                        data-id="${item.id}"
-                        ${item.done ? "disabled" : ""}>+</button>
-                </div>
-                `}
-            `;
+            const main = el("div", "shopping-main");
+
+            const doneSwitch = el("label", "done-switch");
+            if (!this.state.mode) doneSwitch.style.display = "none";
+
+            const doneCheckbox = document.createElement("input");
+            doneCheckbox.type = "checkbox";
+            doneCheckbox.checked = !!item.done;
+            doneCheckbox.dataset.action = "toggle-done";
+            doneCheckbox.dataset.id = item.id;
+            doneSwitch.appendChild(doneCheckbox);
+            doneSwitch.appendChild(el("span", "done-slider"));
+
+            main.appendChild(doneSwitch);
+            main.appendChild(el("span", "item-name", item.name));
+            div.appendChild(main);
+
+            div.appendChild(el("span", "item-qty", item.qty));
+
+            if (!this.state.mode) {
+                const controls = el("div", "qty-controls");
+
+                [["decrease", "-"], ["increase", "+"]].forEach(([action, label]) => {
+                    const btn = el("button", "qty-btn", label);
+                    btn.dataset.action = action;
+                    btn.dataset.id = item.id;
+                    btn.disabled = !!item.done;
+                    controls.appendChild(btn);
+                });
+
+                div.appendChild(controls);
+            }
 
             listEl.appendChild(div);
             div.classList.add("just-added");
@@ -691,7 +753,10 @@ const App = {
             shoppingInput.addEventListener("keydown", e => {
                 if (e.key === "Enter") {
                     e.preventDefault();
-                    Shopping.addItem();
+                    // Shopping.addItem() nigdy nie istniało - Enter rzucał
+                    // TypeError i pozycja nie trafiała na listę, mimo że
+                    // przycisk "Add" obok działał.
+                    addShoppingItem();
                 }
             });
         }
@@ -826,11 +891,16 @@ async function confirmDeleteYes() {
 function showInstructions(text) {
     const modalText = document.getElementById("modal-text");
 
-    // zamieniamy newline na <br> TUTAJ, bez hacków w HTML
-    modalText.innerHTML = text
-        .split("\n")
-        .map(line => line.trim())
-        .join("<br>");
+    // Łamanie linii budujemy z prawdziwych elementów <br>, a same linie wchodzą
+    // jako tekst. Sklejenie ich w string i przypisanie do innerHTML wykonywało
+    // znaczniki zapisane w instrukcjach przepisu.
+    modalText.replaceChildren();
+    const lines = (text ?? "").split("\n").map(line => line.trim());
+
+    lines.forEach((line, index) => {
+        if (index > 0) modalText.appendChild(document.createElement("br"));
+        modalText.appendChild(document.createTextNode(line));
+    });
 
     UI.openModal("modal");
 }
@@ -1093,9 +1163,8 @@ async function removeImage() {
 }
 
 
-function openIngredientsModal() {
-    UI.toast("Ingredients feature coming soon", "info");
-}
+// openIngredientsModal() usunięte razem z pozycją menu "Ingredients" - jedyne,
+// co robiło, to toast "funkcja wkrótce dostępna".
 
 
 function toggleBurger() {
