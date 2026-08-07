@@ -65,7 +65,8 @@
             >
             Switch Theme
             </button>
-        <button class="secondary small" onclick="openIngredientsModal()">Ingredients</button>
+        {# Pozycja "Ingredients" usunięta: prowadziła wyłącznie do toastu
+           "feature coming soon". Wraca, gdy będzie co pokazać. #}
 
         <form method="get" action="/logout">
             <button type="submit" class="burger-item danger">Logout</button>
@@ -84,7 +85,7 @@
 <div id="add-recipe-form" class="content">
     <input id="name" placeholder="Name">
         <label class="visibility-switch">
-        <input type="checkbox" id="edit-is-public">
+        <input type="checkbox" id="add-is-public">
         <span class="slider"></span>
         <span class="labels">
             <span class="private">PRIVATE</span>
