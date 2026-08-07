@@ -30,8 +30,9 @@ Na produkcji: 5 kont, 4 z nich są autorami przepisów.
 ## Current Limitations
 
 - **Brak pojęcia gospodarstwa domowego.** Model zna użytkownika i flagę
-  „publiczny", a produkt służy rodzinie. To blokuje decyzję D-2: czy plan
-  posiłków jest wspólny, czy prywatny.
+  „publiczny", a produkt służy rodzinie. Rozstrzygnięte przez
+  [ADR-002](../decisions/ADR-002.md): encji gospodarstwa **nie wprowadzamy** —
+  granicą gospodarstwa jest granica instancji.
 - Brak samodzielnej rejestracji, resetu hasła i zmiany hasła z poziomu UI —
   konta zakłada administrator.
 - Brak UI zarządzania użytkownikami; panel administracyjny pokazuje wyłącznie
@@ -41,14 +42,17 @@ Na produkcji: 5 kont, 4 z nich są autorami przepisów.
 
 ## Design Direction
 
-Do rozstrzygnięcia w Sprincie 1 razem z modelem planu: **czy wprowadzamy
-gospodarstwo domowe jako byt** (plan, lista zakupów i przepisy współdzielone w
-obrębie domu), **czy pozostajemy przy jednym planie na instancję**.
+Rozstrzygnięte przez [ADR-002](../decisions/ADR-002.md): **jeden plan i jedna
+lista zakupów na instancję**, bez encji gospodarstwa i bez multi-tenancy.
+Wprowadzanie modelu wielu domów byłoby budowaniem SaaS-a bez potrzeby.
 
-Rekomendacja: jeden plan i jedna lista zakupów na instancję w v1 — Meal Planner
-obsługuje jedno gospodarstwo domowe, a wprowadzanie pełnego modelu wielu domów
-byłoby budowaniem SaaS-a bez potrzeby. Flagę `is_public` przy przepisach można
-wtedy uprościć do „mój / wspólny".
+Wynikające z tego zadania dla modułu — wszystkie drobne:
+
+- Plan i lista dostają `created_by` / `updated_by` wyłącznie do audytu, nie do
+  kontroli dostępu.
+- Flagę `is_public` przy przepisach można uprościć do „mój / wspólny", bo
+  „publiczny" w obrębie jednego domu znaczy „wspólny". Osobna zmiana, poza
+  zakresem ADR-002.
 
 Poza tym moduł jest zamrożony: żadnych ról, uprawnień ani mechanizmów kont bez
 konkretnej potrzeby produktowej.

@@ -44,20 +44,24 @@ posiłków; ręczne dopisanie pozycji zostaje jako wyjątek.
 
 Sprint 1 przebudowuje moduł w trzech ruchach:
 
-1. **Serwerowa trwałość** — lista per gospodarstwo/użytkownik w bazie, z
-   jednorazową migracją zawartości `localStorage` przy pierwszym uruchomieniu
-   (użytkownik nie może stracić bieżącej listy).
+1. **Serwerowa trwałość** — jedna wspólna lista dla instancji
+   ([ADR-002](../decisions/ADR-002.md)), z jednorazową migracją zawartości
+   `localStorage` przy pierwszym uruchomieniu (użytkownik nie może stracić
+   bieżącej listy).
 2. **Generowanie z planu** — jedno kliknięcie „Generuj listę z planu"
    zastępuje przeklikiwanie przepisów. Ręczne dodawanie zostaje.
-3. **Uczciwa agregacja** (decyzja D-3): sumowanie tylko przy zgodnej jednostce
-   i zgodnej nazwie; wszystko inne trafia jako osobne pozycje z widocznym
-   tekstem źródłowym. Lepiej pokazać dwie pozycje niż skłamać jedną.
+3. **Uczciwa agregacja** ([ADR-003](../decisions/ADR-003.md)): sumowanie tylko
+   przy zgodnej nazwie i zgodnej jednostce; różne jednostki trafiają jako
+   osobne pozycje z widocznym tekstem źródłowym, a każda pozycja pamięta, z
+   których przepisów pochodzi. Lepiej pokazać dwie pozycje prawdziwe niż jedną
+   zmyśloną.
 
 Tryb zakupów zostaje bez zmian — jest wzorcem dla reszty produktu, nie
 kandydatem do przeprojektowania.
 
-Sortowanie po działach sklepu i scalanie aliasów („pomidor"/„pomidory") wchodzą
-dopiero po tym, jak lista będzie serwerowa — patrz [Składniki](ingredients.md).
+Sortowanie po działach sklepu i scalanie aliasów („pomidor"/„pomidory") są
+świadomie poza v1 ([ADR-003](../decisions/ADR-003.md)) i wchodzą dopiero po
+tym, jak lista będzie serwerowa — patrz [Składniki](ingredients.md).
 
 ## Source Of Truth
 

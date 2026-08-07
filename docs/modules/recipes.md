@@ -42,7 +42,9 @@ wielolinijkowymi składnikami.
   `PATCH /api/v1/recipes/{id}/visibility` istnieje, ale żadna ścieżka UI go nie
   wywołuje — to martwy kod obok zepsutej funkcji.
 - **Brak porcji, czasu przygotowania i czasu gotowania** w modelu, mimo że
-  formularz importu te dane zbiera (i po zapisie wyrzuca).
+  formularz importu te dane zbiera (i po zapisie wyrzuca). Rozstrzygnięte —
+  [ADR-004](../decisions/ADR-004.md) nakazuje je utrwalić; wdrożenie w
+  Sprincie 1.
 - **Składniki i instrukcje to wolny tekst.** Instrukcje są przekazywane przez
   atrybut HTML `data-instructions`, co jest kruche dla długich treści i
   uniemożliwia widok kroków.
@@ -58,8 +60,10 @@ Moduł jest **utrzymywany, nie rozbudowywany**. Trzy rzeczy do zrobienia,
 wszystkie w kategorii „napraw obietnicę", nie „dodaj funkcję":
 
 1. Jedna, działająca kontrolka widoczności; usunięcie drugiej drogi.
-2. Kolumny `servings` / `prep_time` / `cook_time` albo usunięcie tych pól z
-   importu (decyzja D-4) — dane potrzebne później do skalowania porcji.
+2. Kolumny `servings` (tekst), `prep_time_minutes` i `cook_time_minutes` —
+   [ADR-004](../decisions/ADR-004.md). Te same pola wchodzą do formularza
+   ręcznego dodawania i edycji: przepis dodany ręcznie nie może być uboższy niż
+   zaimportowany.
 3. Instrukcje jako lista kroków zamiast pola tekstowego w atrybucie HTML.
 
 Filtry i tagi wchodzą dopiero wtedy, gdy rozmiar katalogu je uzasadni.

@@ -48,6 +48,12 @@ Warunek odmrożenia: **istnieje serwerowa lista zakupów generowana z planu**
 (Sprint 1). Dopóki go nie ma, każda praca tutaj powiększa powierzchnię
 utrzymania bez wartości dla użytkownika.
 
+Zamrożenie zostało potwierdzone decyzją
+[ADR-003](../decisions/ADR-003.md): agregacja v1 opiera się na dokładnym
+dopasowaniu nazwy i jednostki, więc Sprint 1 **nie potrzebuje** ani konwersji
+jednostek, ani aliasów, ani sekcji sklepowych. Odmrożenie tego modułu będzie
+wymagało nowego ADR-a rozszerzającego ADR-003.
+
 Kolejność po odmrożeniu:
 
 1. `/api/v1/ingredients/*` + minimalne UI mapowania składnika na słownik

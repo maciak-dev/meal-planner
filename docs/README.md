@@ -21,7 +21,8 @@ North Star → Vision → Modules → Integrations → Architecture → Operatio
    wyjściowy i diagnoza
 4. [Roadmap](product/roadmap.md) — Sprint 0, Sprint 1, decyzje do podjęcia
 5. [Backlog](product/backlog.md)
-6. [Integracja z MAP](integrations/map.md) — granice i kontrakt
+6. [Rejestr decyzji](decisions/README.md) — ADR-001 … ADR-004
+7. [Integracja z MAP](integrations/map.md) — granice i kontrakt
 
 ## Modules
 
@@ -39,6 +40,16 @@ North Star → Vision → Modules → Integrations → Architecture → Operatio
 ## Product
 
 - [Projekt dashboardu](product/dashboard.md) — specyfikacja wejściowa Sprintu 2
+
+## Decisions
+
+- [Rejestr decyzji](decisions/README.md)
+- [ADR-001](decisions/ADR-001.md) — jeden slot posiłkowy dziennie w v1
+- [ADR-002](decisions/ADR-002.md) — plan i lista należą do gospodarstwa, nie do
+  użytkownika
+- [ADR-003](decisions/ADR-003.md) — agregacja tylko przy zgodnej nazwie i
+  jednostce
+- [ADR-004](decisions/ADR-004.md) — porcje i czasy utrwalane w modelu przepisu
 
 ## Architecture
 
@@ -70,8 +81,9 @@ zaakceptowaniu tamtej zmiany:
 
 - `docs/architecture/recipe-import.md`
 - `docs/architecture/ingredient-model.md`
-- `docs/decisions/recipe-translations.md`
-- `docs/decisions/ingredient-normalization.md`
+- `docs/decisions/recipe-translations.md` — do przenumerowania na **ADR-005**
+- `docs/decisions/ingredient-normalization.md` — do przenumerowania na
+  **ADR-006**
 - `docs/handoffs/i18n-recipe-import-ingredients.md`
 - `docs/product/bilingual-recipe-import.md`
 - `docs/audits/meal-planner-production-rollout-ready-2026-08-05.md`
@@ -81,14 +93,14 @@ zaakceptowaniu tamtej zmiany:
 - Kierunek produktu: [north-star.md](north-star.md)
 - Aktywny plan: [product/roadmap.md](product/roadmap.md)
 - Priorytetyzowany backlog: [product/backlog.md](product/backlog.md)
+- Decyzje: [decisions/README.md](decisions/README.md)
 - Granice wobec MAP: [integrations/map.md](integrations/map.md)
 - Dokumentacja modułów: [modules/](modules/README.md)
 
 ## Zasady dokumentacji
 
-1. `product/roadmap.md`, `product/backlog.md` i katalog `decisions/` (wraca do
-   tej hierarchii razem z branchem `feature/i18n-recipe-import-ingredients`)
-   pozostają jedynym źródłem prawdy dla aktywnego planu, backlogu i decyzji.
+1. `product/roadmap.md`, `product/backlog.md` i `decisions/` pozostają jedynym
+   źródłem prawdy dla aktywnego planu, backlogu i decyzji.
 2. Każdy nowy moduł dostaje dokument w `modules/`.
 3. Dokumenty aktywne mają `status` i `last_updated` we frontmatterze.
 4. Nie utrzymujemy dwóch źródeł prawdy dla tego samego aktywnego tematu.

@@ -43,12 +43,14 @@ Legenda celu NS: **1** = decyzja, **2** = zakupy, **3** = katalog.
 - Dependencies: RC po migracji, smoke na RC
 - Links: [Recipe Import](../modules/recipe-import.md)
 
-### Cztery decyzje produktowe blokujące Sprint 1 (D-1…D-4)
+### ~~Cztery decyzje produktowe blokujące Sprint 1 (D-1…D-4)~~
 
 - Value: bez nich model planu i listy zakupów nie da się zaprojektować.
 - Cel NS: 1, 2
-- Status: Decision needed
-- Links: [Roadmap — Decyzje do podjęcia](roadmap.md#decyzje-do-podjęcia-blokują-sprint-1)
+- Status: **Done (2026-08-07)** — [ADR-001](../decisions/ADR-001.md),
+  [ADR-002](../decisions/ADR-002.md), [ADR-003](../decisions/ADR-003.md),
+  [ADR-004](../decisions/ADR-004.md)
+- Links: [Rejestr decyzji](../decisions/README.md)
 
 ---
 
@@ -75,7 +77,7 @@ Legenda celu NS: **1** = decyzja, **2** = zakupy, **3** = katalog.
 - Value: lista przestaje ginąć między laptopem a telefonem — dziś to unieważnia najlepiej zrobiony moduł aplikacji.
 - Cel NS: 2
 - Status: Planned (Sprint 1)
-- Dependencies: jednorazowa migracja istniejącego `localStorage`
+- Dependencies: jednorazowa migracja istniejącego `localStorage`; jedna wspólna lista wg [ADR-002](../decisions/ADR-002.md)
 - Links: [Shopping List module](../modules/shopping-list.md)
 
 ### Generowanie listy zakupów z planu
@@ -83,15 +85,23 @@ Legenda celu NS: **1** = decyzja, **2** = zakupy, **3** = katalog.
 - Value: zamienia ~40–70 interakcji tygodniowo w jedno kliknięcie.
 - Cel NS: 1, 2
 - Status: Planned (Sprint 1)
-- Dependencies: model planu, serwerowa lista, D-3
+- Dependencies: model planu, serwerowa lista, reguła agregacji z [ADR-003](../decisions/ADR-003.md)
 - Links: [Shopping List module](../modules/shopping-list.md)
+
+### Kolumny `servings`, `prep_time_minutes`, `cook_time_minutes`
+
+- Value: import przestaje wyrzucać dane użytkownika (P-3); dashboard może pokazać „45 min · 4 porcje"; skalowanie porcji dostaje podstawę.
+- Cel NS: 1, 3
+- Status: Planned (Sprint 1) — [ADR-004](../decisions/ADR-004.md)
+- Dependencies: migracja Alembic; kolejność względem branchu `feature/i18n-recipe-import-ingredients`
+- Links: [Recipes module](../modules/recipes.md), [Recipe Import module](../modules/recipe-import.md)
 
 ### Naprawa kontrolek, które kłamią
 
-- Value: widoczność przepisu (P-1, P-2), pola porcji i czasów w imporcie (P-3), usunięcie martwego „Składniki" (P-5). Najtańsza poprawa zaufania do interfejsu.
+- Value: widoczność przepisu (P-1, P-2) i usunięcie martwego „Składniki" (P-5). Najtańsza poprawa zaufania do interfejsu.
 - Cel NS: 3
 - Status: Planned (Sprint 1)
-- Dependencies: D-4 dla pól porcji/czasów
+- Dependencies: brak; P-3 (porcje i czasy) obsługuje osobna pozycja wg [ADR-004](../decisions/ADR-004.md)
 - Links: [Audyt — sekcja 4.3](../audits/product-audit-2026-08-07.md)
 
 ### Dashboard „co dzisiaj?"

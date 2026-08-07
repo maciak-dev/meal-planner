@@ -48,6 +48,9 @@ dla celu 1 — plan jest tyle wart, ile katalog, z którego się go składa.
   wyrzucane.** Schemat `RecipeImportConfirmRequest` je waliduje,
   `create_recipe_from_import()` ich nie zapisuje, bo model `Recipe` nie ma
   takich kolumn. Użytkownik traci dane bez ostrzeżenia (P-3 w audycie).
+  Rozstrzygnięte — [ADR-004](../decisions/ADR-004.md): pola zostają i są
+  utrwalane, a `total_time` znika z kontraktu `confirm`, bo formularz go nie
+  pokazuje.
 - Zaimportowany przepis jest zawsze prywatny i — dopóki widoczność w UI jest
   zepsuta — nie da się go upublicznić.
 - Przełącznik „zapisz składniki jako relacyjne" pokazuje użytkownikowi decyzję

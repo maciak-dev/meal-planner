@@ -26,17 +26,18 @@ pamięta, które z nich „są na ten tydzień".
 Kształt v1 — celowo minimalny, bo produkt konkuruje z kartką i przegrywa
 liczbą kliknięć, nie brakiem opcji:
 
-- **Jednostka planu to dzień, nie posiłek.** V1 zakłada jeden slot dziennie
-  (obiad) — decyzja D-1 w [roadmapie](../product/roadmap.md). Trzy sloty można
-  dodać później bez łamania modelu; odwrotna droga jest droższa.
+- **Jednostka planu to dzień, nie posiłek.** V1 ma jeden slot dziennie (obiad) —
+  [ADR-001](../decisions/ADR-001.md). Trzy sloty można dodać później bez łamania
+  modelu; odwrotna droga jest droższa.
 - **Tydzień jest widokiem, nie bytem.** Plan to zbiór wpisów `data → przepis`.
   Tydzień w UI to zakres siedmiu dni, nie osobna encja z cyklem życia.
 - **Wpis planu może być pusty albo tekstowy.** „Obiad u rodziców" i „zostało z
   wczoraj" to prawidłowe wpisy. Plan, który akceptuje tylko przepisy z katalogu,
   zostanie porzucony po dwóch tygodniach.
-- **Plan jest własnością gospodarstwa domowego, nie użytkownika** (decyzja D-2).
-  Dziś przepisy mają właściciela i flagę publiczności; plan wymaga pojęcia
-  wspólnoty domowej albo świadomej decyzji, że jest jeden plan na instancję.
+- **Jeden wspólny plan dla instancji** — [ADR-002](../decisions/ADR-002.md).
+  Każdy zalogowany użytkownik widzi i edytuje ten sam plan; nie ma planów per
+  użytkownik ani encji gospodarstwa domowego. Autorstwo przepisów pozostaje
+  osobną osią.
 - **Z planu prowadzą dokładnie dwie akcje**: „Generuj listę zakupów" i „Gotuj"
   (otwórz przepis).
 - **Kopiowanie poprzedniego tygodnia** jest funkcją pierwszej klasy, nie
@@ -51,8 +52,9 @@ dopiero, gdy plan udowodni, że jest używany.
 - **Blokuje**: [Dashboard](dashboard.md),
   [generowanie listy zakupów](shopping-list.md),
   [kontrakt dla MAP](../integrations/map.md).
-- **Jest blokowany przez**: decyzje D-1 (liczba slotów) i D-2 (własność planu)
-  z [roadmapy](../product/roadmap.md).
+- **Był blokowany przez**: decyzje D-1 (liczba slotów) i D-2 (własność planu) —
+  obie podjęte 2026-08-07, [ADR-001](../decisions/ADR-001.md) i
+  [ADR-002](../decisions/ADR-002.md). Moduł nie ma już blokad produktowych.
 
 ## Source Of Truth
 

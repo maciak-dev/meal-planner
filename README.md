@@ -1,6 +1,8 @@
 # 🍽️ Meal Planner
 
-Simple recipe manager built with **FastAPI**, **SQLAlchemy**, and **JWT authentication**.
+**Plan meals. Build the shopping list. Know what's for dinner.**
+
+Built with **FastAPI**, **SQLAlchemy**, and **JWT authentication**.
 
 GitHub: [https://github.com/maciak-dev/meal-planner](https://github.com/maciak-dev/meal-planner)
 

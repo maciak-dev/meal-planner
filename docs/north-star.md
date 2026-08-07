@@ -104,6 +104,7 @@ Wszystko inne czeka w backlogu.
 - Aktywna roadmapa: [product/roadmap.md](product/roadmap.md)
 - Backlog: [product/backlog.md](product/backlog.md)
 - Portfolio modułów: [modules/README.md](modules/README.md)
+- Rejestr decyzji: [decisions/README.md](decisions/README.md)
 - Integracja z MAP: [integrations/map.md](integrations/map.md)
 - Propozycja dashboardu: [product/dashboard.md](product/dashboard.md)
 - Audyt produktowy: [audits/product-audit-2026-08-07.md](audits/product-audit-2026-08-07.md)

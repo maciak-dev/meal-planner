@@ -48,20 +48,28 @@ funkcjami.
    - domknąć decyzję o wdrożeniu importu przepisu na produkcję,
    - zdecydować, czy branch `feature/i18n-recipe-import-ingredients` idzie do
      `main`.
-4. Podjąć cztery decyzje produktowe blokujące Sprint 1 (patrz „Decyzje do
-   podjęcia" poniżej).
+4. ~~Podjąć cztery decyzje produktowe blokujące Sprint 1.~~ **Zrobione
+   2026-08-07** — [ADR-001](../decisions/ADR-001.md) …
+   [ADR-004](../decisions/ADR-004.md).
+5. Zaktualizować tagline produktu tak, by nie przeczył North Star.
+   **Zrobione 2026-08-07** — `README.md`.
 
 ## Następnie
 
 **Sprint 1 — Tydzień i lista zakupów.** Moment, w którym nazwa produktu staje
 się prawdziwa.
 
-- Model planu: tydzień → dzień → posiłek (jeden slot na dzień w v1).
-- Ekran planu tygodnia z przypisywaniem przepisu do dnia.
-- Serwerowa lista zakupów per użytkownik (koniec `localStorage`).
-- Generowanie listy zakupów z planu, z sensowną agregacją ilości.
-- Naprawa kontrolek, które dziś kłamią: widoczność przepisu, pola porcji/czasów
-  w imporcie, usunięcie martwej pozycji „Składniki" z menu.
+- Model planu: `data → przepis albo tekst`, jeden wpis na dzień
+  ([ADR-001](../decisions/ADR-001.md)), wspólny dla instancji
+  ([ADR-002](../decisions/ADR-002.md)).
+- Ekran planu tygodnia — siedem pól, kopiowanie poprzedniego tygodnia.
+- Serwerowa lista zakupów, jedna wspólna, z jednorazową migracją zawartości
+  `localStorage`.
+- Generowanie listy z planu z agregacją wg [ADR-003](../decisions/ADR-003.md).
+- Kolumny `servings` / `prep_time_minutes` / `cook_time_minutes` i zapisywanie
+  ich przy imporcie ([ADR-004](../decisions/ADR-004.md)).
+- Naprawa kontrolek, które dziś kłamią: widoczność przepisu, usunięcie martwej
+  pozycji „Składniki" z menu.
 
 **Sprint 2 — Dashboard i integracja.**
 
@@ -104,18 +112,21 @@ się prawdziwa.
   Powód: łamie ADR-001 i ADR-007 po stronie MAP oraz izolację działającej
   produkcji.
 
-## Decyzje do podjęcia (blokują Sprint 1)
+## Decyzje odblokowujące Sprint 1 — podjęte
 
-| # | Decyzja | Dlaczego blokuje |
+Wszystkie cztery decyzje zapadły przy przeglądzie Sprintu 0 (2026-08-07).
+Sprint 1 nie ma już blokad produktowych.
+
+| # | Decyzja | Rozstrzygnięcie |
 |---|---|---|
-| D-1 | Ile slotów posiłkowych na dzień w v1: **jeden (obiad)** czy trzy (śniadanie/obiad/kolacja)? | Determinuje model danych, ekran planu i złożoność generowania listy |
-| D-2 | Czy plan jest **wspólny dla gospodarstwa** czy per użytkownik? | Dziś przepisy są per użytkownik z flagą publiczny; plan wspólny wymaga pojęcia gospodarstwa domowego |
-| D-3 | Jak agregujemy ilości w liście zakupów w v1: **sumowanie tylko przy zgodnej jednostce, reszta jako osobne pozycje** czy pełna normalizacja jednostek? | Decyduje, czy Ingredient Engine jest potrzebny w Sprincie 1, czy dopiero później |
-| D-4 | Czy `Recipe` dostaje kolumny `servings` / `prep_time` / `cook_time`, czy usuwamy te pola z formularza importu? | Dziś dane są zbierane i wyrzucane (P-3 w audycie); stan pośredni jest niedopuszczalny |
+| D-1 | Liczba slotów posiłkowych na dzień | **Jeden — obiad.** Slot nie jest osobną encją; wpis może być tekstowy. [ADR-001](../decisions/ADR-001.md) |
+| D-2 | Własność planu | **Jeden wspólny plan i jedna wspólna lista dla instancji.** Bez planów per użytkownik i bez multi-tenancy. [ADR-002](../decisions/ADR-002.md) |
+| D-3 | Agregacja składników | **Sumowanie tylko przy zgodnej nazwie i zgodnej jednostce**; różne jednostki dają osobne pozycje. Bez konwersji i bez aliasów w v1. [ADR-003](../decisions/ADR-003.md) |
+| D-4 | Porcje i czasy | **Utrwalane w modelu**: `servings` (tekst), `prep_time_minutes`, `cook_time_minutes`. `total_time` znika z formularza zatwierdzania. [ADR-004](../decisions/ADR-004.md) |
 
-Rekomendacja: D-1 → jeden slot, D-2 → wspólny dla gospodarstwa, D-3 → tylko
-zgodne jednostki, D-4 → dodać kolumny (dane są potrzebne dla skalowania porcji
-i dla dashboardu).
+Najważniejsza konsekwencja łączna: **Sprint 1 nie potrzebuje Ingredient
+Engine.** ADR-003 świadomie odracza konwersję jednostek i scalanie aliasów, co
+utrzymuje zakres Sprintu 1 przy planie i liście zakupów.
 
 ## Ryzyka i blokady
 
