@@ -2,6 +2,8 @@
 
 Data aktualizacji: 2026-08-04
 
+> Aktualny stan operacyjny i ograniczenia zmian opisuje [Production Guardrails](production-guardrails.md). Ten dokument zawiera również informacje historyczne i nie zastępuje obserwacji z VPS.
+
 ## Stan bieżący
 
 - Checkout: `/var/www/meal-planner`

@@ -72,6 +72,7 @@ Swagger UI:
 - Keep production and RC on separate databases.
 - Never commit real `.env` files or secrets.
 - Use SQLite only when it is explicitly configured for local development.
+- Before changing deployment, domains, database, volumes, authentication, cookies, reverse proxy, or persistent data, read [Production Guardrails](docs/operations/production-guardrails.md).
 
 License
 
