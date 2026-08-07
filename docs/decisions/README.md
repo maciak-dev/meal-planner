@@ -15,9 +15,11 @@ obowiązywać, dostaje status `Superseded` i wskazanie następcy.
 | [ADR-002](ADR-002.md) | Plan i lista zakupów należą do gospodarstwa domowego, nie do użytkownika | Accepted | 2026-08-07 | Produkt, model danych, dostęp |
 | [ADR-003](ADR-003.md) | Lista zakupów sumuje wyłącznie identyczny składnik przy zgodnej jednostce | Accepted | 2026-08-07 | Produkt, lista zakupów |
 | [ADR-004](ADR-004.md) | Porcje i czasy są utrwalane w modelu przepisu | Accepted | 2026-08-07 | Produkt, model przepisu, import |
+| [ADR-005](ADR-005.md) | Integracja z MAP jest kontraktem read-only w wersji 1 | Accepted | 2026-08-07 | Produkt, integracje, granice systemów |
 
 ADR-001 … ADR-004 to cztery decyzje odblokowujące Sprint 1, podjęte przy
-przeglądzie Sprintu 0. Ich kontekst opisuje
+przeglądzie Sprintu 0. ADR-005 zamyka piąty deliverable Sprintu 0 — granice
+wobec MAP. Kontekst opisuje
 [audyt produktowy](../audits/product-audit-2026-08-07.md), a skutki są
 odzwierciedlone w [roadmapie](../product/roadmap.md) i dokumentach modułów.
 
@@ -32,9 +34,11 @@ wprowadzenia numeracji ADR:
 - `docs/decisions/ingredient-normalization.md` — zakres normalizacji
   składników i sekcje sklepowe w V1
 
-Przy przyjmowaniu tamtego brancha należy je przenumerować na **ADR-005** i
-**ADR-006**, uzupełnić o frontmatter zgodny z pozostałymi i dopisać do tabeli
-powyżej. Do tego czasu ten katalog nie jest kompletnym rejestrem decyzji
+Przy przyjmowaniu tamtego brancha należy je przenumerować na **ADR-006** i
+**ADR-007**, uzupełnić o frontmatter zgodny z pozostałymi i dopisać do tabeli
+powyżej. Numeracja idzie według daty przyjęcia decyzji, a nie według daty
+powstania dokumentu — dlatego numery 006/007, mimo że decyzje zapadły
+wcześniej. Do tego czasu ten katalog nie jest kompletnym rejestrem decyzji
 projektu.
 
 ## Zasady

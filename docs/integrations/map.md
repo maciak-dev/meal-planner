@@ -1,9 +1,12 @@
 ---
-status: Proposed — kontrakt do zatwierdzenia w Sprincie 0, implementacja w Sprincie 2
+status: Accepted — kontrakt v1 zatwierdzony 2026-08-07, implementacja w Sprincie 2
 last_updated: 2026-08-07
 ---
 
 # Integracja z MAP
+
+Decyzja: [ADR-005](../decisions/ADR-005.md). Ten dokument jest kształtem
+kontraktu; ADR-005 jest zapisem, dlaczego wygląda właśnie tak.
 
 ## Zasada nadrzędna
 
@@ -197,9 +200,10 @@ z pulpitu MAP.
 
 Kolejność:
 
-1. **Sprint 0** — zatwierdzenie tego dokumentu jako deklaracji kontraktu;
+1. ~~**Sprint 0** — zatwierdzenie tego dokumentu jako deklaracji kontraktu.~~
+   **Zrobione 2026-08-07** ([ADR-005](../decisions/ADR-005.md)). Pozostaje
    zgłoszenie do backlogu MAP, że zależność „kontrakt statusu po stronie Meal
-   Plannera" ma właściciela i kształt.
+   Plannera" ma właściciela, kształt i status.
 2. **Sprint 1** — powstaje plan i serwerowa lista zakupów, czyli dane, które
    kontrakt ma wystawić.
 3. **Sprint 2** — implementacja `GET /api/v1/integration/summary`, token

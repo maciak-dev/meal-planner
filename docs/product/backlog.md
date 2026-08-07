@@ -116,7 +116,7 @@ Legenda celu NS: **1** = decyzja, **2** = zakupy, **3** = katalog.
 
 - Value: MAP pokazuje „co dziś na obiad" i „ile zostało do kupienia" bez wchodzenia do Meal Plannera; zamyka zależność z backlogu MAP.
 - Cel NS: 1, 2
-- Status: Planned (Sprint 2)
+- Status: Planned (Sprint 2) — kontrakt zatwierdzony [ADR-005](../decisions/ADR-005.md)
 - Dependencies: dane dashboardu, token serwisowy
 - Links: [Integracja z MAP](../integrations/map.md)
 

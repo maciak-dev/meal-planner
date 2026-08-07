@@ -40,9 +40,10 @@ funkcjami.
 
 1. Przyjąć [North Star](../north-star.md) i [Vision](../product/vision.md) jako
    obowiązujące kryterium przyjmowania zadań do sprintów.
-2. Przyjąć [kontrakt integracyjny dla MAP](../integrations/map.md) jako
-   deklarację (implementacja: Sprint 2) i zgłosić go do backlogu MAP jako
-   spełnioną zależność „kontrakt statusu po stronie Meal Plannera".
+2. ~~Przyjąć [kontrakt integracyjny dla MAP](../integrations/map.md).~~
+   **Zrobione 2026-08-07** — [ADR-005](../decisions/ADR-005.md), kontrakt v1
+   read-only; implementacja w Sprincie 2. Pozostaje zgłoszenie do backlogu MAP
+   spełnionej zależności „kontrakt statusu po stronie Meal Plannera".
 3. Zamknąć wiszące elementy poprzedniej pracy:
    - uruchomić migrację `69eea78ac02c` na RC (jedyna niewykonana),
    - domknąć decyzję o wdrożeniu importu przepisu na produkcję,

@@ -50,6 +50,8 @@ North Star → Vision → Modules → Integrations → Architecture → Operatio
 - [ADR-003](decisions/ADR-003.md) — agregacja tylko przy zgodnej nazwie i
   jednostce
 - [ADR-004](decisions/ADR-004.md) — porcje i czasy utrwalane w modelu przepisu
+- [ADR-005](decisions/ADR-005.md) — integracja z MAP jako kontrakt read-only
+  w v1
 
 ## Architecture
 
