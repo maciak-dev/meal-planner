@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ lang }}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Login - Recipe Manager</title>
+<title>{{ t('login.button', lang) }} - {{ t('app.title', lang) }}</title>
 
 <!-- FAVICONS -->
 <link rel="icon" type="image/png" sizes="16x16" href="static/favicon-16.png">
@@ -16,7 +16,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@400;500;600&display=swap" rel="stylesheet">
 
 <!-- CSS -->
-<link rel="stylesheet" href="/static/main.css"> 
+<link rel="stylesheet" href="/static/main.css">
 <link rel="stylesheet" href="/static/themes.css">
 <link rel="stylesheet" href="/static/login.css">
 
@@ -24,16 +24,33 @@
 
 <body class="login">
 <form class="login-form" method="post" action="/login">
-    <button type="button" class="theme-btn" onclick="toggleTheme()">Switch Theme</button>
+    {# Przełącznik języka jest osobnym formularzem POST, więc nie może być
+       zagnieżdżony w formularzu logowania - stąd renderowanie go obok, a
+       pozycjonowanie w rogu przez CSS. #}
+    <button type="button" class="theme-btn" onclick="toggleTheme()">{{ t('login.switch_theme', lang) }}</button>
 
     {% if error %}
     <div class="error">{{ error }}</div>
     {% endif %}
 
-    <input type="text" name="username" placeholder="Username" required>
-    <input type="password" name="password" placeholder="Password" required>
-    <button type="submit" class="login-btn">Login</button>
+    <input type="text" name="username" placeholder="{{ t('login.username_placeholder', lang) }}" required>
+    <input type="password" name="password" placeholder="{{ t('login.password_placeholder', lang) }}" required>
+    <button type="submit" class="login-btn">{{ t('login.button', lang) }}</button>
 </form>
+
+<div class="login-lang-switch">
+    <form class="lang-switch" method="post" action="/set-lang" aria-label="{{ t('lang.label', lang) }}">
+        <button type="submit" name="code" value="pl"
+                class="lang-option {% if lang == 'pl' %}active{% endif %}"
+                {% if lang == 'pl' %}aria-current="true"{% endif %}>{{ t('lang.switch_to_pl', lang) }}</button>
+        <button type="submit" name="code" value="en"
+                class="lang-option {% if lang == 'en' %}active{% endif %}"
+                {% if lang == 'en' %}aria-current="true"{% endif %}>{{ t('lang.switch_to_en', lang) }}</button>
+    </form>
+    {# Jawnie, zanim użytkownik zdąży się nabrać: przełącznik dotyczy
+       interfejsu, nie treści przepisów. #}
+    <p class="lang-scope-note">{{ t('lang.scope_note', lang) }}</p>
+</div>
 
 <script>
 // THEME FUNCTIONS

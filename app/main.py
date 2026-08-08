@@ -15,6 +15,14 @@ from app.core.database import Base, engine, get_db, SessionLocal
 from app.core.bootstrap import initialize_database_schema
 from app.core.config import COOKIE_SECURE
 from app.core import security
+from app.core.i18n import (
+    LANG_COOKIE_NAME,
+    SUPPORTED_LANGUAGES,
+    js_translations,
+    resolve_language,
+    t,
+)
+from app.core.redirects import safe_local_return_path
 from app.core.request_log_middleware import RequestLogMiddleware
 from app.core.middleware import IPBlockMiddleware
 
@@ -62,6 +70,9 @@ initialize_database_schema()
 # STATIC & TEMPLATES
 # =========================
 templates = Jinja2Templates(directory="app/templates")
+# `t` jako global Jinja: szablony wołają t('klucz', lang) bez przekazywania
+# helpera w każdym kontekście z osobna.
+templates.env.globals["t"] = t
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 
@@ -94,11 +105,12 @@ def root(
 # =========================
 @app.get("/login")
 def login_page(request: Request):
-    ##return templates.TemplateResponse("login.html", {"request": request})
+    # Bez `user` - ekran logowania obsługuje osobę niezalogowaną, więc język
+    # bierze się z cookie albo z Accept-Language.
     return templates.TemplateResponse(
     request=request,
     name="login.html",
-    context={}
+    context={"lang": resolve_language(request)}
 )
 @app.post("/login")
 def login(
@@ -112,11 +124,13 @@ def login(
 
     user = login_user(db, username, password, ip, agent)
     if not user:
+        lang = resolve_language(request)
         return templates.TemplateResponse(
     request=request,
     name="login.html",
     context={
-        "error": "Invalid credentials"
+        "lang": lang,
+        "error": t("login.invalid_credentials", lang)
     },
     status_code=401
 )
@@ -137,6 +151,51 @@ def login(
 def logout():
     response = RedirectResponse(url="/login", status_code=302)
     response.delete_cookie("access_token", path="/")
+    return response
+
+
+@app.post("/set-lang", include_in_schema=False)
+def set_lang(
+    request: Request,
+    code: str = Form(...),
+    db: Session = Depends(get_db),
+    user=Depends(security.get_current_user_optional),
+):
+    """Przełącza język interfejsu.
+
+    POST, nie GET, mimo że zmiana języka wygląda niewinnie. Ten endpoint
+    zapisuje `users.language`, czyli mutuje stan — a `SameSite=Lax` wysyła
+    cookie sesji przy nawigacji GET najwyższego poziomu, więc jako GET dałby
+    się wywołać zwykłym linkiem z obcej strony. Cross-site POST cookie `Lax`
+    nie dostaje, więc zapis do bazy jest nieosiągalny z zewnątrz.
+
+    Działa też dla osoby niezalogowanej — wtedy zapisuje wyłącznie cookie,
+    żeby ekran logowania dało się przełączyć przed zalogowaniem.
+    """
+    if code not in SUPPORTED_LANGUAGES:
+        raise HTTPException(status_code=400, detail="Unsupported language")
+
+    if user is not None:
+        user.language = code
+        db.commit()
+
+    # Wracamy tam, skąd użytkownik przyszedł - Referer jest sterowany przez
+    # klienta, więc przepuszczamy go przez walidację same-origin.
+    response = RedirectResponse(
+        url=safe_local_return_path(
+            request.headers.get("referer"),
+            allowed_netloc=request.url.netloc,
+        ),
+        status_code=303,  # POST -> GET, żeby odświeżenie nie ponawiało zapisu
+    )
+    response.set_cookie(
+        key=LANG_COOKIE_NAME,
+        value=code,
+        httponly=False,  # czytane też przez JS przy wyborze wariantu tekstu
+        samesite="lax",
+        secure=COOKIE_SECURE,
+        path="/",
+    )
     return response
 
 @app.get("/auth/me")
@@ -210,13 +269,19 @@ def recipes_ui(
         for i in db.query(Ingredient).all()
     }
 
+    lang = resolve_language(request, user)
+
     return templates.TemplateResponse(
     request=request,
     name="recipes.html",
     context={
         "user": user,
         "recipes": recipes,
-        "ingredients_map": ingredients_map
+        "ingredients_map": ingredients_map,
+        "lang": lang,
+        # Ten sam słownik, z którego korzysta Jinja - front nie ma własnej
+        # kopii stringów.
+        "js_translations": js_translations(lang)
     }
 )
 
