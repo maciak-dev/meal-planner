@@ -100,12 +100,12 @@ class RecipeDeleteCascadeTests(unittest.TestCase):
         self.db.commit()
         return translation
 
-    def _add_structured_ingredient(self, recipe, text: str = "2 lyzki oliwy"):
+    def _add_structured_ingredient(self, recipe, text: str = "2 lyzki oliwy", ingredient_id: int | None = None):
         from app.db.models.recipe_ingredient import RecipeIngredient
 
         item = RecipeIngredient(
             recipe_id=recipe.id,
-            ingredient_id=None,
+            ingredient_id=ingredient_id,
             original_text=text,
             parsed_name="oliwa",
             quantity=2,
@@ -116,6 +116,15 @@ class RecipeDeleteCascadeTests(unittest.TestCase):
         self.db.add(item)
         self.db.commit()
         return item
+
+    def _add_ingredient(self, name: str = "czosnek"):
+        from app.db.models.ingredient import Ingredient
+
+        ingredient = Ingredient(name=name, is_essential=True)
+        self.db.add(ingredient)
+        self.db.commit()
+        self.db.refresh(ingredient)
+        return ingredient
 
     def _counts(self, recipe_id: int):
         from app.db.models.recipe_ingredient import RecipeIngredient
@@ -204,6 +213,61 @@ class RecipeDeleteCascadeTests(unittest.TestCase):
 
         self.assertEqual(self._counts(survivor_id), (1, 1))
         self.assertIsNotNone(recipe_service.get_recipe_by_id(self.db, survivor_id))
+
+    def test_delete_recipe_keeps_the_normalized_ingredient(self) -> None:
+        """Kaskada nie może sięgnąć do słownika składników.
+
+        `recipe_ingredients.ingredient_id` celowo NIE ma ON DELETE CASCADE -
+        wskazuje na znormalizowany wpis współdzielony przez wiele przepisów.
+        Usunięcie przepisu ma skasować jego pozycje składników, ale sam
+        `Ingredient` musi zostać: inaczej usunięcie jednego przepisu wycinałoby
+        słownik spod wszystkich pozostałych.
+        """
+        from app.db.models.ingredient import Ingredient
+        from app.services import recipe_service
+
+        ingredient = self._add_ingredient("czosnek")
+        ingredient_id = ingredient.id
+
+        recipe = self._make_recipe()
+        self._add_translation(recipe, "pl")
+        self._add_structured_ingredient(recipe, "1 zabek czosnku", ingredient_id=ingredient_id)
+        recipe_id = recipe.id
+        self.assertEqual(self._counts(recipe_id), (1, 1))
+
+        recipe_service.delete_recipe(self.db, recipe, self.user)
+
+        # Dzieci przepisu znikają...
+        self.assertIsNone(recipe_service.get_recipe_by_id(self.db, recipe_id))
+        self.assertEqual(self._counts(recipe_id), (0, 0))
+
+        # ...a znormalizowany składnik zostaje nietknięty.
+        survivor = self.db.query(Ingredient).filter(Ingredient.id == ingredient_id).first()
+        self.assertIsNotNone(survivor, "Ingredient zniknął razem z przepisem")
+        self.assertEqual(survivor.name, "czosnek")
+        self.assertTrue(survivor.is_essential)
+        self.assertEqual(self.db.query(Ingredient).count(), 1)
+
+    def test_ingredient_shared_by_two_recipes_survives_deleting_one(self) -> None:
+        """Wariant, w którym błąd bolałby najbardziej: ten sam składnik używany
+        przez dwa przepisy. Usunięcie jednego nie może naruszyć pozycji drugiego."""
+        from app.db.models.ingredient import Ingredient
+        from app.services import recipe_service
+
+        ingredient = self._add_ingredient("czosnek")
+        ingredient_id = ingredient.id
+
+        doomed = self._make_recipe("Do usuniecia")
+        self._add_structured_ingredient(doomed, "1 zabek czosnku", ingredient_id=ingredient_id)
+
+        survivor = self._make_recipe("Zostaje")
+        self._add_structured_ingredient(survivor, "2 zabki czosnku", ingredient_id=ingredient_id)
+        survivor_id = survivor.id
+
+        recipe_service.delete_recipe(self.db, doomed, self.user)
+
+        self.assertIsNotNone(self.db.query(Ingredient).filter(Ingredient.id == ingredient_id).first())
+        self.assertEqual(self._counts(survivor_id), (0, 1))
 
     def test_no_orphan_rows_remain_anywhere_after_delete(self) -> None:
         """Twardy warunek: po usunięciu żaden wiersz potomny nie może wskazywać
