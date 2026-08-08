@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, Numeric, Boolean, ForeignKey
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import backref, relationship
 from app.core.database import Base
 
 
@@ -28,5 +28,16 @@ class RecipeIngredient(Base):
     sort_order = Column(Integer, default=0, nullable=False)
     needs_review = Column(Boolean, default=True, nullable=False)
 
-    recipe = relationship("Recipe", backref="structured_ingredients")
+    # patrz recipe_translation.py - to samo NOT NULL recipe_id i ten sam powód;
+    # sprzątanie po stronie bazy pochodzi z ON DELETE CASCADE w migracji 539387eab2be.
+    recipe = relationship(
+        "Recipe",
+        backref=backref(
+            "structured_ingredients",
+            cascade="all, delete-orphan",
+            passive_deletes=True,
+        ),
+    )
+    # ingredient_id jest nullable i celowo BEZ kaskady: usunięcie znormalizowanego
+    # składnika nie może kasować pozycji przepisów, które go używały.
     ingredient = relationship("Ingredient")
