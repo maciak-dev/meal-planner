@@ -1,6 +1,6 @@
 # Production Environment
 
-Data aktualizacji: 2026-08-04
+Data aktualizacji: 2026-08-08
 
 > Aktualny stan operacyjny i ograniczenia zmian opisuje [Production Guardrails](production-guardrails.md). Ten dokument zawiera również informacje historyczne i nie zastępuje obserwacji z VPS.
 
@@ -8,7 +8,9 @@ Data aktualizacji: 2026-08-04
 
 - Checkout: `/var/www/meal-planner`
 - Branch: `main`
-- Commit: `feacd6c`
+- Commit produkcji przed planowanym wdrożeniem: `a734342` (PR #15)
+- Zaakceptowany `origin/main`: `0443a4f` (PR #17)
+- Oczekujące na wdrożenie: PR #16 (Alembic/schemat) i PR #17 (UI PL/EN)
 - Proces: `uvicorn app.main:app --host 0.0.0.0 --port 8000`
 - Usługa: `meal-planner.service`
 - Reverse proxy: `nginx`
@@ -37,7 +39,7 @@ Data aktualizacji: 2026-08-04
   [alembic-migrations.md](alembic-migrations.md)
 - `.env` wskazuje SQLite, choć runtime działa na PostgreSQL
 - brak health/ready endpointów
-- produkcja nie została zmieniona w Sprincie 0 na VPS; checkout i usługa pozostają bez restartu
+- starsze wpisy tego dokumentu i audytów opisują stan historyczny; bieżący stan commitów należy zawsze potwierdzać przez `git rev-parse HEAD` oraz `git rev-parse origin/main`
 
 ## Polecenia tylko do odczytu
 

@@ -1,12 +1,13 @@
 # RC Environment
 
-Data aktualizacji: 2026-08-04
+Data aktualizacji: 2026-08-08
 
 ## Stan bieżący
 
 - Checkout RC na VPS: `/var/www/meal-planner-rc`
-- Branch checkoutu RC po wdrożeniu Sprint 0: `chore/meal-planner-sprint-0`
-- Commit checkoutu RC po wdrożeniu Sprint 0: `cf9f17c`
+- Branch checkoutu RC przed odświeżeniem PR #17: `rc/meal-alembic-foundation-validation`
+- Commit checkoutu RC przed odświeżeniem: `b733644`
+- Docelowy branch walidacyjny PR #17: `rc/meal-ui-i18n-validation`, tworzony bezpośrednio z `origin/main=0443a4f`
 - Usługa systemowa: `meal-planner-rc.service`
 - WorkingDirectory usługi: `/var/www/meal-planner-rc`
 - Port usługi: `127.0.0.1:8001`
@@ -39,6 +40,12 @@ Data aktualizacji: 2026-08-04
 - autostart usługi został wyłączony,
 - po smoke usługa RC została zatrzymana,
 - produkcja pozostała bez zmian.
+
+## Stan przed walidacją PR #17
+
+- `origin/main=0443a4f` zawiera PR #15, PR #16 i PR #17.
+- RC PostgreSQL ma `current=head=69eea78ac02c` i `alembic check` nie wykazuje driftu.
+- PR #17 wymaga jeszcze smoke UI PL/EN; nie należy traktować go jako wdrożonego na produkcji.
 
 ## Sprawdzona bezpieczna ścieżka testowa
 

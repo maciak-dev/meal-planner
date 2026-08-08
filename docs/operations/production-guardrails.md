@@ -1,6 +1,6 @@
 # Production Guardrails
 
-Data obserwacji: 2026-08-07 UTC.
+Data obserwacji: 2026-08-08 UTC.
 
 ## Cel
 
@@ -8,8 +8,9 @@ Ten dokument jest obowiązkową instrukcją dla osób i agentów pracujących na
 
 ## Źródła prawdy
 
-* Kod uruchomiony na produkcji: `/var/www/meal-planner`, obecnie commit `9e64b73e1ee84eed4e296ee09dac7844005e0ceb`.
-* Kod w GitHubie: remote `origin`; na dzień obserwacji `origin/main` wskazuje `feacd6c51e5d562a0568244f63d577aa3323581d` i nie jest tym samym stanem co uruchomiona produkcja. Nie zakładaj, że `main` jest źródłem aktualnego runtime.
+* Kod uruchomiony na produkcji przed kolejnym planowanym wdrożeniem: `/var/www/meal-planner`, commit `a734342` (PR #15).
+* Zaakceptowany punkt wejścia do kolejnej walidacji: `origin/main` commit `0443a4f` (PR #17, z PR #15 i #16 w historii). PR #16 i #17 nie są jeszcze wdrożone na produkcji.
+* Przy każdym wdrożeniu odczytaj `HEAD` checkoutu i `origin/main`, zapisz oba hashe w raporcie preflight i oceń różnicę względem zatwierdzonych PR-ów. Żaden konkretny SHA nie jest trwałym guardrailem.
 * Konfiguracja produkcji: systemd, `/var/www/meal-planner/.env` oraz aktywny plik Nginx na VPS. Wartości sekretów pozostają wyłącznie na VPS.
 * Dokumentacja: pliki `docs/` w repo, z zastrzeżeniem, że starsze audyty mogą opisywać stan historyczny.
 * Dane i konta: PostgreSQL `fastapi_db` na localhost, tabele aplikacyjne `users`, `recipes`, `ingredients`, `login_log`, `request_log`.
@@ -123,7 +124,8 @@ Rollback aplikacji jest ręczny i nie jest obecnie pełnym, automatycznym mechan
 
 ## Znane ograniczenia i dług techniczny
 
-* `/var/www/meal-planner` jest osobnym produkcyjnym checkoutem; aktywny commit nie jest aktualnym `origin/main`.
+* `/var/www/meal-planner` jest osobnym produkcyjnym checkoutem; przed planowanym wdrożeniem jest na `a734342`, trzy commity za zaakceptowanym `origin/main=0443a4f`.
+* Wartości `9e64b73`, `feacd6c` i wcześniejsze SHA występują w starszych audytach jako historia obserwacji/wdrożeń, nie jako aktualne wymagania.
 * Istnieją trzy checkouty Meal Plannera: produkcyjny `/var/www/meal-planner`, RC `/var/www/meal-planner-rc` oraz roboczy `/home/deploy/meal-planner-sprint-0`; ich role nie wynikają z samej nazwy katalogu.
 * RC jest obecnie zatrzymany i ma wyłączony autostart.
 * Część starszych dokumentów opisuje historyczną konfigurację i wymaga aktualizacji; ten dokument opisuje obserwację z 2026-08-07.
