@@ -29,7 +29,12 @@ Data aktualizacji: 2026-08-04
 
 - `ENV=dev`
 - `COOKIE_SECURE=False`
-- `Base.metadata.create_all()` aktywne przy starcie
+- `Base.metadata.create_all()` aktywne przy starcie — **od wprowadzenia Alembica
+  ma to konsekwencję dla kolejności wdrożenia**: restart z kodem zawierającym
+  nowe modele utworzy brakujące tabele, ale nie doda kolumn do istniejących, więc
+  aplikacja może wystartować na schemacie połowicznym. Migracja musi poprzedzać
+  restart. Szczegóły i procedura:
+  [alembic-migrations.md](alembic-migrations.md)
 - `.env` wskazuje SQLite, choć runtime działa na PostgreSQL
 - brak health/ready endpointów
 - produkcja nie została zmieniona w Sprincie 0 na VPS; checkout i usługa pozostają bez restartu

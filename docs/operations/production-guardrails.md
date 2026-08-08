@@ -43,6 +43,23 @@ Meal Planner ma własne logowanie FastAPI. Endpointy `/login`, `/logout` i `/aut
 
 Nie zmieniaj bez testu na RC logowania, cookies, redirectów, middleware ani ustawień proxy. Reset hasła i publiczna rejestracja nie są obecnie potwierdzonymi funkcjami. Integracja logowania z MAP nie należy do tego baseline’u.
 
+## Migracje schematu
+
+Od wprowadzenia Alembica każda zmiana schematu przechodzi przez
+[alembic-migrations.md](alembic-migrations.md). Trzy rzeczy z tamtego dokumentu
+obowiązują także tutaj, bo dotyczą granic bezpiecznej pracy:
+
+* **Migracja bazy przed restartem aplikacji z nowym kodem.** Kolejność odwrotna
+  uruchamia aplikację na niezmigrowanym schemacie i wykłada ją na brakujących
+  kolumnach.
+* **Produkcja ma dziś `ENV=dev`, więc `Base.metadata.create_all()` jest przy
+  starcie aktywne.** Utworzy brakujące tabele, ale nie doda kolumn do
+  istniejących — czyli potrafi zostawić schemat w stanie połowicznym. Przejście
+  na `ENV=prod` jest osobną zmianą operacyjną.
+* **Nigdy `alembic stamp head`** na bazie bez wykonanych migracji. Oznacza
+  wszystkie migracje jako zrobione, nie zmieniając schematu; błąd wychodzi
+  dopiero w aplikacji.
+
 ## Krytyczne pliki i ścieżki
 
 | Element | Ryzyko zmiany |
