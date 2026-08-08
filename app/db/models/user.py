@@ -10,3 +10,8 @@ class User(Base):
     hashed_password = Column(String, nullable=False)
     role = Column(String, nullable=False, default="user")
     created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Preferowany język interfejsu. Przełącznika języka jeszcze nie ma - kolumna
+    # istnieje, żeby i18n UI weszło bez migracji. Istniejące konta dostają 'pl'
+    # przez server_default w migracji d17abcef39ac.
+    language = Column(String(2), nullable=False, default="pl", server_default="pl")
