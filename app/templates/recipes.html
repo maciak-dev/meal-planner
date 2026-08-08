@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ lang }}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Recipe Manager</title>
+<title>{{ t('app.title', lang) }}</title>
 
 <!-- FAVICONS -->
 <link rel="icon" type="image/png" sizes="16x16" href="static/favicon-16.png">
@@ -26,23 +26,36 @@
 <main class="app">
 <header class="topbar">
     <div class="topbar-left">
-        <h1 onclick="toggleModuleNav()">Recipe Manager</h1>
+        <h1 onclick="toggleModuleNav()">{{ t('app.title', lang) }}</h1>
 
         <div class="module-nav">
             <button class="nav-tab active"
                     data-module="recipes"
                     onclick="showModule('recipes'); closeAllMenus();">
-                Recipes
+                {{ t('topbar.recipes_tab', lang) }}
             </button>
 
             <button class="nav-tab"
                     data-module="shopping"
                     onclick="showModule('shopping'); closeAllMenus();">
-                Shopping List
+                {{ t('topbar.shopping_tab', lang) }}
             </button>
         </div>
 </div>
     <div class="topbar-right">
+
+    {# title na formularzu, a nie osobny widoczny podpis: przełącznik siedzi w
+       ciasnym pasku nagłówka, a informacja jest doprecyzowaniem, nie
+       ostrzeżeniem. Pełne wyjaśnienie zakresu jest na ekranie logowania. #}
+    <form class="lang-switch" method="post" action="/set-lang"
+          aria-label="{{ t('lang.label', lang) }}" title="{{ t('lang.scope_note', lang) }}">
+        <button type="submit" name="code" value="pl"
+                class="lang-option {% if lang == 'pl' %}active{% endif %}"
+                {% if lang == 'pl' %}aria-current="true"{% endif %}>{{ t('lang.switch_to_pl', lang) }}</button>
+        <button type="submit" name="code" value="en"
+                class="lang-option {% if lang == 'en' %}active{% endif %}"
+                {% if lang == 'en' %}aria-current="true"{% endif %}>{{ t('lang.switch_to_en', lang) }}</button>
+    </form>
 
     {% if user.role == "super_admin" %}
     <span class="user-badge clickable"
@@ -63,13 +76,13 @@
             id="theme-toggle"
             class="secondary small"
             >
-            Switch Theme
+            {{ t('burger.switch_theme', lang) }}
             </button>
         {# Pozycja "Ingredients" usunięta: prowadziła wyłącznie do toastu
            "feature coming soon". Wraca, gdy będzie co pokazać. #}
 
         <form method="get" action="/logout">
-            <button type="submit" class="burger-item danger">Logout</button>
+            <button type="submit" class="burger-item danger">{{ t('common.logout', lang) }}</button>
         </form>
     </div>
 
@@ -79,17 +92,17 @@
 <section id="recipes-module">
 <section class="controls">
 
-<input id="search" placeholder="Search recipes..." oninput="filterRecipes()">
-<button id="add-recipe-btn" class="collapsible">Add Recipe</button>
+<input id="search" placeholder="{{ t('recipes.search_placeholder', lang) }}" oninput="filterRecipes()">
+<button id="add-recipe-btn" class="collapsible">{{ t('recipes.add_button', lang) }}</button>
 
 <div id="add-recipe-form" class="content">
-    <input id="name" placeholder="Name">
+    <input id="name" placeholder="{{ t('recipes.name_placeholder', lang) }}">
         <label class="visibility-switch">
         <input type="checkbox" id="add-is-public">
         <span class="slider"></span>
         <span class="labels">
-            <span class="private">PRIVATE</span>
-            <span class="public">PUBLIC</span>
+            <span class="private">{{ t('recipes.visibility_private', lang) }}</span>
+            <span class="public">{{ t('recipes.visibility_public', lang) }}</span>
         </span>
     </label>
     <input type="file" id="add-image" accept="image/*">
@@ -97,10 +110,10 @@
     <img id="add-preview" class="recipe-image-preview">
     <span class="image-remove-btn" onclick="removeAddImage()">✖</span>
     </div>
-    <input id="description" placeholder="Description">
-    <textarea id="ingredients" rows="5" placeholder="Ingredients (one per line)"></textarea>
-    <textarea id="instructions" rows="5" placeholder="Instructions"></textarea>
-    <button class="primary" data-action="create-recipe">Save</button>
+    <input id="description" placeholder="{{ t('recipes.description_placeholder', lang) }}">
+    <textarea id="ingredients" rows="5" placeholder="{{ t('recipes.ingredients_placeholder', lang) }}"></textarea>
+    <textarea id="instructions" rows="5" placeholder="{{ t('recipes.instructions_placeholder', lang) }}"></textarea>
+    <button class="primary" data-action="create-recipe">{{ t('recipes.save', lang) }}</button>
 </div>
 <div class="divider"></div>
 </section>
@@ -108,23 +121,23 @@
     <section id="recipes-container"></section>
 </section>
 <section id="shopping-module" style="display:none;">
-    <h2 id="shopping-title">Your shopping list</h2>
+    <h2 id="shopping-title">{{ t('shopping.title_default', lang) }}</h2>
     <button class="secondary" onclick="toggleShoppingMode()">
-    Shopping mode
+    {{ t('shopping.mode_button', lang) }}
     </button>        <button
             id="open-shopping-import-btn"
             class="secondary"
         >
-            Add List
+            {{ t('shopping.add_list_button', lang) }}
         </button>
     <div class="shopping-input" id="shopping-input-box">
         <input
             type="text"
             id="shopping-input"
-            placeholder="Add item..."
+            placeholder="{{ t('shopping.add_item_placeholder', lang) }}"
         >
         <button class="primary" onclick="addShoppingItem()">
-            Add
+            {{ t('shopping.add_button', lang) }}
         </button>
 
     </div>
@@ -133,7 +146,7 @@
 
     <div style="margin-top:15px;">
         <button class="secondary" onclick="clearShoppingList()">
-            Clear list
+            {{ t('shopping.clear_button', lang) }}
         </button>
     </div>
 </section>
@@ -149,15 +162,15 @@
 <div id="edit-modal" class="modal">
     <div class="modal-content">
         <span class="close" onclick="closeEdit()">&times;</span>
-        <h3>Edit Recipe</h3>
-        <input id="edit-name" placeholder="Name">
+        <h3>{{ t('recipes.edit.title', lang) }}</h3>
+        <input id="edit-name" placeholder="{{ t('recipes.name_placeholder', lang) }}">
         <div class="edit-visibility">
     <label class="visibility-switch">
         <input type="checkbox" id="edit-is-public">
         <span class="slider"></span>
         <span class="labels">
-            <span class="private">PRIVATE</span>
-            <span class="public">PUBLIC</span>
+            <span class="private">{{ t('recipes.visibility_private', lang) }}</span>
+            <span class="public">{{ t('recipes.visibility_public', lang) }}</span>
         </span>
     </label>
 </div>
@@ -166,25 +179,25 @@
             <span class="image-remove-btn" onclick="removeImage()">✖</span>
         </div>
         <input type="file" id="edit-image" accept="image/*">
-        <input id="edit-description" placeholder="Description">
-        <textarea id="edit-ingredients" rows="5" placeholder="Ingredients"></textarea>
-        <textarea id="edit-instructions" rows="5" placeholder="Instructions"></textarea>
-        <button class="primary" data-action="update-recipe">Save</button>
+        <input id="edit-description" placeholder="{{ t('recipes.description_placeholder', lang) }}">
+        <textarea id="edit-ingredients" rows="5" placeholder="{{ t('recipes.edit.ingredients_placeholder', lang) }}"></textarea>
+        <textarea id="edit-instructions" rows="5" placeholder="{{ t('recipes.edit.instructions_placeholder', lang) }}"></textarea>
+        <button class="primary" data-action="update-recipe">{{ t('recipes.save', lang) }}</button>
         <button
             class="danger subtle"
             data-action="delete">
-            Delete Recipe
+            {{ t('recipes.edit.delete_button', lang) }}
         </button>
     </div>
 </div>
 
 <div id="delete-modal" class="modal">
     <div class="modal-content">
-        <h3 id="delete-title">Delete Recipe</h3>
+        <h3 id="delete-title">{{ t('recipes.delete_modal.title', lang) }}</h3>
         <p id="delete-text"></p>
         <div class="modal-actions">
-            <button class="secondary" onclick="closeDeleteModal()">Cancel</button>
-            <button class="danger" onclick="confirmDeleteYes()">Delete</button>
+            <button class="secondary" onclick="closeDeleteModal()">{{ t('common.cancel', lang) }}</button>
+            <button class="danger" onclick="confirmDeleteYes()">{{ t('common.delete', lang) }}</button>
         </div>
     </div>
 </div>
@@ -193,11 +206,11 @@
 <!-- CLEAR LIST MODAL -->
 <div id="clear-modal" class="modal">
   <div class="modal-content">
-    <h2 id="clear-title">Clear shopping list</h2>
-    <p id="clear-text">Are you sure you want to clear the entire shopping list?</p>
+    <h2 id="clear-title">{{ t('shopping.clear_modal.title', lang) }}</h2>
+    <p id="clear-text">{{ t('shopping.clear_modal.text', lang) }}</p>
     <div class="modal-buttons">
-      <button class="primary" onclick="confirmClearYes()">Yes</button>
-      <button class="secondary" onclick="closeClearModal()">No</button>
+      <button class="primary" onclick="confirmClearYes()">{{ t('common.yes', lang) }}</button>
+      <button class="secondary" onclick="closeClearModal()">{{ t('common.no', lang) }}</button>
     </div>
   </div>
 </div>
@@ -214,11 +227,11 @@
             &times;
         </span>
 
-        <h3>Import Shopping List</h3>
+        <h3>{{ t('shopping.import.title', lang) }}</h3>
 
         <textarea
             id="shopping-import-textarea"
-            placeholder="Paste shopping list here..."
+            placeholder="{{ t('shopping.import.placeholder', lang) }}"
             style="
                 width:100%;
                 min-height:300px;
@@ -230,12 +243,15 @@
         id="confirm-shopping-import-btn"
         class="primary"
     >
-        Import
+        {{ t('shopping.import.button', lang) }}
     </button>
 </div>
     </div>
 </div>
 
+{# Ten sam słownik, z którego korzysta Jinja - front nie ma własnej kopii
+   stringów. tojson escapuje treść, więc nie da się nią wyjść ze skryptu. #}
+<script>window.I18N = {{ js_translations|tojson }};</script>
 <script src="/static/recipes.js"></script>
 </body>
 </html>
