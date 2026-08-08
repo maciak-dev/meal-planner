@@ -1296,3 +1296,66 @@ input[type="file"]::file-selector-button {
     color:
         rgba(0, 229, 255, 0.72);
 }
+/* =========================
+   PRZEŁĄCZNIK JĘZYKA INTERFEJSU
+   Wygląd segmentowy (jeden spójny blok, bez przerw między opcjami) pochodzi
+   z RC-owych dopracowań UI. Opcje są przyciskami w formularzu POST, nie
+   linkami - zmiana języka zapisuje preferencję konta, więc nie może być
+   nawigacją GET.
+   ========================= */
+
+.lang-switch {
+    display: flex;
+    gap: 0;
+    align-items: center;
+    border: 1px solid var(--accent-primary);
+    border-radius: 6px;
+    background: var(--bg-panel);
+    box-shadow: var(--shadow-secondary);
+    overflow: hidden;
+}
+
+.lang-option {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2rem;
+    height: 30px;
+    padding: 6px 10px;
+    font-size: 0.8rem;
+    font-family: var(--font-heading, Orbitron, sans-serif);
+    color: var(--accent-primary);
+    background: transparent;
+    text-decoration: none;
+    white-space: nowrap;
+    border: 1px solid transparent;
+    border-radius: 0;
+    cursor: pointer;
+    transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.lang-option.active {
+    color: var(--accent-secondary);
+    background: color-mix(in srgb, var(--accent-secondary) 10%, transparent);
+    box-shadow: inset 0 -2px 0 var(--accent-secondary);
+    font-weight: 700;
+}
+
+.lang-option:hover {
+    color: var(--accent-secondary);
+    background: color-mix(in srgb, var(--accent-primary) 8%, transparent);
+}
+
+.lang-option:focus-visible {
+    outline: 2px solid var(--accent-secondary);
+    outline-offset: 2px;
+}
+
+/* Podpis pod przełącznikiem: przełącznik dotyczy interfejsu, nie treści
+   przepisów. Bez tego obietnica jest szersza niż funkcja. */
+.lang-scope-note {
+    margin: 4px 0 0;
+    font-size: 0.7rem;
+    opacity: 0.65;
+    text-align: right;
+}

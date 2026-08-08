@@ -202,11 +202,17 @@ class LegacyRowCompatibilityTests(SchemaCompatibilityTestCase):
 
 
 class NoProductFeatureLeakedTests(unittest.TestCase):
-    """Strażnik zakresu PR-a: schemat wchodzi bez funkcji, które go używają.
+    """Strażnik zakresu: schemat z migracji nie może być aktywowany po cichu.
 
-    Gdyby któryś z tych plików albo endpointów wjechał tu razem ze schematem, PR
-    przestałby być niezależnie wdrażalny - a to jest jedyny powód, dla którego
-    dzielimy branch RC."""
+    Pierwotnie ten strażnik pilnował też nieobecności i18n interfejsu — słusznie,
+    bo pakiet migracji nie miał prawa go wnosić. i18n UI weszło własnym,
+    osobnym pakietem, więc ta część asercji została **świadomie zdjęta**;
+    granica przesunęła się, nie zniknęła.
+
+    Nadal poza zakresem i nadal pilnowane: import przepisu z URL oraz warstwa
+    tłumaczeń TREŚCI przepisu (`recipe_translations` jako funkcja produktowa).
+    Schemat ma te tabele gotowe od PR #16 — to nie znaczy, że wolno je włączyć
+    przy okazji."""
 
     REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -235,22 +241,32 @@ class NoProductFeatureLeakedTests(unittest.TestCase):
             with self.subTest(path=path):
                 self._assert_no_sources_under(path)
 
-    def test_ui_i18n_is_absent(self) -> None:
-        self._assert_no_sources_under("app/core/i18n.py")
-        # Słowniki nie są .py, więc sprawdzamy je wprost.
-        self.assertEqual(sorted((self.REPO_ROOT / "app/i18n").glob("*.json")), [])
-
-    def test_translation_service_is_absent(self) -> None:
+    def test_recipe_content_translation_service_is_absent(self) -> None:
+        """i18n INTERFEJSU jest dozwolone. Tłumaczenie TREŚCI przepisu - nie."""
         self._assert_no_sources_under("app/services/recipe_translation_service.py")
 
     def test_no_router_references_import_endpoints(self) -> None:
         router = (self.REPO_ROOT / "app/api/v1/router.py").read_text(encoding="utf-8")
         self.assertNotIn("recipe_import", router)
 
-    def test_frontend_has_no_import_or_language_controls(self) -> None:
+    def test_frontend_has_no_import_or_content_language_controls(self) -> None:
         template = (self.REPO_ROOT / "app/templates/recipes.html").read_text(encoding="utf-8")
-        for marker in ("import-url-modal", "import-draft-modal", "set-lang", "add-content-language"):
-            self.assertNotIn(marker, template, f"{marker} nie należy do tego PR-a")
+        # `set-lang` świadomie NIE jest tu wymieniony - przełącznik języka
+        # interfejsu jest dozwolony. `add-content-language` to selektor języka
+        # TREŚCI przepisu i nadal nie należy do żadnego wdrożonego pakietu.
+        for marker in (
+            "import-url-modal",
+            "import-draft-modal",
+            "add-content-language",
+            "edit-content-language",
+        ):
+            self.assertNotIn(marker, template, f"{marker} nie należy do tego pakietu")
+
+    def test_recipe_schema_has_no_content_language_field(self) -> None:
+        """RecipeCreate/RecipeRead bez pola `language` - inaczej tłumaczenie
+        treści weszłoby tylnymi drzwiami przez API."""
+        schema = (self.REPO_ROOT / "app/schemas/recipe.py").read_text(encoding="utf-8")
+        self.assertNotIn("language", schema)
 
 
 if __name__ == "__main__":
