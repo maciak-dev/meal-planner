@@ -2,3 +2,7 @@ from .user import User
 from .recipe import Recipe
 from .ingredient import Ingredient
 from .login_log import LoginLog
+from .recipe_translation import RecipeTranslation
+from .recipe_ingredient import RecipeIngredient
+from .ingredient_alias import IngredientAlias
+from .store_section import StoreSection
