@@ -1,13 +1,38 @@
+/**
+ * Tłumaczenie stringów interfejsu po stronie klienta.
+ *
+ * Słownik przychodzi z serwera jako window.I18N - to ten sam plik JSON, z
+ * którego korzysta Jinja, więc string istnieje w repozytorium dokładnie raz.
+ *
+ * Fallback jest celowo cichy: brakujący klucz zwraca sam klucz zamiast rzucać.
+ * Widoczny klucz to defekt kosmetyczny, a wyjątek w środku renderowania listy
+ * zakupów wywaliłby cały widok.
+ *
+ * Interpolacja {name} podmienia wyłącznie znane parametry i NIE parsuje HTML -
+ * wynik trafia dalej przez textContent, zgodnie z zasadą z PR #15.
+ */
+function t(key, params) {
+    const dict = window.I18N || {};
+    let text = Object.prototype.hasOwnProperty.call(dict, key) ? dict[key] : key;
+
+    if (params) {
+        for (const [name, value] of Object.entries(params)) {
+            text = text.split(`{${name}}`).join(String(value));
+        }
+    }
+    return text;
+}
+
 const Api = {
     async request(url, options = {}) {
         const res = await fetch(url, options);
 
         if (!res.ok) {
-            let msg = "API error";
+            let msg = t("toast.api_error");
             try {
                 msg = await res.text();
             } catch { }
-            throw new Error(msg || "API error");
+            throw new Error(msg || t("toast.api_error"));
         }
 
         return res;
@@ -179,15 +204,23 @@ const Recipes = {
 
     renderRecipeBadge(recipe) {
         if (recipe.is_owner) {
+            const visibility = recipe.is_public
+                ? t("recipes.visibility_public")
+                : t("recipes.visibility_private");
+
             return el(
                 "span",
                 `recipe-badge mine ${recipe.is_public ? "public" : "private"}`,
-                `MY · ${recipe.is_public ? "PUBLIC" : "PRIVATE"}`
+                `${t("recipes.badge.mine_prefix")} ${visibility}`
             );
         }
 
         // author_username przychodzi z bazy i trafia na kartę cudzego przepisu.
-        return el("span", "recipe-badge foreign", `BY ${recipe.author_username ?? "USER"}`);
+        return el(
+            "span",
+            "recipe-badge foreign",
+            `${t("recipes.badge.by_prefix")} ${recipe.author_username ?? t("recipes.badge.unknown_user")}`
+        );
     },
 
 
@@ -218,12 +251,12 @@ const Recipes = {
         const textCol = el("div", "recipe-text");
 
         const description = el("p");
-        description.appendChild(el("strong", null, "Description:"));
+        description.appendChild(el("strong", null, t("recipes.card.description_label")));
         description.appendChild(document.createTextNode(` ${r.description ?? ""}`));
         textCol.appendChild(description);
 
         const ingredientsLabel = el("p");
-        ingredientsLabel.appendChild(el("strong", null, "Ingredients:"));
+        ingredientsLabel.appendChild(el("strong", null, t("recipes.card.ingredients_label")));
         textCol.appendChild(ingredientsLabel);
 
         textCol.appendChild(this.renderIngredients(r.ingredients));
@@ -242,20 +275,20 @@ const Recipes = {
 
         const actions = el("div", "recipe-actions");
 
-        const instructionsBtn = el("button", "secondary", "View Instructions");
+        const instructionsBtn = el("button", "secondary", t("recipes.card.view_instructions"));
         instructionsBtn.dataset.action = "instructions";
         // dataset zapisuje wartość atrybutu bez parsowania - cudzysłowy i znaczniki
         // w instrukcjach nie mają jak z niego wyjść.
         instructionsBtn.dataset.instructions = r.instructions ?? "";
         actions.appendChild(instructionsBtn);
 
-        const addToListBtn = el("button", "secondary add-to-list", "+ Add to list");
+        const addToListBtn = el("button", "secondary add-to-list", t("recipes.card.add_to_list"));
         addToListBtn.dataset.action = "add-to-list";
         addToListBtn.dataset.id = String(r.id);
         actions.appendChild(addToListBtn);
 
         if (r.is_owner === true) {
-            const manageBtn = el("button", "secondary", "Manage");
+            const manageBtn = el("button", "secondary", t("recipes.card.manage"));
             manageBtn.dataset.action = "edit";
             manageBtn.dataset.id = String(r.id);
             actions.appendChild(manageBtn);
@@ -328,11 +361,11 @@ const Recipes = {
                     RecipesUI.add.preview().style.display = "none";
                     RecipesUI.add.image().value = "";
 
-                    UI.toast("Recipe saved", "success");
+                    UI.toast(t("toast.recipe_saved"), "success");
                 })
                 .catch(err => {
                     console.error(err);
-                    UI.toast("Server error", "warn");
+                    UI.toast(t("toast.server_error"), "warn");
                 });
         },
         openEdit(id) {
@@ -375,10 +408,10 @@ const Recipes = {
                 closeEdit();
                 await Recipes.load();
 
-                UI.toast("Recipe updated", "success");
+                UI.toast(t("toast.recipe_updated"), "success");
             } catch (err) {
                 console.error(err);
-                UI.toast("Server error", "warn");
+                UI.toast(t("toast.server_error"), "warn");
             }
         },
 
@@ -386,7 +419,7 @@ const Recipes = {
             Api.patch(`/api/v1/recipes/${id}/visibility`, { is_public: checkbox.checked })
                 .catch(() => {
                     checkbox.checked = !checkbox.checked;
-                    UI.toast("You cannot change visibility of this recipe");
+                    UI.toast(t("toast.cannot_change_visibility"));
                 });
         }
 
@@ -468,7 +501,7 @@ const Shopping = {
             const data = JSON.parse(localStorage.getItem("shoppingList") || "[]");
             return data.map(item => ({
                 id: item.id || crypto.randomUUID(),
-                name: typeof item.name === "string" ? item.name : "Unknown",
+                name: typeof item.name === "string" ? item.name : t("shopping.unknown_item"),
                 qty: typeof item.qty === "number" ? item.qty : 1,
                 done: !!item.done
             }));
@@ -502,7 +535,7 @@ const Shopping = {
         const sortedList = [...list].sort((a, b) => a.done - b.done);
         listEl.replaceChildren();
         if (sortedList.length === 0) {
-            listEl.appendChild(el("p", "muted", "Your shopping list is empty 🛒"));
+            listEl.appendChild(el("p", "muted", t("shopping.empty_state")));
             return;
         }
         sortedList.forEach(item => {
@@ -612,7 +645,7 @@ const Shopping = {
                 list.splice(index, 1);
                 Shopping.saveList(list);
                 Shopping.render();
-                UI.toast(`${item.name} removed 🗑️`);
+                UI.toast(t("toast.item_removed", { name: item.name }));
 
                 Shopping.state.pendingRemoveId = null;
                 clearTimeout(Shopping.state.pendingRemoveTimer);
@@ -621,7 +654,7 @@ const Shopping = {
             }
 
             Shopping.state.pendingRemoveId = id;
-            UI.toast(`Tap again to remove ${item.name}`, "warn");
+            UI.toast(t("toast.tap_again_remove", { name: item.name }), "warn");
 
             Shopping.state.pendingRemoveTimer = setTimeout(() => {
                 Shopping.state.pendingRemoveId = null;
@@ -699,19 +732,19 @@ const Shopping = {
         Shopping.updateImportButton();
 
         UI.toast(
-            Shopping.state.mode ? "Shopping mode ON 🛒" : "Shopping mode OFF",
+            Shopping.state.mode ? t("toast.shopping_mode_on") : t("toast.shopping_mode_off"),
             "success"
         );
     },
 
     updateTitle() {
         ShoppingUI.title().textContent =
-            Shopping.state.mode ? "Shopping mode" : "Your shopping list";
+            Shopping.state.mode ? t("shopping.title_mode") : t("shopping.title_default");
     },
     clear() {
         this.saveList([]);
         this.render();
-        UI.toast("Shopping list cleared 🧹");
+        UI.toast(t("toast.shopping_cleared"));
     }
 };
 
@@ -825,7 +858,7 @@ async function toggleVisibility(recipeId, checkbox) {
 
     } catch (err) {
         checkbox.checked = !newValue; // 👈 cofamy
-        UI.toast("You cannot change visibility of this recipe");
+        UI.toast(t("toast.cannot_change_visibility"));
     }
 }
 
@@ -868,7 +901,7 @@ function closeEdit() {
 let deleteRecipeId = null;
 function openDeleteModal(id, name) {
     deleteRecipeId = id;
-    document.getElementById("delete-text").innerText = `Are you sure you want to delete "${name}"?`;
+    document.getElementById("delete-text").innerText = t("recipes.delete_modal.confirm_text", { name });
     UI.openModal("delete-modal");
 }
 function closeDeleteModal() { deleteRecipeId = null; UI.closeModal("delete-modal"); }
@@ -882,9 +915,9 @@ async function confirmDeleteYes() {
         closeDeleteModal();
         closeEdit();
         Recipes.load();
-        UI.toast("Recipe deleted", "success");
+        UI.toast(t("toast.recipe_deleted"), "success");
 
-    } catch (err) { console.error(err); UI.toast("Server error", "warn"); }
+    } catch (err) { console.error(err); UI.toast(t("toast.server_error"), "warn"); }
 }
 
 // === INSTRUCTIONS MODAL ===
@@ -962,7 +995,7 @@ function toggleShoppingMode() {
     Shopping.render();
 
     UI.toast(
-        Shopping.state.mode ? "Shopping mode ON 🛒" : "Shopping mode OFF",
+        Shopping.state.mode ? t("toast.shopping_mode_on") : t("toast.shopping_mode_off"),
         "success"
     );
 }
@@ -996,7 +1029,7 @@ function clearShoppingList() {
     const modal = document.getElementById("clear-modal");
     document.getElementById("clear-title").innerText = "Clear shopping list";
     document.getElementById("clear-text").innerText =
-        "Are you sure you want to clear the entire shopping list?";
+        t("shopping.clear_modal.text");
 
     modal.dataset.action = "clear";
     modal.style.display = "flex"; // pokaz modal
@@ -1040,7 +1073,7 @@ function addRecipeToShoppingList(buttonEl) {
 
     Shopping.saveList(list);
     Shopping.render();
-    UI.toast("Selected ingredients added to shopping list 🛒");
+    UI.toast(t("toast.selected_added_to_list"));
 }
 
 function updateShoppingTitle() {
@@ -1048,8 +1081,8 @@ function updateShoppingTitle() {
     if (!title) return;
 
     title.textContent = Shopping.state.mode
-        ? "Shopping mode"
-        : "Your shopping list";
+        ? t("shopping.title_mode")
+        : t("shopping.title_default");
 }
 
 
@@ -1128,7 +1161,7 @@ async function updateRecipeImage(recipeId, inputId) {
 
     } catch (err) {
         console.error(err);
-        UI.toast("Failed to update image", "error");
+        UI.toast(t("toast.image_update_failed"), "error");
     }
 }
 
@@ -1155,7 +1188,7 @@ async function removeImage() {
         preview.style.display = "none";
         document.getElementById("edit-image").value = "";
 
-        UI.toast("Image removed", "success");
+        UI.toast(t("toast.image_removed"), "success");
     } catch (err) {
         console.error(err);
         UI.toast(err.message, "error");
@@ -1266,7 +1299,7 @@ function importShoppingList() {
     const value = textarea.value.trim();
 
     if (!value) {
-        UI.toast("Paste shopping list first", "warn");
+        UI.toast(t("toast.paste_list_first"), "warn");
         return;
     }
 
@@ -1276,7 +1309,7 @@ function importShoppingList() {
         .filter(Boolean);
 
     if (!lines.length) {
-        UI.toast("Nothing to import", "warn");
+        UI.toast(t("toast.nothing_to_import"), "warn");
         return;
     }
 
@@ -1308,5 +1341,5 @@ function importShoppingList() {
 
     closeShoppingImportModal();
 
-    UI.toast("Shopping list imported 🛒", "success");
+    UI.toast(t("toast.list_imported"), "success");
 }
