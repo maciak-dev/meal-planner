@@ -19,6 +19,9 @@ from unittest import mock
 REPO_ROOT = Path(__file__).resolve().parents[1]
 BASELINE = "41e1afa8db94"
 HEAD = "69eea78ac02c"
+# Musi odpowiadać COMPARISON_OPTIONS w alembic/env.py - inaczej testy mierzyłyby
+# drift inną miarą niż `alembic check` uruchamiany przy wdrożeniu.
+COMPARISON_OPTIONS = {"compare_type": True, "compare_server_default": True}
 EXPECTED_CHAIN = [
     "41e1afa8db94",  # baseline - schemat produkcyjny
     "d17abcef39ac",  # users.language
@@ -193,9 +196,107 @@ class EmptyDatabaseLifecycleTests(MigrationTestCase):
         from app.core.database import Base, engine
 
         with engine.connect() as connection:
-            diff = compare_metadata(MigrationContext.configure(connection), Base.metadata)
+            diff = compare_metadata(
+                MigrationContext.configure(connection, opts=COMPARISON_OPTIONS),
+                Base.metadata,
+            )
 
         self.assertEqual(diff, [], f"Drift między modelami a schematem: {diff}")
+
+
+class DriftDetectionTests(MigrationTestCase):
+    """Detektor driftu musi widzieć `server_default`.
+
+    Bezpieczeństwo migracji d17abcef39ac stoi na `server_default='pl'` - bez
+    niego ALTER TABLE dodający kolumnę NOT NULL wywaliłby się na istniejących
+    kontach. Alembic domyślnie NIE porównuje wartości domyślnych, więc zanikanie
+    albo zmiana tego defaultu byłaby dla `alembic check` niewidoczna.
+    """
+
+    def _metadata_copy(self):
+        """Kopia Base.metadata, żeby eksperyment nie zatruł globalnych modeli."""
+        from sqlalchemy import MetaData
+
+        import app.db.models  # noqa: F401
+        from app.core.database import Base
+
+        copy = MetaData()
+        for table in Base.metadata.tables.values():
+            table.to_metadata(copy)
+        return copy
+
+    def _diff(self, metadata, opts):
+        """Spłaszczona lista różnic.
+
+        compare_metadata grupuje zmiany na tej samej kolumnie w zagnieżdżoną
+        listę (np. [[('modify_default', ...)]]), więc bez spłaszczenia test
+        przeoczyłby dokładnie ten wpis, o który tu chodzi.
+        """
+        from alembic.autogenerate import compare_metadata
+        from alembic.migration import MigrationContext
+
+        from app.core.database import engine
+
+        with engine.connect() as connection:
+            raw = compare_metadata(MigrationContext.configure(connection, opts=opts), metadata)
+
+        flat = []
+        for entry in raw:
+            if isinstance(entry, list):
+                flat.extend(entry)
+            else:
+                flat.append(entry)
+        return flat
+
+    def test_env_declares_both_comparison_options(self) -> None:
+        """Opcje muszą być w env.py i muszą trafiać do OBU trybów - online i
+        offline. Test czyta źródło, bo importowanie env.py wymaga aktywnego
+        kontekstu Alembica."""
+        source = (REPO_ROOT / "alembic" / "env.py").read_text(encoding="utf-8")
+
+        self.assertIn('"compare_server_default": True', source)
+        self.assertIn('"compare_type": True', source)
+        # Oba wywołania context.configure() muszą rozpakować ten sam słownik.
+        self.assertEqual(source.count("**COMPARISON_OPTIONS"), 2)
+
+    def test_users_language_server_default_drift_is_detected(self) -> None:
+        """Sedno tej poprawki: usunięcie DEFAULT 'pl' z modelu MUSI zostać
+        zgłoszone jako drift."""
+        self.upgrade("head")
+
+        metadata = self._metadata_copy()
+        metadata.tables["users"].c.language.server_default = None
+
+        diff = self._diff(metadata, COMPARISON_OPTIONS)
+        kinds = {entry[0] for entry in diff if isinstance(entry, tuple)}
+
+        self.assertIn("modify_default", kinds, f"server_default drift nie wykryty: {diff}")
+        self.assertTrue(
+            any("language" in str(entry) for entry in diff),
+            f"drift wykryty, ale nie na users.language: {diff}",
+        )
+
+    def test_the_same_drift_is_invisible_without_the_option(self) -> None:
+        """Dowód, że opcja jest tym, co decyduje - a nie że test sprawdza coś,
+        co i tak by przeszło. Z domyślną konfiguracją Alembica ten sam rozjazd
+        nie generuje żadnego wpisu."""
+        self.upgrade("head")
+
+        metadata = self._metadata_copy()
+        metadata.tables["users"].c.language.server_default = None
+
+        diff = self._diff(metadata, {"compare_type": True, "compare_server_default": False})
+
+        self.assertEqual(diff, [], f"oczekiwano braku wykrycia bez opcji, dostano: {diff}")
+
+    def test_clean_schema_reports_no_drift_with_the_option_on(self) -> None:
+        """Włączenie compare_server_default nie może produkować fałszywych
+        alarmów na poprawnym schemacie - inaczej `alembic check` przestanie być
+        użyteczny i zacznie być ignorowany."""
+        self.upgrade("head")
+
+        diff = self._diff(self._metadata_copy(), COMPARISON_OPTIONS)
+        self.assertEqual(diff, [], f"fałszywy drift na czystym schemacie: {diff}")
 
 
 class ProductionFixtureTests(MigrationTestCase):

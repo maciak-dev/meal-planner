@@ -24,6 +24,22 @@ config.set_main_option("sqlalchemy.url", DATABASE_URL)
 
 target_metadata = Base.metadata
 
+# Opcje porównywania schematu, wspólne dla trybu online i offline - inaczej
+# `alembic check` i `--autogenerate` mierzyłyby drift inną miarą w każdym z nich.
+#
+# compare_server_default: NIE jest domyślnie włączone, a bezpieczeństwo migracji
+# d17abcef39ac stoi właśnie na server_default ('pl' dla istniejących kont).
+# Bez tej opcji zniknięcie albo zmiana wartości domyślnej po stronie bazy nie
+# zostałaby zgłoszona jako drift - a to jest dokładnie ta klasa rozjazdu, która
+# nie boli, dopóki ktoś nie doda kolumny NOT NULL do tabeli z danymi.
+#
+# compare_type jest w Alembicu 1.19 domyślnie włączone; podane jawnie, żeby
+# wersja biblioteki nie decydowała po cichu o zakresie kontroli.
+COMPARISON_OPTIONS = {
+    "compare_type": True,
+    "compare_server_default": True,
+}
+
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
@@ -48,6 +64,7 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        **COMPARISON_OPTIONS,
     )
 
     with context.begin_transaction():
@@ -69,7 +86,9 @@ def run_migrations_online() -> None:
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata
+            connection=connection,
+            target_metadata=target_metadata,
+            **COMPARISON_OPTIONS,
         )
 
         with context.begin_transaction():
