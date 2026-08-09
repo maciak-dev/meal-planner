@@ -65,11 +65,10 @@ class DictionaryTests(unittest.TestCase):
         self.assertEqual(sorted(k for k in used if k not in PL_DICT), [])
         self.assertEqual(sorted(k for k in used if k not in EN_DICT), [])
 
-    def test_no_import_or_content_translation_keys_leaked(self) -> None:
-        """Klucze importu z URL należą do innego pakietu; klucz martwej pozycji
-        menu został usunięty w PR #15 i nie może wrócić."""
-        for key in PL_DICT:
-            self.assertFalse(key.startswith("import."), f"klucz importu w słowniku: {key}")
+    def test_import_keys_are_symmetric_but_content_translation_is_not_enabled(self) -> None:
+        """Import owns its UI keys, but no recipe-content language selector is added."""
+        self.assertIn("import.button", PL_DICT)
+        self.assertIn("import.button", EN_DICT)
         self.assertNotIn("burger.ingredients", PL_DICT)
         self.assertNotIn("toast.ingredients_coming_soon", PL_DICT)
 

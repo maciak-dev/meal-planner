@@ -1285,6 +1285,195 @@ input[type="file"]::file-selector-button {
 
 /* FOREIGN */
 
+/* =========================
+   RECIPE IMPORT FROM URL
+   ========================= */
+
+.recipe-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.recipe-actions #add-recipe-btn {
+    flex: 1 1 220px;
+}
+
+.recipe-actions #open-import-url-btn {
+    flex: 0 1 220px;
+}
+
+.import-draft-content {
+    max-width: 720px;
+}
+
+.import-error {
+    margin-top: 12px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--accent-danger, #b35b5b);
+    color: var(--accent-danger, #b35b5b);
+    background: rgba(179, 91, 91, 0.08);
+    font-size: 0.85rem;
+}
+
+.import-loading {
+    margin-top: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-muted, var(--accent-secondary));
+    font-size: 0.9rem;
+}
+
+.spinner {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.25);
+    border-top-color: var(--accent-primary);
+    display: inline-block;
+    animation: import-spin 0.8s linear infinite;
+}
+
+@keyframes import-spin {
+    to { transform: rotate(360deg); }
+}
+
+.import-btn-row {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 18px;
+}
+
+.import-grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+}
+
+.checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 14px;
+    font-size: 0.9rem;
+}
+
+.import-structured-toggle {
+    margin-top: 18px;
+}
+
+.import-section-title {
+    margin-top: 22px;
+    margin-bottom: 8px;
+    font-size: 1rem;
+}
+
+.import-table-wrap {
+    overflow-x: auto;
+}
+
+.ing-edit-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+
+.ing-edit-table th {
+    text-align: left;
+    padding: 6px 6px;
+    border-bottom: 1px solid var(--accent-primary);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--accent-secondary);
+}
+
+.ing-edit-table td {
+    padding: 6px 6px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    vertical-align: middle;
+}
+
+.ing-edit-table input {
+    width: 100%;
+    min-width: 60px;
+}
+
+.ing-edit-table .ing-original-cell {
+    font-family: monospace;
+    font-size: 0.78rem;
+    color: var(--text-muted, #9aa7b0);
+    max-width: 160px;
+    word-break: break-word;
+}
+
+.ing-edit-table .ing-remove-btn {
+    cursor: pointer;
+    color: var(--accent-danger, #b35b5b);
+    background: none;
+    border: none;
+    font-size: 1rem;
+}
+
+.ing-review-pill {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.ing-review-pill.ok {
+    background: rgba(68,255,204,0.12);
+    color: var(--accent-secondary);
+}
+
+.ing-review-pill.review {
+    background: rgba(255,180,84,0.15);
+    color: #ffb454;
+}
+
+.import-warnings {
+    margin: 10px 0;
+}
+
+.import-warnings:empty {
+    display: none;
+}
+
+.import-warning-item {
+    padding: 6px 10px;
+    margin-bottom: 6px;
+    border-radius: 6px;
+    background: rgba(255,180,84,0.1);
+    border: 1px solid rgba(255,180,84,0.35);
+    color: #ffb454;
+    font-size: 0.8rem;
+}
+
+.source-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.78rem;
+    color: var(--text-muted, #9aa7b0);
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 999px;
+    padding: 4px 12px;
+    margin: 6px 0 4px;
+}
+
+.source-chip:empty {
+    display: none;
+}
+
 .recipe-badge.foreign {
 
     background:

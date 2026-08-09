@@ -93,7 +93,10 @@
 <section class="controls">
 
 <input id="search" placeholder="{{ t('recipes.search_placeholder', lang) }}" oninput="filterRecipes()">
+<div class="recipe-actions">
 <button id="add-recipe-btn" class="collapsible">{{ t('recipes.add_button', lang) }}</button>
+<button id="open-import-url-btn" class="secondary">{{ t('import.button', lang) }}</button>
+</div>
 
 <div id="add-recipe-form" class="content">
     <input id="name" placeholder="{{ t('recipes.name_placeholder', lang) }}">
@@ -246,6 +249,57 @@
         {{ t('shopping.import.button', lang) }}
     </button>
 </div>
+    </div>
+</div>
+
+<div id="import-url-modal" class="modal">
+    <div class="modal-content import-content">
+        <span id="close-import-url-modal" class="close">&times;</span>
+        <h3>{{ t('import.modal_title', lang) }}</h3>
+        <label class="field">{{ t('import.url_label', lang) }}</label>
+        <input type="url" id="import-url-input" placeholder="{{ t('import.url_placeholder', lang) }}">
+        <div id="import-url-error" class="import-error" style="display:none;"></div>
+        <div id="import-url-loading" class="import-loading" style="display:none;"><span class="spinner"></span> {{ t('import.loading', lang) }}</div>
+        <div class="import-btn-row">
+            <button id="cancel-import-url-btn" class="secondary">{{ t('common.cancel', lang) }}</button>
+            <button id="analyze-import-url-btn" class="primary">{{ t('import.analyze_button', lang) }}</button>
+        </div>
+    </div>
+</div>
+
+<div id="import-draft-modal" class="modal">
+    <div class="modal-content import-draft-content">
+        <span id="close-import-draft-modal" class="close">&times;</span>
+        <h3>{{ t('import.draft_title', lang) }}</h3>
+        <div id="import-warnings" class="import-warnings"></div>
+        <div class="source-chip" id="import-source-chip"></div>
+
+        <h4 class="import-section-title">{{ t('import.basic_section', lang) }}</h4>
+        <label class="field">{{ t('recipes.name_placeholder', lang) }}</label>
+        <input type="text" id="import-draft-name">
+        <label class="field">{{ t('recipes.description_placeholder', lang) }}</label>
+        <textarea id="import-draft-description" rows="3"></textarea>
+        <label class="field">{{ t('recipes.instructions_placeholder', lang) }}</label>
+        <textarea id="import-draft-instructions" rows="6"></textarea>
+        <label class="visibility-switch import-public-toggle">
+            <input type="checkbox" id="import-draft-is-public">
+            <span class="slider"></span>
+            <span class="labels"><span class="private">{{ t('recipes.visibility_private', lang) }}</span><span class="public">{{ t('recipes.visibility_public', lang) }}</span></span>
+        </label>
+
+        <h4 class="import-section-title">{{ t('import.source_section', lang) }}</h4>
+        <label class="field">{{ t('import.author_label', lang) }}</label>
+        <input type="text" id="import-draft-author">
+        <label class="checkbox-row"><input type="checkbox" id="import-draft-download-image">{{ t('import.download_image_label', lang) }}</label>
+        <div id="import-image-preview-row" class="image-preview-wrapper" style="display:none;"><img id="import-image-preview" class="recipe-image-preview" alt=""></div>
+
+        <h4 class="import-section-title">{{ t('import.ingredients_title', lang) }}</h4>
+        <div class="import-table-wrap"><table class="ing-edit-table"><thead><tr>
+            <th>{{ t('import.col_original', lang) }}</th><th>{{ t('import.col_qty', lang) }}</th><th>{{ t('import.col_unit', lang) }}</th><th>{{ t('import.col_name', lang) }}</th><th>{{ t('import.col_note', lang) }}</th><th></th>
+        </tr></thead><tbody id="import-ingredients-body"></tbody></table></div>
+        <button id="import-add-ingredient-btn" class="secondary small">{{ t('import.add_ingredient_button', lang) }}</button>
+        <label class="checkbox-row import-structured-toggle"><input type="checkbox" id="import-save-structured-ingredients" checked>{{ t('import.save_structured_label', lang) }}</label>
+        <div class="import-btn-row"><button id="cancel-import-draft-btn" class="secondary">{{ t('common.cancel', lang) }}</button><button id="confirm-import-btn" class="primary">{{ t('import.save_button', lang) }}</button></div>
     </div>
 </div>
 
