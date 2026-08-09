@@ -53,7 +53,8 @@ class FetchedImage:
 
 def _is_blocked_ip(ip: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
     return (
-        ip.is_private
+        not ip.is_global
+        or ip.is_private
         or ip.is_loopback
         or ip.is_link_local
         or ip.is_multicast
@@ -80,7 +81,10 @@ def _validate_url(url: str) -> tuple[str, str, int, str, str, str]:
         raise InvalidUrlError("URL is missing a host")
 
     default_port = DEFAULT_PORT_FOR_SCHEME[parts.scheme]
-    port = parts.port if parts.port is not None else default_port
+    try:
+        port = parts.port if parts.port is not None else default_port
+    except ValueError as exc:
+        raise InvalidUrlError("URL contains an invalid port") from exc
     if port not in ALLOWED_PORTS:
         raise InvalidUrlError(f"Port {port} is not allowed (only 80/443 are permitted)")
 
@@ -121,6 +125,19 @@ def _build_pinned_url(scheme: str, resolved_ip: str, port: int, path: str, query
     host_literal = f"[{resolved_ip}]" if ip_obj.version == 6 else resolved_ip
     netloc = f"{host_literal}:{port}"
     return urlunsplit((scheme, netloc, path, query, fragment))
+
+
+def _declared_length(headers) -> int | None:
+    value = headers.get("content-length")
+    if value is None:
+        return None
+    try:
+        length = int(value)
+    except (TypeError, ValueError) as exc:
+        raise UpstreamFetchError("Upstream returned an invalid Content-Length") from exc
+    if length < 0:
+        raise UpstreamFetchError("Upstream returned an invalid Content-Length")
+    return length
 
 
 async def fetch_html(url: str) -> FetchedPage:
@@ -178,8 +195,8 @@ async def fetch_html(url: str) -> FetchedPage:
                     if not any(content_type.lower().startswith(p) for p in ALLOWED_CONTENT_TYPE_PREFIXES):
                         raise UnsupportedContentTypeError(f"Unsupported Content-Type: {content_type or '(none)'}")
 
-                    content_length = response.headers.get("content-length")
-                    if content_length is not None and int(content_length) > MAX_RESPONSE_BYTES:
+                    content_length = _declared_length(response.headers)
+                    if content_length is not None and content_length > MAX_RESPONSE_BYTES:
                         raise ResponseTooLargeError(
                             f"Response too large ({content_length} bytes, limit {MAX_RESPONSE_BYTES})"
                         )
@@ -270,8 +287,8 @@ async def fetch_image(url: str) -> FetchedImage:
                     if content_type not in ALLOWED_IMAGE_CONTENT_TYPES:
                         raise UnsupportedContentTypeError(f"Unsupported image Content-Type: {content_type or '(none)'}")
 
-                    content_length = response.headers.get("content-length")
-                    if content_length is not None and int(content_length) > MAX_IMAGE_BYTES:
+                    content_length = _declared_length(response.headers)
+                    if content_length is not None and content_length > MAX_IMAGE_BYTES:
                         raise ResponseTooLargeError(
                             f"Image too large ({content_length} bytes, limit {MAX_IMAGE_BYTES})"
                         )
