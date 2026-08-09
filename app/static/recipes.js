@@ -1443,7 +1443,7 @@ function openImportDraftModal(draft) {
     ImportState.sourceUrl = draft.source_url || "";
     ImportState.sourceName = draft.source_name || "";
     ImportState.sourceAuthor = draft.source_author || "";
-    ImportState.imageUrl = draft.image_url || "";
+    ImportState.imageUrl = isSafeImportImageUrl(draft.image_url) ? draft.image_url : "";
     ImportState.ingredients = (draft.ingredients || []).map(ing => ({
         original_text: ing.original_text,
         quantity: ing.quantity,
@@ -1476,6 +1476,16 @@ function openImportDraftModal(draft) {
 
     modal.classList.add("open");
     document.body.classList.add("modal-open");
+}
+
+function isSafeImportImageUrl(value) {
+    if (typeof value !== "string" || !value.trim()) return false;
+    try {
+        const parsed = new URL(value, window.location.href);
+        return parsed.protocol === "http:" || parsed.protocol === "https:";
+    } catch (_) {
+        return false;
+    }
 }
 
 function closeImportDraftModal() {
