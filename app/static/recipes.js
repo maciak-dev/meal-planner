@@ -1343,3 +1343,362 @@ function importShoppingList() {
 
     UI.toast(t("toast.list_imported"), "success");
 }
+
+/* =========================
+   RECIPE IMPORT FROM URL
+   ========================= */
+
+const ImportState = {
+    ingredients: [],
+    sourceUrl: "",
+    sourceName: "",
+    sourceAuthor: "",
+    imageUrl: "",
+    submitting: false
+};
+
+function openImportUrlModal() {
+    const modal = document.getElementById("import-url-modal");
+    if (!modal) return;
+
+    document.getElementById("import-url-input").value = "";
+    document.getElementById("import-url-error").style.display = "none";
+    document.getElementById("import-url-loading").style.display = "none";
+    document.getElementById("analyze-import-url-btn").disabled = false;
+
+    modal.classList.add("open");
+    document.body.classList.add("modal-open");
+}
+
+function closeImportUrlModal() {
+    const modal = document.getElementById("import-url-modal");
+    if (!modal) return;
+    modal.classList.remove("open");
+    document.body.classList.remove("modal-open");
+}
+
+function showImportUrlError(message) {
+    const errorBox = document.getElementById("import-url-error");
+    errorBox.textContent = message;
+    errorBox.style.display = "block";
+}
+
+const IMPORT_ERROR_CODE_KEYS = {
+    invalid_url: "import.error.invalid_url",
+    blocked_host: "import.error.blocked_host",
+    too_many_redirects: "import.error.too_many_redirects",
+    timeout: "import.error.timeout",
+    too_large: "import.error.too_large",
+    unsupported_content_type: "import.error.unsupported_content_type",
+    no_recipe_found: "import.error.no_recipe_found",
+    upstream_error: "import.error.upstream_error",
+    import_failed: "import.error.generic"
+};
+
+function importErrorMessage(errorCode) {
+    const key = IMPORT_ERROR_CODE_KEYS[errorCode] || IMPORT_ERROR_CODE_KEYS.import_failed;
+    return t(key);
+}
+
+async function analyzeImportUrl() {
+    const input = document.getElementById("import-url-input");
+    const url = input.value.trim();
+
+    document.getElementById("import-url-error").style.display = "none";
+
+    if (!url) {
+        showImportUrlError(t("import.error.empty_url"));
+        return;
+    }
+
+    const analyzeBtn = document.getElementById("analyze-import-url-btn");
+    analyzeBtn.disabled = true;
+    document.getElementById("import-url-loading").style.display = "flex";
+
+    try {
+        const res = await Api.post("/api/v1/recipe-import/preview", { url });
+        const draft = await res.json();
+        closeImportUrlModal();
+        openImportDraftModal(draft);
+    } catch (err) {
+        let errorCode = "import_failed";
+        try {
+            const parsed = JSON.parse(err.message);
+            const detail = parsed && parsed.detail;
+            errorCode = (detail && detail.error_code) || errorCode;
+        } catch (_) {
+            // err.message wasn't JSON (network-level failure) - fall back to generic.
+        }
+        showImportUrlError(importErrorMessage(errorCode));
+    } finally {
+        analyzeBtn.disabled = false;
+        document.getElementById("import-url-loading").style.display = "none";
+    }
+}
+
+function openImportDraftModal(draft) {
+    const modal = document.getElementById("import-draft-modal");
+    if (!modal) return;
+
+    ImportState.sourceUrl = draft.source_url || "";
+    ImportState.sourceName = draft.source_name || "";
+    ImportState.sourceAuthor = draft.source_author || "";
+    ImportState.imageUrl = draft.image_url || "";
+    ImportState.ingredients = (draft.ingredients || []).map(ing => ({
+        original_text: ing.original_text,
+        quantity: ing.quantity,
+        unit: ing.unit || "",
+        name: ing.name,
+        note: ing.note || "",
+        confidence: ing.confidence,
+        requires_review: !!ing.requires_review
+    }));
+
+    document.getElementById("import-draft-name").value = draft.name || "";
+    document.getElementById("import-draft-description").value = draft.description || "";
+    document.getElementById("import-draft-instructions").value = draft.instructions || "";
+    document.getElementById("import-draft-is-public").checked = false;
+    document.getElementById("import-draft-author").value = draft.source_author || "";
+
+    const downloadImageCheckbox = document.getElementById("import-draft-download-image");
+    downloadImageCheckbox.checked = !!ImportState.imageUrl;
+    downloadImageCheckbox.disabled = !ImportState.imageUrl;
+    renderImportImagePreview();
+
+    renderImportWarnings(draft.warnings || []);
+    renderImportSourceChip();
+    renderImportIngredientsTable();
+
+    const confirmBtn = document.getElementById("confirm-import-btn");
+    confirmBtn.disabled = false;
+    confirmBtn.textContent = t("import.save_button");
+    ImportState.submitting = false;
+
+    modal.classList.add("open");
+    document.body.classList.add("modal-open");
+}
+
+function closeImportDraftModal() {
+    const modal = document.getElementById("import-draft-modal");
+    if (!modal) return;
+    modal.classList.remove("open");
+    document.body.classList.remove("modal-open");
+}
+
+function renderImportImagePreview() {
+    const row = document.getElementById("import-image-preview-row");
+    const img = document.getElementById("import-image-preview");
+    if (ImportState.imageUrl) {
+        img.src = ImportState.imageUrl;
+        row.style.display = "block";
+    } else {
+        row.style.display = "none";
+    }
+}
+
+const IMPORT_WARNING_KEYS = {
+    no_structured_recipe_data: "import.warning.no_structured_data",
+    no_ingredients_found: "import.warning.no_ingredients",
+    no_instructions_found: "import.warning.no_instructions",
+    no_image_found: "import.warning.no_image",
+    some_ingredients_need_review: "import.warning.needs_review",
+    image_download_failed: "import.warning.image_download_failed",
+    duplicate_import_returned_existing: "import.warning.duplicate"
+};
+
+function renderImportWarnings(warningCodes) {
+    const box = document.getElementById("import-warnings");
+    box.innerHTML = "";
+
+    warningCodes.forEach(code => {
+        const key = IMPORT_WARNING_KEYS[code];
+        if (!key) return;
+
+        const item = document.createElement("div");
+        item.className = "import-warning-item";
+        item.textContent = t(key);
+        box.appendChild(item);
+    });
+}
+
+function renderImportSourceChip() {
+    const chip = document.getElementById("import-source-chip");
+    chip.textContent = ImportState.sourceName
+        ? `${t("import.source_label")} ${ImportState.sourceName}`
+        : "";
+}
+
+function renderImportIngredientsTable() {
+    const body = document.getElementById("import-ingredients-body");
+    body.innerHTML = "";
+
+    ImportState.ingredients.forEach((item, index) => {
+        body.appendChild(buildImportIngredientRow(item, index));
+    });
+}
+
+function buildImportIngredientRow(item, index) {
+    const row = document.createElement("tr");
+    row.dataset.index = String(index);
+
+    const originalCell = document.createElement("td");
+    originalCell.className = "ing-original-cell";
+    originalCell.textContent = item.original_text;
+    row.appendChild(originalCell);
+
+    row.appendChild(buildImportIngredientInputCell(index, "quantity", item.quantity ?? ""));
+    row.appendChild(buildImportIngredientInputCell(index, "unit", item.unit));
+    row.appendChild(buildImportIngredientInputCell(index, "name", item.name));
+    row.appendChild(buildImportIngredientInputCell(index, "note", item.note));
+
+    const actionsCell = document.createElement("td");
+    if (item.requires_review) {
+        const pill = document.createElement("span");
+        pill.className = "ing-review-pill review";
+        pill.textContent = t("import.needs_review_pill");
+        actionsCell.appendChild(pill);
+    }
+    const removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.className = "ing-remove-btn";
+    removeBtn.textContent = "✖";
+    removeBtn.title = t("import.remove_ingredient_title");
+    removeBtn.addEventListener("click", () => removeImportIngredientRow(index));
+    actionsCell.appendChild(removeBtn);
+    row.appendChild(actionsCell);
+
+    return row;
+}
+
+function buildImportIngredientInputCell(index, field, value) {
+    const cell = document.createElement("td");
+    const input = document.createElement("input");
+    input.type = "text";
+    input.value = value === null || value === undefined ? "" : String(value);
+    input.addEventListener("input", () => {
+        ImportState.ingredients[index][field] = input.value;
+    });
+    cell.appendChild(input);
+    return cell;
+}
+
+function addImportIngredientRow() {
+    ImportState.ingredients.push({
+        original_text: "",
+        quantity: null,
+        unit: "",
+        name: "",
+        note: "",
+        confidence: null,
+        requires_review: false
+    });
+    renderImportIngredientsTable();
+}
+
+function removeImportIngredientRow(index) {
+    ImportState.ingredients.splice(index, 1);
+    renderImportIngredientsTable();
+}
+
+function buildImportConfirmPayload() {
+    return {
+        source_url: ImportState.sourceUrl,
+        source_name: ImportState.sourceName || null,
+        source_author: document.getElementById("import-draft-author").value.trim() || null,
+        name: document.getElementById("import-draft-name").value.trim(),
+        description: document.getElementById("import-draft-description").value || null,
+        instructions: document.getElementById("import-draft-instructions").value || null,
+        is_public: document.getElementById("import-draft-is-public").checked,
+        image_url: ImportState.imageUrl || null,
+        download_image: document.getElementById("import-draft-download-image").checked,
+        save_structured_ingredients: document.getElementById("import-save-structured-ingredients").checked,
+        ingredients: ImportState.ingredients.map(item => ({
+            original_text: item.original_text,
+            quantity: parseNumberOrNull(item.quantity),
+            unit: item.unit || null,
+            name: item.name,
+            note: item.note || null,
+            confidence: item.confidence,
+            requires_review: !!item.requires_review
+        }))
+    };
+}
+
+function validateImportIngredients() {
+    for (const item of ImportState.ingredients) {
+        if (!String(item.original_text || "").trim() || !String(item.name || "").trim()) {
+            UI.toast(t("import.error.ingredient_required"), "warn");
+            return false;
+        }
+    }
+    return true;
+}
+
+async function confirmImportSave() {
+    if (ImportState.submitting) return;
+
+    const nameInput = document.getElementById("import-draft-name");
+    if (!nameInput.value.trim()) {
+        UI.toast(t("import.error.title_required"), "warn");
+        return;
+    }
+    if (!validateImportIngredients()) return;
+
+    ImportState.submitting = true;
+    const confirmBtn = document.getElementById("confirm-import-btn");
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = t("import.saving");
+
+    try {
+        const payload = buildImportConfirmPayload();
+        const res = await Api.post("/api/v1/recipe-import/confirm", payload);
+        const data = await res.json();
+
+        closeImportDraftModal();
+        await Recipes.load();
+
+        if (data.warnings && data.warnings.includes("image_download_failed")) {
+            UI.toast(t("import.warning.image_download_failed"), "warn");
+        } else {
+            UI.toast(t("import.success"), "success");
+        }
+    } catch (err) {
+        let errorCode = "import_failed";
+        try {
+            const parsed = JSON.parse(err.message);
+            const detail = parsed && parsed.detail;
+            errorCode = (detail && detail.error_code) || errorCode;
+        } catch (_) {
+            // non-JSON error body - fall back to generic message.
+        }
+        UI.toast(importErrorMessage(errorCode), "error");
+    } finally {
+        ImportState.submitting = false;
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = t("import.save_button");
+    }
+}
+
+const openImportUrlBtn = document.getElementById("open-import-url-btn");
+if (openImportUrlBtn) openImportUrlBtn.addEventListener("click", openImportUrlModal);
+
+const closeImportUrlBtn = document.getElementById("close-import-url-modal");
+if (closeImportUrlBtn) closeImportUrlBtn.addEventListener("click", closeImportUrlModal);
+
+const cancelImportUrlBtn = document.getElementById("cancel-import-url-btn");
+if (cancelImportUrlBtn) cancelImportUrlBtn.addEventListener("click", closeImportUrlModal);
+
+const analyzeImportUrlBtn = document.getElementById("analyze-import-url-btn");
+if (analyzeImportUrlBtn) analyzeImportUrlBtn.addEventListener("click", analyzeImportUrl);
+
+const closeImportDraftBtn = document.getElementById("close-import-draft-modal");
+if (closeImportDraftBtn) closeImportDraftBtn.addEventListener("click", closeImportDraftModal);
+
+const cancelImportDraftBtn = document.getElementById("cancel-import-draft-btn");
+if (cancelImportDraftBtn) cancelImportDraftBtn.addEventListener("click", closeImportDraftModal);
+
+const importAddIngredientBtn = document.getElementById("import-add-ingredient-btn");
+if (importAddIngredientBtn) importAddIngredientBtn.addEventListener("click", addImportIngredientRow);
+
+const confirmImportBtn = document.getElementById("confirm-import-btn");
+if (confirmImportBtn) confirmImportBtn.addEventListener("click", confirmImportSave);

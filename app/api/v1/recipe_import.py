@@ -1,8 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.i18n import resolve_language
 from app.core.security import get_current_user
 from app.schemas.recipe_import import (
     ImportedIngredientOut,
@@ -92,14 +91,9 @@ async def preview_recipe_import(
         source_url=draft.source_url,
         source_name=draft.source_name,
         source_author=draft.author,
-        language=draft.language,
         name=draft.title,
         description=draft.description,
         instructions=draft.instructions,
-        servings=draft.servings,
-        prep_time=draft.prep_time_minutes,
-        cook_time=draft.cook_time_minutes,
-        total_time=draft.total_time_minutes,
         image_url=draft.image_url,
         ingredients=[
             ImportedIngredientOut(
@@ -120,7 +114,6 @@ async def preview_recipe_import(
 @router.post("/confirm", response_model=RecipeImportConfirmResponse)
 async def confirm_recipe_import(
     payload: RecipeImportConfirmRequest,
-    request: Request,
     db: Session = Depends(get_db),
     user=Depends(get_current_user),
 ):
@@ -128,13 +121,11 @@ async def confirm_recipe_import(
     pobiera strony ponownie - jedyny opcjonalny network call tutaj jest do
     zdjęcia, i tylko jeśli payload.download_image=True.
     """
-    lang = resolve_language(request, user)
-
     existing = recipe_service.find_recent_import(db, user.id, payload.source_url)
     if existing is not None:
         return RecipeImportConfirmResponse(
             recipe=recipe_service.to_recipe_read(
-                db, existing, lang, is_owner=True, author_username=user.username
+                db, existing, "pl", is_owner=True, author_username=user.username
             ),
             warnings=["duplicate_import_returned_existing"],
         )
@@ -150,11 +141,12 @@ async def confirm_recipe_import(
     try:
         recipe = recipe_service.create_recipe_from_import(db, payload, user.id, image_path=image_path)
     except Exception:
+        db.rollback()
         if image_path:
             delete_stored_image(image_path)
         raise
 
     return RecipeImportConfirmResponse(
-        recipe=recipe_service.to_recipe_read(db, recipe, lang, is_owner=True, author_username=user.username),
+        recipe=recipe_service.to_recipe_read(db, recipe, "pl", is_owner=True, author_username=user.username),
         warnings=warnings,
     )

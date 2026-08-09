@@ -105,9 +105,9 @@ class DraftSerializationStructureTests(unittest.TestCase):
         self.assertIsNotNone(match)
         body = match.group(1)
         for field in (
-            "source_url", "source_name", "source_author", "language", "name",
+            "source_url", "source_name", "source_author", "name",
             "description", "instructions",
-            "image_url", "download_image", "save_structured_ingredients", "ingredients",
+            "is_public", "image_url", "download_image", "save_structured_ingredients", "ingredients",
         ):
             self.assertIn(f"{field}:", body, msg=f"buildImportConfirmPayload is missing '{field}'")
 
@@ -123,7 +123,7 @@ class DraftSerializationStructureTests(unittest.TestCase):
 
     def test_import_ui_has_accessible_language_switch_and_basic_sections(self) -> None:
         for source in (RECIPES_HTML, LOGIN_HTML):
-            self.assertIn('aria-current="page"', source)
+            self.assertIn('aria-current="true"', source)
             self.assertIn('class="lang-option', source)
         self.assertIn("import.basic_section", RECIPES_HTML)
         self.assertIn("import.source_section", RECIPES_HTML)
@@ -136,6 +136,11 @@ class DraftSerializationStructureTests(unittest.TestCase):
         body = match.group(1)
         for field in ("original_text", "quantity", "unit", "name", "note", "confidence", "requires_review"):
             self.assertIn(f"{field}:", body)
+
+    def test_import_rendering_does_not_interpolate_recipe_text_as_html(self) -> None:
+        self.assertIn("originalCell.textContent = item.original_text", RECIPES_JS)
+        self.assertIn("item.textContent = t(key)", RECIPES_JS)
+        self.assertNotIn("innerHTML = item", RECIPES_JS)
 
 
 class DoubleSubmitGuardTests(unittest.TestCase):

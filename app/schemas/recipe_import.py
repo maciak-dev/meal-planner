@@ -1,6 +1,5 @@
 from pydantic import BaseModel, Field, field_validator
 
-from app.core.i18n import SUPPORTED_LANGUAGES
 from app.schemas.recipe import RecipeRead
 
 MAX_URL_LENGTH = 2000
@@ -32,14 +31,9 @@ class RecipeImportPreviewResponse(BaseModel):
     source_url: str
     source_name: str | None = None
     source_author: str | None = None
-    language: str | None = None
     name: str | None = None
     description: str | None = None
     instructions: str | None = None
-    servings: str | None = None
-    prep_time: int | None = None
-    cook_time: int | None = None
-    total_time: int | None = None
     image_url: str | None = None
     ingredients: list[ImportedIngredientOut] = []
     warnings: list[str] = []
@@ -66,28 +60,16 @@ class RecipeImportConfirmRequest(BaseModel):
     source_url: str = Field(min_length=1, max_length=MAX_URL_LENGTH)
     source_name: str | None = Field(default=None, max_length=MAX_SHORT_FIELD_LENGTH)
     source_author: str | None = Field(default=None, max_length=MAX_SHORT_FIELD_LENGTH)
-    language: str = "pl"
-
     name: str = Field(min_length=1, max_length=MAX_TITLE_LENGTH)
     description: str | None = Field(default=None, max_length=MAX_DESCRIPTION_LENGTH)
     instructions: str | None = Field(default=None, max_length=MAX_INSTRUCTIONS_LENGTH)
-    servings: str | None = Field(default=None, max_length=MAX_SHORT_FIELD_LENGTH)
-    prep_time: int | None = Field(default=None, ge=0, le=100_000)
-    cook_time: int | None = Field(default=None, ge=0, le=100_000)
-    total_time: int | None = Field(default=None, ge=0, le=100_000)
+    is_public: bool = False
 
     image_url: str | None = Field(default=None, max_length=MAX_URL_LENGTH)
     download_image: bool = False
 
     ingredients: list[ImportedIngredientIn] = Field(default_factory=list, max_length=MAX_INGREDIENTS)
     save_structured_ingredients: bool = False
-
-    @field_validator("language")
-    @classmethod
-    def _language_must_be_supported(cls, value: str) -> str:
-        if value not in SUPPORTED_LANGUAGES:
-            raise ValueError(f"Unsupported language: {value!r}")
-        return value
 
     @field_validator("source_url", "image_url")
     @classmethod
