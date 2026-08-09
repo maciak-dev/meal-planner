@@ -172,6 +172,54 @@ class RecipeImportEndpointTests(unittest.TestCase):
         response = self.client.post("/api/v1/recipe-import/preview", json={"url": "https://example.com/x"})
         self.assertEqual(response.status_code, 401)
 
+    def test_full_preview_edit_confirm_list_edit_delete_flow(self) -> None:
+        """One local-database smoke reproduces the browser's critical path."""
+        from app.db.models.recipe import Recipe
+        from app.db.models.recipe_translation import RecipeTranslation
+
+        fake = self._fake_fetch_html(load_fixture("schema_org_recipe.html"))
+        with mock.patch("app.api.v1.recipe_import.fetch_html", side_effect=fake):
+            preview = self.client.post(
+                "/api/v1/recipe-import/preview", json={"url": "https://blog.example.com/nalesniki"}
+            )
+        self.assertEqual(preview.status_code, 200)
+        self.assertEqual(self.db.query(Recipe).count(), 0)
+
+        draft = preview.json()
+        draft["name"] = "Edited imported pancakes"
+        draft["description"] = "Edited after preview"
+        draft.pop("warnings", None)
+        draft["is_public"] = True
+        draft["download_image"] = False
+        draft["save_structured_ingredients"] = True
+
+        confirmed = self.client.post("/api/v1/recipe-import/confirm", json=draft)
+        self.assertEqual(confirmed.status_code, 200)
+        recipe_id = confirmed.json()["recipe"]["id"]
+        self.assertEqual(self.db.query(Recipe).count(), 1)
+        self.assertEqual(self.db.query(RecipeTranslation).count(), 0)
+
+        listed = self.client.get("/api/v1/recipes/")
+        self.assertEqual(listed.status_code, 200)
+        self.assertEqual(listed.json()[0]["name"], "Edited imported pancakes")
+
+        updated = self.client.put(
+            f"/api/v1/recipes/{recipe_id}",
+            json={
+                "name": "Edited again",
+                "description": "d",
+                "ingredients": "1 egg",
+                "instructions": "cook",
+                "is_public": False,
+            },
+        )
+        self.assertEqual(updated.status_code, 200)
+        self.assertFalse(updated.json()["is_public"])
+
+        deleted = self.client.delete(f"/api/v1/recipes/{recipe_id}")
+        self.assertEqual(deleted.status_code, 204)
+        self.assertEqual(self.db.query(Recipe).count(), 0)
+
     # ---- confirm ----
 
     def _confirm_payload(self, **overrides) -> dict:
