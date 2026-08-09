@@ -5,6 +5,8 @@ Recipe URL import is an explicit preview/confirm workflow. `POST
 not write to the database. The browser displays the draft and the user may
 edit the recipe fields and ingredient rows. `POST
 /api/v1/recipe-import/confirm` persists only that edited payload.
+Confirm serializes the duplicate check per owner in the database transaction;
+the client-side submitting guard is an additional UX safeguard.
 
 The import package supports schema.org `Recipe` JSON-LD, including multiple
 JSON-LD blocks, `@graph`, string/list `recipeInstructions`, `HowToStep`, and
