@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timedelta
 
 from sqlalchemy.orm import Session
@@ -10,8 +11,10 @@ from app.schemas.recipe import RecipeCreate, RecipeVisibilityUpdate
 from app.schemas.recipe import RecipeRead
 from app.services.ingredient_parsing.parser import NEEDS_REVIEW_THRESHOLD
 from app.services.permissions_service import require_owner_or_admin
+from app.utils.file_utils import delete_image
 
 DUPLICATE_IMPORT_WINDOW_SECONDS = 120
+logger = logging.getLogger(__name__)
 
 
 def to_recipe_read(db: Session, recipe: Recipe, language: str, **extra) -> RecipeRead:
@@ -190,5 +193,18 @@ def delete_recipe(db: Session, recipe: Recipe, user):
     """Usuwa przepis po autoryzacji."""
     require_owner_or_admin(recipe, user)
 
+    image = recipe.image
     db.delete(recipe)
     db.commit()
+
+    # The database row is already gone. Image cleanup is best effort so a
+    # filesystem issue does not turn a successful delete into a misleading
+    # 500. Log only the recipe id; never expose the stored path.
+    if image:
+        try:
+            delete_image(image)
+        except OSError:
+            logger.warning(
+                "Could not remove image after recipe deletion",
+                extra={"recipe_id": recipe.id},
+            )
