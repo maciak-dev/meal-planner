@@ -105,7 +105,7 @@ class DraftSerializationStructureTests(unittest.TestCase):
         self.assertIsNotNone(match)
         body = match.group(1)
         for field in (
-            "source_url", "source_name", "source_author", "name",
+            "preview_token", "source_url", "source_name", "source_author", "name",
             "description", "instructions",
             "is_public", "image_url", "download_image", "save_structured_ingredients", "ingredients",
         ):
@@ -146,6 +146,13 @@ class DraftSerializationStructureTests(unittest.TestCase):
         self.assertIn("function isSafeImportImageUrl(value)", RECIPES_JS)
         self.assertIn('parsed.protocol === "http:" || parsed.protocol === "https:"', RECIPES_JS)
         self.assertIn("isSafeImportImageUrl(draft.image_url)", RECIPES_JS)
+
+    def test_preview_token_stays_in_memory_and_is_sent_on_confirm(self) -> None:
+        self.assertIn("previewToken: \"\"", RECIPES_JS)
+        self.assertIn("preview_token: ImportState.previewToken", RECIPES_JS)
+        self.assertIn("ImportState.previewToken = draft.preview_token || \"\"", RECIPES_JS)
+        self.assertIn("ImportState.previewToken = \"\"", RECIPES_JS)
+        self.assertNotIn("localStorage.setItem(\"preview_token\"", RECIPES_JS)
 
 
 class DoubleSubmitGuardTests(unittest.TestCase):

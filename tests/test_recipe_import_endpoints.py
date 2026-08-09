@@ -172,6 +172,67 @@ class RecipeImportEndpointTests(unittest.TestCase):
         response = self.client.post("/api/v1/recipe-import/preview", json={"url": "https://example.com/x"})
         self.assertEqual(response.status_code, 401)
 
+    def test_preview_returns_user_bound_token(self) -> None:
+        fake = self._fake_fetch_html(load_fixture("schema_org_recipe.html"))
+        with mock.patch("app.api.v1.recipe_import.fetch_html", side_effect=fake):
+            response = self.client.post(
+                "/api/v1/recipe-import/preview", json={"url": "https://blog.example.com/nalesniki"}
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()["preview_token"])
+        self.assertNotIn("secret", response.text.lower())
+
+    def test_confirm_requires_preview_token(self) -> None:
+        payload = self._confirm_payload()
+        payload.pop("preview_token")
+        response = self.client.post("/api/v1/recipe-import/confirm", json=payload)
+        self.assertEqual(response.status_code, 422)
+
+    def test_invalid_expired_and_source_mismatched_tokens_are_rejected(self) -> None:
+        from app.services.recipe_import.preview_tokens import PREVIEW_TOKEN_TTL_SECONDS, issue_preview_token
+
+        expired = self._confirm_payload(
+            preview_token=issue_preview_token(
+                self.user.id, "https://blog.example.com/nalesniki", now=int(__import__("time").time()) - PREVIEW_TOKEN_TTL_SECONDS - 1
+            )
+        )
+        response = self.client.post("/api/v1/recipe-import/confirm", json=expired)
+        self.assertEqual(response.status_code, 410)
+        self.assertEqual(response.json()["detail"]["error_code"], "preview_token_expired")
+
+        mismatched = self._confirm_payload(
+            preview_token=issue_preview_token(self.user.id, "https://example.com/other")
+        )
+        response = self.client.post("/api/v1/recipe-import/confirm", json=mismatched)
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["detail"]["error_code"], "preview_token_source_mismatch")
+
+        tampered = self._confirm_payload(preview_token="tampered.token")
+        response = self.client.post("/api/v1/recipe-import/confirm", json=tampered)
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["detail"]["error_code"], "invalid_preview_token")
+        self.assertNotIn("tampered", response.text)
+
+    def test_preview_token_cannot_be_confirmed_by_another_user(self) -> None:
+        from app.core.security import get_current_user
+        from app.db.models.user import User
+
+        other = User(username="other-import-user", hashed_password="x", role="user")
+        self.db.add(other)
+        self.db.commit()
+        payload = self._confirm_payload()
+        self.main_module.app.dependency_overrides[get_current_user] = lambda: other
+        try:
+            response = self.client.post("/api/v1/recipe-import/confirm", json=payload)
+        finally:
+            self.main_module.app.dependency_overrides[get_current_user] = lambda: self.user
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json()["detail"]["error_code"], "preview_token_owner_mismatch")
+        from app.db.models.recipe import Recipe
+        self.assertEqual(self.db.query(Recipe).count(), 0)
+
     def test_full_preview_edit_confirm_list_edit_delete_flow(self) -> None:
         """One local-database smoke reproduces the browser's critical path."""
         from app.db.models.recipe import Recipe
@@ -246,6 +307,14 @@ class RecipeImportEndpointTests(unittest.TestCase):
             ],
         }
         payload.update(overrides)
+        from app.services.recipe_import.preview_tokens import issue_preview_token
+
+        if "preview_token" in overrides:
+            return payload
+        if payload["source_url"].startswith(("http://", "https://")):
+            payload["preview_token"] = issue_preview_token(self.user.id, payload["source_url"])
+        else:
+            payload["preview_token"] = "not-a-token"
         return payload
 
     def test_confirm_persists_legacy_recipe_and_structured_ingredients(self) -> None:
@@ -357,9 +426,12 @@ class RecipeImportEndpointTests(unittest.TestCase):
         self.assertEqual(response.json()["recipe"]["image"], "")
 
     def test_confirm_saves_without_optional_fields(self) -> None:
+        from app.services.recipe_import.preview_tokens import issue_preview_token
+
         response = self.client.post(
             "/api/v1/recipe-import/confirm",
             json={
+                "preview_token": issue_preview_token(self.user.id, "https://example.com/minimal"),
                 "source_url": "https://example.com/minimal",
                 "name": "Minimal imported recipe",
             },
