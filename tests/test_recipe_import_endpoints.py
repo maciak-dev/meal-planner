@@ -473,13 +473,14 @@ class RecipeImportEndpointTests(unittest.TestCase):
                     "app.services.recipe_service.create_recipe_from_import", side_effect=RuntimeError("db exploded")
                 ):
                     with mock.patch("sqlalchemy.orm.Session.rollback") as rollback_mock:
-                        with self.assertRaises(RuntimeError):
-                            self.client.post(
-                                "/api/v1/recipe-import/confirm",
-                                json=self._confirm_payload(
-                                    image_url="https://example.com/photo.jpg", download_image=True
-                                ),
-                            )
+                        response = self.client.post(
+                            "/api/v1/recipe-import/confirm",
+                            json=self._confirm_payload(
+                                image_url="https://example.com/photo.jpg", download_image=True
+                            ),
+                        )
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(response.json()["detail"]["error_code"], "recipe_persistence_failed")
         rollback_mock.assert_called_once()
         delete_mock.assert_called_once_with("/static/uploads/fake-during-test.jpg")
 

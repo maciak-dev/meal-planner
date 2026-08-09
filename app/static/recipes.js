@@ -32,7 +32,10 @@ const Api = {
             try {
                 msg = await res.text();
             } catch { }
-            throw new Error(msg || t("toast.api_error"));
+            const error = new Error(msg || t("toast.api_error"));
+            error.name = "ApiError";
+            error.status = res.status;
+            throw error;
         }
 
         return res;
@@ -1399,12 +1402,47 @@ const IMPORT_ERROR_CODE_KEYS = {
     preview_token_expired: "import.error.preview_token_expired",
     preview_token_source_mismatch: "import.error.preview_token_source_mismatch",
     preview_required: "import.error.preview_required",
+    invalid_quantity: "import.error.invalid_quantity",
+    payload_invalid: "import.error.payload_invalid",
+    network_error: "import.error.network_error",
+    api_error: "import.error.api_error",
+    recipe_persistence_conflict: "import.error.recipe_persistence_conflict",
+    recipe_persistence_failed: "import.error.recipe_persistence_failed",
     import_failed: "import.error.generic"
 };
 
 function importErrorMessage(errorCode) {
     const key = IMPORT_ERROR_CODE_KEYS[errorCode] || IMPORT_ERROR_CODE_KEYS.import_failed;
     return t(key);
+}
+
+function parseNumberOrNull(value) {
+    const normalized = String(value ?? "").trim().replace(",", ".");
+    if (!normalized) return null;
+
+    const parsed = Number(normalized);
+    if (!Number.isFinite(parsed) || parsed < 0) {
+        throw new Error("invalid_quantity");
+    }
+    return parsed;
+}
+
+function importErrorCodeFromError(err) {
+    if (err && err.message === "invalid_quantity") return "invalid_quantity";
+
+    try {
+        const parsed = JSON.parse(err.message);
+        const detail = parsed && parsed.detail;
+        if (typeof detail === "object" && detail?.error_code) {
+            return detail.error_code;
+        }
+    } catch (_) {
+        // The response was not JSON; use the status/network fallback below.
+    }
+
+    if (err?.name === "TypeError") return "network_error";
+    if (err?.name === "ApiError") return "api_error";
+    return "payload_invalid";
 }
 
 async function analyzeImportUrl() {
@@ -1675,7 +1713,13 @@ async function confirmImportSave() {
     confirmBtn.textContent = t("import.saving");
 
     try {
-        const payload = buildImportConfirmPayload();
+        let payload;
+        try {
+            payload = buildImportConfirmPayload();
+        } catch (err) {
+            UI.toast(importErrorMessage(importErrorCodeFromError(err)), "error");
+            return;
+        }
         const res = await Api.post("/api/v1/recipe-import/confirm", payload);
         const data = await res.json();
 
@@ -1688,14 +1732,7 @@ async function confirmImportSave() {
             UI.toast(t("import.success"), "success");
         }
     } catch (err) {
-        let errorCode = "import_failed";
-        try {
-            const parsed = JSON.parse(err.message);
-            const detail = parsed && parsed.detail;
-            errorCode = (detail && detail.error_code) || errorCode;
-        } catch (_) {
-            // non-JSON error body - fall back to generic message.
-        }
+        const errorCode = importErrorCodeFromError(err);
         if (errorCode.startsWith("preview_token_") || errorCode === "invalid_preview_token") {
             ImportState.previewToken = "";
         }
