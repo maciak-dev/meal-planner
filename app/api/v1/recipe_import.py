@@ -26,6 +26,14 @@ from app.services.recipe_import.errors import (
 )
 from app.services.recipe_import.fetcher import fetch_html
 from app.services.recipe_import.image_storage import delete_stored_image, download_and_store_image
+from app.services.recipe_import.preview_tokens import (
+    PreviewTokenError,
+    PreviewTokenExpired,
+    PreviewTokenOwnerMismatch,
+    PreviewTokenSourceMismatch,
+    issue_preview_token,
+    verify_preview_token,
+)
 
 router = APIRouter()
 
@@ -61,6 +69,18 @@ def _raise_as_http_error(exc: RecipeImportError) -> None:
     raise HTTPException(status_code=400, detail={"error_code": _error_code_for(exc)}) from exc
 
 
+def _raise_preview_token_http_error(exc: PreviewTokenError) -> None:
+    if isinstance(exc, PreviewTokenOwnerMismatch):
+        status_code, error_code = 403, "preview_token_owner_mismatch"
+    elif isinstance(exc, PreviewTokenExpired):
+        status_code, error_code = 410, "preview_token_expired"
+    elif isinstance(exc, PreviewTokenSourceMismatch):
+        status_code, error_code = 400, "preview_token_source_mismatch"
+    else:
+        status_code, error_code = 400, "invalid_preview_token"
+    raise HTTPException(status_code=status_code, detail={"error_code": error_code}) from exc
+
+
 @router.post("/preview", response_model=RecipeImportPreviewResponse)
 async def preview_recipe_import(
     payload: RecipeImportPreviewRequest,
@@ -88,6 +108,7 @@ async def preview_recipe_import(
         warnings.append("some_ingredients_need_review")
 
     return RecipeImportPreviewResponse(
+        preview_token=issue_preview_token(user.id, draft.source_url),
         source_url=draft.source_url,
         source_name=draft.source_name,
         source_author=draft.author,
@@ -121,6 +142,11 @@ async def confirm_recipe_import(
     pobiera strony ponownie - jedyny opcjonalny network call tutaj jest do
     zdjęcia, i tylko jeśli payload.download_image=True.
     """
+    try:
+        verify_preview_token(payload.preview_token, user.id, payload.source_url)
+    except PreviewTokenError as exc:
+        _raise_preview_token_http_error(exc)
+
     recipe_service.lock_user_for_import(db, user.id)
     existing = recipe_service.find_recent_import(db, user.id, payload.source_url)
     if existing is not None:

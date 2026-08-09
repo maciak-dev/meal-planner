@@ -28,6 +28,7 @@ class ImportedIngredientOut(BaseModel):
 
 
 class RecipeImportPreviewResponse(BaseModel):
+    preview_token: str
     source_url: str
     source_name: str | None = None
     source_author: str | None = None
@@ -57,6 +58,7 @@ class RecipeImportConfirmRequest(BaseModel):
     i nigdy nie zapisuje niczego, co nie przyszło w tym payloadzie.
     """
 
+    preview_token: str = Field(min_length=1, max_length=4096)
     source_url: str = Field(min_length=1, max_length=MAX_URL_LENGTH)
     source_name: str | None = Field(default=None, max_length=MAX_SHORT_FIELD_LENGTH)
     source_author: str | None = Field(default=None, max_length=MAX_SHORT_FIELD_LENGTH)
