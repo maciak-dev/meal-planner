@@ -295,6 +295,21 @@ class RecipeDeleteCascadeTests(unittest.TestCase):
         self.assertEqual(orphan_translations, [])
         self.assertEqual(orphan_ingredients, [])
 
+    def test_delete_recipe_removes_attached_image_after_commit(self) -> None:
+        """Deleting a recipe must not leave its uploaded image orphaned."""
+        from app.services import recipe_service
+
+        recipe = self._make_recipe()
+        recipe.image = "/static/uploads/recipe-delete-test.webp"
+        self.db.commit()
+        recipe_id = recipe.id
+
+        with mock.patch("app.services.recipe_service.delete_image") as delete_image:
+            recipe_service.delete_recipe(self.db, recipe, self.user)
+
+        self.assertIsNone(recipe_service.get_recipe_by_id(self.db, recipe_id))
+        delete_image.assert_called_once_with("/static/uploads/recipe-delete-test.webp")
+
 
 if __name__ == "__main__":
     unittest.main()
