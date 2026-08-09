@@ -340,6 +340,14 @@ class RecipeImportEndpointTests(unittest.TestCase):
         count = self.db.query(Recipe).filter(Recipe.source_url == self._confirm_payload()["source_url"]).count()
         self.assertEqual(count, 1)
 
+    def test_confirm_uses_owner_lock_before_duplicate_check(self) -> None:
+        with mock.patch("app.api.v1.recipe_import.recipe_service.lock_user_for_import") as lock_mock:
+            response = self.client.post("/api/v1/recipe-import/confirm", json=self._confirm_payload())
+
+        self.assertEqual(response.status_code, 200)
+        lock_mock.assert_called_once()
+        self.assertEqual(lock_mock.call_args.args[1], self.user.id)
+
     def test_confirm_saves_without_image_when_download_not_requested(self) -> None:
         response = self.client.post(
             "/api/v1/recipe-import/confirm",

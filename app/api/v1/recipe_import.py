@@ -121,6 +121,7 @@ async def confirm_recipe_import(
     pobiera strony ponownie - jedyny opcjonalny network call tutaj jest do
     zdjęcia, i tylko jeśli payload.download_image=True.
     """
+    recipe_service.lock_user_for_import(db, user.id)
     existing = recipe_service.find_recent_import(db, user.id, payload.source_url)
     if existing is not None:
         return RecipeImportConfirmResponse(

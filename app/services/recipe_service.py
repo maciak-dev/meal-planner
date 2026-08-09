@@ -5,6 +5,7 @@ from fastapi import HTTPException, status
 
 from app.db.models.recipe import Recipe
 from app.db.models.recipe_ingredient import RecipeIngredient
+from app.db.models.user import User
 from app.schemas.recipe import RecipeCreate, RecipeVisibilityUpdate
 from app.schemas.recipe import RecipeRead
 from app.services.ingredient_parsing.parser import NEEDS_REVIEW_THRESHOLD
@@ -58,6 +59,17 @@ def find_recent_import(
         .order_by(Recipe.imported_at.desc())
         .first()
     )
+
+
+def lock_user_for_import(db: Session, user_id: int) -> None:
+    """Serialize imports for one owner before the duplicate check.
+
+    PostgreSQL's row lock closes the race where two simultaneous confirms both
+    observe no recent import and then create duplicate recipes. SQLite ignores
+    FOR UPDATE, but production uses PostgreSQL and the existing duplicate
+    window remains a best-effort fallback for that development backend.
+    """
+    db.query(User.id).filter(User.id == user_id).with_for_update().one()
 
 
 def create_recipe_from_import(db: Session, payload, user_id: int, image_path: str | None = None) -> Recipe:
