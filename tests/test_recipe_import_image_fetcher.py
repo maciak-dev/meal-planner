@@ -52,6 +52,29 @@ class FetchImageTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(image.extension, "jpg")
         self.assertEqual(image.content_type, "image/jpeg")
 
+    async def test_image_fetcher_disables_environment_proxies(self) -> None:
+        captured = []
+
+        class StubAsyncClient:
+            def __init__(self, **kwargs):
+                captured.append(kwargs)
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, *args):
+                return None
+
+            def stream(self, *args, **kwargs):
+                return FakeStreamCM(FakeStreamResponse(
+                    headers={"content-type": "image/jpeg"}, chunks=[JPEG_MAGIC]
+                ))
+
+        with mock.patch.object(fetcher.httpx, "AsyncClient", StubAsyncClient):
+            await fetcher.fetch_image("https://example.com/photo.jpg")
+
+        self.assertEqual(captured[0]["trust_env"], False)
+
     async def test_accepts_png(self) -> None:
         response = FakeStreamResponse(headers={"content-type": "image/png"}, chunks=[PNG_MAGIC])
         with mock.patch("httpx.AsyncClient.stream", return_value=FakeStreamCM(response)):

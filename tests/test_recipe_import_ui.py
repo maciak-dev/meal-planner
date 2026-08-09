@@ -142,6 +142,11 @@ class DraftSerializationStructureTests(unittest.TestCase):
         self.assertIn("item.textContent = t(key)", RECIPES_JS)
         self.assertNotIn("innerHTML = item", RECIPES_JS)
 
+    def test_import_image_preview_allows_only_http_or_https(self) -> None:
+        self.assertIn("function isSafeImportImageUrl(value)", RECIPES_JS)
+        self.assertIn('parsed.protocol === "http:" || parsed.protocol === "https:"', RECIPES_JS)
+        self.assertIn("isSafeImportImageUrl(draft.image_url)", RECIPES_JS)
+
 
 class DoubleSubmitGuardTests(unittest.TestCase):
     """Real duplicate-confirm protection is tested at the API level in

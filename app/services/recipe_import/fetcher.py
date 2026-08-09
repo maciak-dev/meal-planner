@@ -25,7 +25,7 @@ MAX_REDIRECTS = 3
 MAX_RESPONSE_BYTES = 3 * 1024 * 1024  # 3 MB, enforced on the DECOMPRESSED stream
 MAX_IMAGE_BYTES = 5 * 1024 * 1024  # 5 MB
 TIMEOUT_SECONDS = 10.0
-ALLOWED_CONTENT_TYPE_PREFIXES = ("text/html", "application/xhtml+xml")
+ALLOWED_HTML_CONTENT_TYPES = {"text/html", "application/xhtml+xml"}
 # SVG is deliberately excluded even though browsers treat it as an "image" -
 # it can carry <script>/event-handler content. HTML is excluded outright:
 # an image URL that actually serves an HTML error page must never be saved.
@@ -157,7 +157,12 @@ async def fetch_html(url: str) -> FetchedPage:
     current_url = url
     redirects_followed = 0
 
-    async with httpx.AsyncClient(follow_redirects=False, timeout=TIMEOUT_SECONDS) as client:
+    async with httpx.AsyncClient(
+        follow_redirects=False,
+        timeout=TIMEOUT_SECONDS,
+        # Do not allow an environment proxy to bypass the validated target.
+        trust_env=False,
+    ) as client:
         while True:
             scheme, hostname, port, path, query, fragment = _validate_url(current_url)
             resolved_ip = _resolve_and_validate(hostname)
@@ -191,8 +196,8 @@ async def fetch_html(url: str) -> FetchedPage:
                     if response.status_code != 200:
                         raise UpstreamFetchError(f"Upstream returned HTTP {response.status_code} for {current_url}")
 
-                    content_type = response.headers.get("content-type", "")
-                    if not any(content_type.lower().startswith(p) for p in ALLOWED_CONTENT_TYPE_PREFIXES):
+                    content_type = response.headers.get("content-type", "").split(";", 1)[0].strip().lower()
+                    if content_type not in ALLOWED_HTML_CONTENT_TYPES:
                         raise UnsupportedContentTypeError(f"Unsupported Content-Type: {content_type or '(none)'}")
 
                     content_length = _declared_length(response.headers)
@@ -252,7 +257,12 @@ async def fetch_image(url: str) -> FetchedImage:
     current_url = url
     redirects_followed = 0
 
-    async with httpx.AsyncClient(follow_redirects=False, timeout=TIMEOUT_SECONDS) as client:
+    async with httpx.AsyncClient(
+        follow_redirects=False,
+        timeout=TIMEOUT_SECONDS,
+        # Keep image fetching on the same direct, pinned network path.
+        trust_env=False,
+    ) as client:
         while True:
             scheme, hostname, port, path, query, fragment = _validate_url(current_url)
             resolved_ip = _resolve_and_validate(hostname)

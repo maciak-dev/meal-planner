@@ -33,9 +33,10 @@ ports are rejected. Every DNS result is checked, and the connection is pinned
 to the validated public IP while preserving the original Host/SNI. Each
 redirect is independently validated and pinned; redirects to private targets
 cannot bypass the guard. The fetcher limits redirects, timeout, decompressed
-HTML size and image size, and uses an allowlist for HTML and image content
-types. Error responses expose stable error codes rather than resolved IPs or
-upstream response bodies.
+HTML size and image size, uses an exact allowlist for HTML and image media
+types, and disables environment-configured HTTP proxies so requests cannot
+bypass the validated pinned destination. Error responses expose stable error
+codes rather than resolved IPs or upstream response bodies.
 
 Imported strings are untrusted. Backend values are returned as JSON and the
 existing recipe UI renders them through DOM `textContent`/properties, never as

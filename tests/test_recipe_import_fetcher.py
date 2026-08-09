@@ -195,6 +195,34 @@ class FetchHtmlBehaviorTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("ok", page.html)
         self.assertEqual(page.url, "https://example.com/recipe")
 
+    async def test_fetcher_disables_environment_proxies(self) -> None:
+        captured = []
+
+        class StubAsyncClient:
+            def __init__(self, **kwargs):
+                captured.append(kwargs)
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, *args):
+                return None
+
+            def stream(self, *args, **kwargs):
+                response = FakeStreamResponse(
+                    status_code=200,
+                    headers={"content-type": "text/html"},
+                    chunks=[b"<html>ok</html>"],
+                )
+                return FakeStreamCM(response)
+
+        with mock.patch.object(fetcher.httpx, "AsyncClient", StubAsyncClient):
+            await fetcher.fetch_html("https://example.com/recipe")
+
+        self.assertEqual(captured[0]["trust_env"], False)
+        self.assertFalse(captured[0]["follow_redirects"])
+        self.assertEqual(captured[0]["timeout"], fetcher.TIMEOUT_SECONDS)
+
     async def test_pinned_request_preserves_original_host_header(self) -> None:
         captured = {}
 
@@ -253,6 +281,12 @@ class FetchHtmlBehaviorTests(unittest.IsolatedAsyncioTestCase):
         with mock.patch("httpx.AsyncClient.stream", return_value=FakeStreamCM(response)):
             with self.assertRaises(UnsupportedContentTypeError):
                 await fetcher.fetch_html("https://example.com/file.pdf")
+
+    async def test_html_content_type_must_be_an_exact_media_type(self) -> None:
+        response = FakeStreamResponse(status_code=200, headers={"content-type": "text/html-malicious"})
+        with mock.patch("httpx.AsyncClient.stream", return_value=FakeStreamCM(response)):
+            with self.assertRaises(UnsupportedContentTypeError):
+                await fetcher.fetch_html("https://example.com/file")
 
     async def test_response_too_large_via_content_length_header(self) -> None:
         response = FakeStreamResponse(
