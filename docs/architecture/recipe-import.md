@@ -8,6 +8,28 @@ edit the recipe fields and ingredient rows. `POST
 Confirm serializes the duplicate check per owner in the database transaction;
 the client-side submitting guard is an additional UX safeguard.
 
+## Preview authorization
+
+Preview returns a short-lived authorization token alongside the editable draft.
+The token is an HMAC-SHA-256 signed JSON capability using the existing
+application `SECRET_KEY`; the secret itself is never returned or logged. Its
+claims bind the preview to the authenticated user, a SHA-256 fingerprint of
+the canonical source URL, an issue time, a ten-minute expiry and a random
+nonce. The draft contents are deliberately not signed, so the user may edit
+the title, ingredients, instructions and visibility before confirming.
+
+Confirm verifies the signature, expiry, current user and source fingerprint
+before any image download or database write. Invalid tokens return a generic
+`400`, a token for another user returns `403`, an expired token returns `410`,
+and a different source returns a generic `400`; these responses do not expose
+claims, signatures, owners or secrets. The token is not a server-side draft
+and contains no recipe content. The browser keeps it only in the current page
+state, sends it on confirm, and clears it after success or cancellation.
+
+The owner-scoped database lock and recent-import lookup remain the replay
+protection for the same user. A token replayed by another user is rejected
+before that lookup or any write.
+
 The import package supports schema.org `Recipe` JSON-LD, including multiple
 JSON-LD blocks, `@graph`, string/list `recipeInstructions`, `HowToStep`, and
 string/list/ImageObject images. A small HTML metadata fallback is retained for
