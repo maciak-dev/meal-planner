@@ -116,6 +116,8 @@
   "import.error.payload_invalid": "Edytowane dane przepisu są nieprawidłowe",
   "import.error.network_error": "Nie udało się zapisać przepisu, ponieważ żądanie sieciowe nie powiodło się",
   "import.error.api_error": "Nie udało się zapisać przepisu, ponieważ serwer zwrócił błąd",
+  "import.error.recipe_persistence_conflict": "Nie udało się zapisać przepisu z powodu konfliktu danych. Wykonaj podgląd ponownie",
+  "import.error.recipe_persistence_failed": "Nie udało się zapisać przepisu z powodu błędu bazy danych",
   "import.error.generic": "Nie udało się zaimportować przepisu",
   "import.warning.no_structured_data": "Nie znaleziono danych schema.org; część pól może wymagać uzupełnienia",
   "import.warning.no_ingredients": "Nie znaleziono składników; dodaj je ręcznie",
