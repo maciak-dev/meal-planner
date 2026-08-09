@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -162,16 +163,27 @@ async def confirm_recipe_import(
     if payload.download_image and payload.image_url:
         try:
             image_path = await download_and_store_image(payload.image_url)
-        except RecipeImportError:
+        except (RecipeImportError, OSError):
             warnings.append("image_download_failed")
 
     try:
         recipe = recipe_service.create_recipe_from_import(db, payload, user.id, image_path=image_path)
+    except IntegrityError:
+        db.rollback()
+        if image_path:
+            delete_stored_image(image_path)
+        raise HTTPException(
+            status_code=409,
+            detail={"error_code": "recipe_persistence_conflict"},
+        ) from None
     except Exception:
         db.rollback()
         if image_path:
             delete_stored_image(image_path)
-        raise
+        raise HTTPException(
+            status_code=500,
+            detail={"error_code": "recipe_persistence_failed"},
+        ) from None
 
     return RecipeImportConfirmResponse(
         recipe=recipe_service.to_recipe_read(db, recipe, "pl", is_owner=True, author_username=user.username),
