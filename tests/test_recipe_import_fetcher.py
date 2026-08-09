@@ -94,6 +94,10 @@ class ResolveAndValidateTests(unittest.TestCase):
             with self.assertRaises(BlockedHostError):
                 _resolve_and_validate(ip)
 
+    def test_blocks_shared_address_space(self) -> None:
+        with self.assertRaises(BlockedHostError):
+            _resolve_and_validate("100.64.0.1")
+
     def test_dns_resolution_failure_is_blocked_not_crashed(self) -> None:
         with mock.patch("socket.getaddrinfo", side_effect=socket.gaierror("no such host")):
             with self.assertRaises(BlockedHostError):
@@ -265,6 +269,15 @@ class FetchHtmlBehaviorTests(unittest.IsolatedAsyncioTestCase):
         with mock.patch("httpx.AsyncClient.stream", return_value=FakeStreamCM(response)):
             with self.assertRaises(ResponseTooLargeError):
                 await fetcher.fetch_html("https://example.com/huge-stream")
+
+    async def test_invalid_content_length_is_rejected(self) -> None:
+        response = FakeStreamResponse(
+            status_code=200,
+            headers={"content-type": "text/html", "content-length": "not-a-number"},
+        )
+        with mock.patch("httpx.AsyncClient.stream", return_value=FakeStreamCM(response)):
+            with self.assertRaises(UpstreamFetchError):
+                await fetcher.fetch_html("https://example.com/invalid-length")
 
     async def test_gzip_bomb_is_caught_on_decompressed_size_not_declared_length(self) -> None:
         # httpx's aiter_bytes() yields already-decompressed bytes, so a small
