@@ -261,8 +261,8 @@
         <div id="import-url-error" class="import-error" style="display:none;"></div>
         <div id="import-url-loading" class="import-loading" style="display:none;"><span class="spinner"></span> {{ t('import.loading', lang) }}</div>
         <div class="import-btn-row">
-            <button id="cancel-import-url-btn" class="secondary">{{ t('common.cancel', lang) }}</button>
-            <button id="analyze-import-url-btn" class="primary">{{ t('import.analyze_button', lang) }}</button>
+            <button type="button" id="cancel-import-url-btn" class="secondary">{{ t('common.cancel', lang) }}</button>
+            <button type="button" id="analyze-import-url-btn" class="primary">{{ t('import.analyze_button', lang) }}</button>
         </div>
     </div>
 </div>
@@ -297,9 +297,9 @@
         <div class="import-table-wrap"><table class="ing-edit-table"><thead><tr>
             <th>{{ t('import.col_original', lang) }}</th><th>{{ t('import.col_qty', lang) }}</th><th>{{ t('import.col_unit', lang) }}</th><th>{{ t('import.col_name', lang) }}</th><th>{{ t('import.col_note', lang) }}</th><th></th>
         </tr></thead><tbody id="import-ingredients-body"></tbody></table></div>
-        <button id="import-add-ingredient-btn" class="secondary small">{{ t('import.add_ingredient_button', lang) }}</button>
+        <button type="button" id="import-add-ingredient-btn" class="secondary small">{{ t('import.add_ingredient_button', lang) }}</button>
         <label class="checkbox-row import-structured-toggle"><input type="checkbox" id="import-save-structured-ingredients" checked>{{ t('import.save_structured_label', lang) }}</label>
-        <div class="import-btn-row"><button id="cancel-import-draft-btn" class="secondary">{{ t('common.cancel', lang) }}</button><button id="confirm-import-btn" class="primary">{{ t('import.save_button', lang) }}</button></div>
+        <div class="import-btn-row"><button type="button" id="cancel-import-draft-btn" class="secondary">{{ t('common.cancel', lang) }}</button><button type="button" id="confirm-import-btn" class="primary">{{ t('import.save_button', lang) }}</button></div>
     </div>
 </div>
 

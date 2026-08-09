@@ -473,13 +473,18 @@ body {
     /* =========================
     MODALS
     ========================= */
+    :root {
+        --z-modal: 100;
+        --z-toast: 200;
+    }
+
     .modal {
         display: none;
         position: fixed;
         inset: 0;
         background: rgba(10,10,10,0.95);
         padding: 60px 20px;
-        z-index: 100;
+        z-index: var(--z-modal);
     }
 
 
@@ -588,6 +593,7 @@ body.modal-open {
         opacity: 0;
         pointer-events: none;
         transition: all 0.35s ease;
+        z-index: var(--z-toast);
     }
 
     .toast.show {
