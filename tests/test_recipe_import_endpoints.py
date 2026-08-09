@@ -89,7 +89,7 @@ class RecipeImportEndpointTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertEqual(data["name"], "Naleśniki")
-        self.assertEqual(data["language"], "pl")
+        self.assertNotIn("language", data)
         self.assertEqual(len(data["ingredients"]), 3)
         self.assertEqual(data["ingredients"][0]["quantity"], 2)
         self.assertEqual(data["ingredients"][0]["name"], "jajka")
@@ -178,10 +178,10 @@ class RecipeImportEndpointTests(unittest.TestCase):
         payload = {
             "source_url": "https://blog.example.com/nalesniki",
             "source_name": "blog.example.com",
-            "language": "pl",
             "name": "Naleśniki",
             "description": "Opis",
             "instructions": "Zrób to.",
+            "is_public": False,
             "image_url": None,
             "download_image": False,
             "save_structured_ingredients": True,
@@ -200,7 +200,7 @@ class RecipeImportEndpointTests(unittest.TestCase):
         payload.update(overrides)
         return payload
 
-    def test_confirm_creates_recipe_translation_and_structured_ingredients(self) -> None:
+    def test_confirm_persists_legacy_recipe_and_structured_ingredients(self) -> None:
         response = self.client.post("/api/v1/recipe-import/confirm", json=self._confirm_payload())
         self.assertEqual(response.status_code, 200)
         data = response.json()
@@ -209,21 +209,41 @@ class RecipeImportEndpointTests(unittest.TestCase):
 
         from app.db.models.recipe import Recipe
         from app.db.models.recipe_ingredient import RecipeIngredient
-        from app.services.recipe_translation_service import get_translation
-
         recipe = self.db.query(Recipe).filter(Recipe.id == data["recipe"]["id"]).first()
         self.assertIsNotNone(recipe)
         self.assertEqual(recipe.source_url, "https://blog.example.com/nalesniki")
         self.assertIsNotNone(recipe.imported_at)
 
-        translation = get_translation(self.db, recipe.id, "pl")
-        self.assertIsNotNone(translation)
-        self.assertEqual(translation.name, "Naleśniki")
-
         ingredients = self.db.query(RecipeIngredient).filter(RecipeIngredient.recipe_id == recipe.id).all()
         self.assertEqual(len(ingredients), 1)
         self.assertEqual(ingredients[0].parsed_name, "jajka")
         self.assertEqual(ingredients[0].ingredient_id, None)  # never auto-mapped
+
+    def test_confirm_preserves_edited_visibility(self) -> None:
+        response = self.client.post(
+            "/api/v1/recipe-import/confirm",
+            json=self._confirm_payload(is_public=True, name="Edited imported recipe"),
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()["recipe"]["is_public"])
+
+    def test_untrusted_import_text_is_returned_as_data_not_markup(self) -> None:
+        payload = self._confirm_payload(
+            name='<img src=x onerror="window.__XSS=1">',
+            description='<script>window.__XSS=2</script>',
+            ingredients=[
+                {
+                    "original_text": '<svg onload="window.__XSS=3">',
+                    "name": '<svg onload="window.__XSS=3">',
+                }
+            ],
+        )
+        response = self.client.post("/api/v1/recipe-import/confirm", json=payload)
+        self.assertEqual(response.status_code, 200)
+        recipe = response.json()["recipe"]
+        self.assertIn("<img", recipe["name"])
+        self.assertIn("<script>", recipe["description"])
+        self.assertIn("<svg", recipe["ingredients"])
 
     def test_confirm_without_structured_ingredients_flag_skips_recipe_ingredient_rows(self) -> None:
         response = self.client.post(
@@ -248,10 +268,6 @@ class RecipeImportEndpointTests(unittest.TestCase):
         payload = self._confirm_payload()
         payload["name"] = ""
         response = self.client.post("/api/v1/recipe-import/confirm", json=payload)
-        self.assertEqual(response.status_code, 422)
-
-    def test_confirm_rejects_unsupported_language(self) -> None:
-        response = self.client.post("/api/v1/recipe-import/confirm", json=self._confirm_payload(language="de"))
         self.assertEqual(response.status_code, 422)
 
     def test_confirm_rejects_non_http_source_url(self) -> None:
@@ -283,6 +299,19 @@ class RecipeImportEndpointTests(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["recipe"]["image"], "")
+
+    def test_confirm_saves_without_optional_fields(self) -> None:
+        response = self.client.post(
+            "/api/v1/recipe-import/confirm",
+            json={
+                "source_url": "https://example.com/minimal",
+                "name": "Minimal imported recipe",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        recipe = response.json()["recipe"]
+        self.assertEqual(recipe["name"], "Minimal imported recipe")
+        self.assertEqual(recipe["ingredients"], "")
 
     def test_confirm_saves_recipe_without_image_when_download_fails(self) -> None:
         from app.services.recipe_import.errors import UpstreamFetchError

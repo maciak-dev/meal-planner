@@ -209,10 +209,10 @@ class NoProductFeatureLeakedTests(unittest.TestCase):
     osobnym pakietem, więc ta część asercji została **świadomie zdjęta**;
     granica przesunęła się, nie zniknęła.
 
-    Nadal poza zakresem i nadal pilnowane: import przepisu z URL oraz warstwa
-    tłumaczeń TREŚCI przepisu (`recipe_translations` jako funkcja produktowa).
-    Schemat ma te tabele gotowe od PR #16 — to nie znaczy, że wolno je włączyć
-    przy okazji."""
+    Nadal poza zakresem i nadal pilnowana jest warstwa tłumaczeń TREŚCI
+    przepisu (`recipe_translations` jako funkcja produktowa). Import URL ma
+    własne testy zakresu w test_recipe_import_*; ten pakiet świadomie go
+    aktywuje bez tworzenia tłumaczeń treści."""
 
     REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -231,36 +231,32 @@ class NoProductFeatureLeakedTests(unittest.TestCase):
         leaked = sorted(str(p.relative_to(self.REPO_ROOT)) for p in target.glob("**/*.py"))
         self.assertEqual(leaked, [], f"Kod z innego PR-a w {relative_path}: {leaked}")
 
-    def test_import_feature_is_absent(self) -> None:
+    def test_import_feature_is_present_as_an_explicit_package(self) -> None:
         for path in (
-            "app/services/recipe_import",
+            "app/services/recipe_import/fetcher.py",
             "app/api/v1/recipe_import.py",
             "app/schemas/recipe_import.py",
-            "app/services/ingredient_parsing",
         ):
             with self.subTest(path=path):
-                self._assert_no_sources_under(path)
+                self.assertTrue((self.REPO_ROOT / path).is_file())
 
     def test_recipe_content_translation_service_is_absent(self) -> None:
         """i18n INTERFEJSU jest dozwolone. Tłumaczenie TREŚCI przepisu - nie."""
         self._assert_no_sources_under("app/services/recipe_translation_service.py")
 
-    def test_no_router_references_import_endpoints(self) -> None:
+    def test_router_references_only_the_import_package(self) -> None:
         router = (self.REPO_ROOT / "app/api/v1/router.py").read_text(encoding="utf-8")
-        self.assertNotIn("recipe_import", router)
+        self.assertIn("recipe_import_router", router)
 
-    def test_frontend_has_no_import_or_content_language_controls(self) -> None:
+    def test_frontend_has_import_but_no_content_language_controls(self) -> None:
         template = (self.REPO_ROOT / "app/templates/recipes.html").read_text(encoding="utf-8")
         # `set-lang` świadomie NIE jest tu wymieniony - przełącznik języka
         # interfejsu jest dozwolony. `add-content-language` to selektor języka
         # TREŚCI przepisu i nadal nie należy do żadnego wdrożonego pakietu.
-        for marker in (
-            "import-url-modal",
-            "import-draft-modal",
-            "add-content-language",
-            "edit-content-language",
-        ):
-            self.assertNotIn(marker, template, f"{marker} nie należy do tego pakietu")
+        self.assertIn("import-url-modal", template)
+        self.assertIn("import-draft-modal", template)
+        self.assertNotIn("add-content-language", template)
+        self.assertNotIn("edit-content-language", template)
 
     def test_recipe_schema_has_no_content_language_field(self) -> None:
         """RecipeCreate/RecipeRead bez pola `language` - inaczej tłumaczenie
