@@ -116,6 +116,8 @@
   "import.error.payload_invalid": "The edited recipe data is invalid",
   "import.error.network_error": "The recipe could not be saved because the network request failed",
   "import.error.api_error": "The recipe could not be saved because the server returned an error",
+  "import.error.recipe_persistence_conflict": "The recipe could not be saved because of a data conflict. Please try the preview again",
+  "import.error.recipe_persistence_failed": "The recipe could not be saved because of a database error",
   "import.error.generic": "The recipe could not be imported",
   "import.warning.no_structured_data": "No structured recipe data was found; some fields may need manual input",
   "import.warning.no_ingredients": "No ingredients were found; add them manually",

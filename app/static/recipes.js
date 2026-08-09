@@ -1406,6 +1406,8 @@ const IMPORT_ERROR_CODE_KEYS = {
     payload_invalid: "import.error.payload_invalid",
     network_error: "import.error.network_error",
     api_error: "import.error.api_error",
+    recipe_persistence_conflict: "import.error.recipe_persistence_conflict",
+    recipe_persistence_failed: "import.error.recipe_persistence_failed",
     import_failed: "import.error.generic"
 };
 
