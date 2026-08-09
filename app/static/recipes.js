@@ -1354,6 +1354,7 @@ const ImportState = {
     sourceName: "",
     sourceAuthor: "",
     imageUrl: "",
+    previewToken: "",
     submitting: false
 };
 
@@ -1365,6 +1366,7 @@ function openImportUrlModal() {
     document.getElementById("import-url-error").style.display = "none";
     document.getElementById("import-url-loading").style.display = "none";
     document.getElementById("analyze-import-url-btn").disabled = false;
+    ImportState.previewToken = "";
 
     modal.classList.add("open");
     document.body.classList.add("modal-open");
@@ -1392,6 +1394,11 @@ const IMPORT_ERROR_CODE_KEYS = {
     unsupported_content_type: "import.error.unsupported_content_type",
     no_recipe_found: "import.error.no_recipe_found",
     upstream_error: "import.error.upstream_error",
+    invalid_preview_token: "import.error.invalid_preview_token",
+    preview_token_owner_mismatch: "import.error.preview_token_owner_mismatch",
+    preview_token_expired: "import.error.preview_token_expired",
+    preview_token_source_mismatch: "import.error.preview_token_source_mismatch",
+    preview_required: "import.error.preview_required",
     import_failed: "import.error.generic"
 };
 
@@ -1440,6 +1447,7 @@ function openImportDraftModal(draft) {
     const modal = document.getElementById("import-draft-modal");
     if (!modal) return;
 
+    ImportState.previewToken = draft.preview_token || "";
     ImportState.sourceUrl = draft.source_url || "";
     ImportState.sourceName = draft.source_name || "";
     ImportState.sourceAuthor = draft.source_author || "";
@@ -1493,6 +1501,7 @@ function closeImportDraftModal() {
     if (!modal) return;
     modal.classList.remove("open");
     document.body.classList.remove("modal-open");
+    ImportState.previewToken = "";
 }
 
 function renderImportImagePreview() {
@@ -1612,6 +1621,7 @@ function removeImportIngredientRow(index) {
 
 function buildImportConfirmPayload() {
     return {
+        preview_token: ImportState.previewToken,
         source_url: ImportState.sourceUrl,
         source_name: ImportState.sourceName || null,
         source_author: document.getElementById("import-draft-author").value.trim() || null,
@@ -1647,6 +1657,11 @@ function validateImportIngredients() {
 async function confirmImportSave() {
     if (ImportState.submitting) return;
 
+    if (!ImportState.previewToken) {
+        UI.toast(t("import.error.preview_required"), "error");
+        return;
+    }
+
     const nameInput = document.getElementById("import-draft-name");
     if (!nameInput.value.trim()) {
         UI.toast(t("import.error.title_required"), "warn");
@@ -1680,6 +1695,9 @@ async function confirmImportSave() {
             errorCode = (detail && detail.error_code) || errorCode;
         } catch (_) {
             // non-JSON error body - fall back to generic message.
+        }
+        if (errorCode.startsWith("preview_token_") || errorCode === "invalid_preview_token") {
+            ImportState.previewToken = "";
         }
         UI.toast(importErrorMessage(errorCode), "error");
     } finally {
