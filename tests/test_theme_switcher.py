@@ -53,6 +53,11 @@ class ThemeContractTests(unittest.TestCase):
     def test_switcher_offers_every_theme(self) -> None:
         for theme in EXPECTED_THEMES:
             self.assertIn(f'data-theme-option="{theme}"', RECIPES_HTML)
+            self.assertIn(f'data-theme-option="{theme}"', LOGIN_HTML)
+
+    def test_login_uses_explicit_selector(self) -> None:
+        self.assertIn('class="lang-switch theme-switch"', LOGIN_HTML)
+        self.assertNotIn("onclick=\"toggleTheme()\"", LOGIN_HTML)
 
     def test_map_theme_visual_foundation(self) -> None:
         """Kontrakt motywu map: tokeny prywatnego MAP, bez glow i gradientów."""

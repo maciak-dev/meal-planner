@@ -29,7 +29,12 @@
     {# Przełącznik języka jest osobnym formularzem POST, więc nie może być
        zagnieżdżony w formularzu logowania - stąd renderowanie go obok, a
        pozycjonowanie w rogu przez CSS. #}
-    <button type="button" class="theme-btn" onclick="toggleTheme()">{{ t('login.switch_theme', lang) }}</button>
+    <div class="lang-switch theme-switch" role="group"
+         aria-label="{{ t('login.switch_theme', lang) }}">
+        <button type="button" class="lang-option" data-theme-option="theme-cyber">{{ t('theme.cyber', lang) }}</button>
+        <button type="button" class="lang-option" data-theme-option="theme-scandi">{{ t('theme.scandi', lang) }}</button>
+        <button type="button" class="lang-option" data-theme-option="theme-map">{{ t('theme.map', lang) }}</button>
+    </div>
 
     {% if error %}
     <div class="error">{{ error }}</div>
@@ -66,16 +71,13 @@ function setTheme(theme) {
     localStorage.setItem("theme", theme);
 }
 
-// Pojedynczy przycisk na ekranie logowania przełącza motywy cyklicznie.
-function toggleTheme() {
-    const current = THEMES.find(t => document.body.classList.contains(t)) || THEMES[0];
-    setTheme(THEMES[(THEMES.indexOf(current) + 1) % THEMES.length]);
-}
-
 // ON LOAD
 (function(){
     const saved = localStorage.getItem("theme") || THEMES[0];
     setTheme(saved);
+    document.querySelectorAll("[data-theme-option]").forEach(btn => {
+        btn.addEventListener("click", () => setTheme(btn.dataset.themeOption));
+    });
 })();
 </script>
 
