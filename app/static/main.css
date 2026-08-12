@@ -956,6 +956,26 @@ body.modal-open {
     margin-bottom: 0;
 }
 
+/* =========================
+   PRZEŁĄCZNIK MOTYWU (burger menu)
+   Ten sam wzorzec segmentowy co .lang-switch; trzy opcje:
+   cyber / scandi / map. Styl kolorystyczny dziedziczy z motywu
+   (lang-switch/lang-option), tu tylko układ wewnątrz burger menu.
+   ========================= */
+.theme-switch {
+    width: 100%;
+    margin-bottom: 8px;
+}
+
+/* nadpisuje .burger-menu button (display:block; width:100%),
+   żeby opcje stały obok siebie jak w .lang-switch */
+.burger-menu .theme-switch button {
+    display: inline-flex;
+    width: auto;
+    flex: 1;
+    margin-bottom: 0;
+}
+
 .burger-menu.open {
     display: flex;
 }

@@ -364,3 +364,453 @@ body.theme-scandi .recipe-badge.foreign {
     border: 1px solid rgba(63,76,90,0.18);
     box-shadow: none;
 }
+
+/* =========================
+   MAP THEME (dark-first)
+   =========================
+   Trzeci motyw Meal Plannera. Wizualny fundament prywatnego MAP
+   (bg #171614, surface #1C1B18, turkus #3AA99F, bursztyn #D9A03F,
+   Space Grotesk / Inter / JetBrains Mono), przeniesiony na istniejącą
+   strukturę Meal Plannera. Bez glow, bez gradientów dekoracyjnych,
+   bez text-shadow; hierarchia przez border / surface / spacing.
+   Mono wyłącznie tam, gdzie naturalnie występują fakty (ilości).
+   ========================= */
+body.theme-map {
+    /* ---- tokeny (współdzielone nazwy z main.css) ---- */
+    --bg-main: #171614;
+    --bg-panel: #1C1B18;
+    --bg-muted: #23211D;
+
+    --text-body: #E9E6DF;
+    --text-heading: #E9E6DF;
+    --text-muted: #9B968A;
+    --text-box: #E9E6DF;
+
+    --accent-primary: #3AA99F;   /* turkus — akcja / focus */
+    --accent-secondary: #3AA99F; /* map nie rozdziela cyan/mint; stany aktywne = turkus */
+    --accent-danger: #E05252;
+
+    /* cienie ~zero; "pop" tylko dla warstw wyniesionych (modal/toast/menu) */
+    --shadow-primary: 0 1px 2px rgba(10, 9, 7, 0.4);
+    --shadow-secondary: none;
+
+    --font-body: 'Inter', sans-serif;
+    --font-heading: 'Space Grotesk', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+
+    /* tokeny map-only (hairline'y) */
+    --map-line: #2A2823;
+    --map-line-strong: #3A372F;
+    --map-pop-shadow: 0 18px 50px rgba(10, 9, 7, 0.45);
+    --map-primary-ink: #10201D;  /* tekst na wypełnionym turkusie */
+    --map-work: #D9A03F;         /* bursztyn — dostępny dla stanów "w toku" */
+
+    --done-slider-bg: #3A372F;
+    --done-slider-checked-bg: #3AA99F;
+
+    background: var(--bg-main);
+    background-image: none;      /* bez dot-gridu cyber */
+    color: var(--text-body);
+}
+
+/* ---- typografia ---- */
+body.theme-map h1,
+body.theme-map h2,
+body.theme-map h3 {
+    color: var(--text-heading);
+    font-family: var(--font-heading);
+    letter-spacing: -0.01em;
+    text-shadow: none;
+}
+
+/* hairline zamiast gradientowego podkreślenia */
+body.theme-map h3::after {
+    height: 1px;
+    background: var(--map-line-strong);
+}
+
+/* ---- inputy ---- */
+body.theme-map input,
+body.theme-map textarea,
+body.theme-map select {
+    background: var(--bg-panel);
+    color: var(--text-body);
+    border: 1px solid var(--map-line-strong);
+    border-radius: 6px;
+    box-shadow: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+body.theme-map input::placeholder,
+body.theme-map textarea::placeholder {
+    color: #6D675C;
+}
+
+body.theme-map input:focus,
+body.theme-map textarea:focus,
+body.theme-map select:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px rgba(58, 169, 159, 0.25);
+}
+
+body.theme-map input[type="file"] {
+    border: 1px dashed var(--map-line-strong);
+    color: var(--text-muted);
+}
+
+body.theme-map input[type="file"]:hover {
+    border-color: var(--accent-primary);
+}
+
+/* ---- przyciski (bez gradientów, bez glow) ---- */
+body.theme-map button {
+    font-family: var(--font-body);
+    font-weight: 500;
+    border-radius: 6px;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+body.theme-map button:hover {
+    box-shadow: none;
+}
+
+body.theme-map button.primary {
+    background: var(--accent-primary);
+    color: var(--map-primary-ink);
+}
+
+body.theme-map button.primary:hover {
+    background: #33978E;
+}
+
+body.theme-map button.secondary {
+    background: transparent;
+    border: 1px solid var(--map-line-strong);
+    color: var(--text-muted);
+}
+
+body.theme-map button.secondary:hover {
+    background: var(--bg-muted);
+    color: var(--text-body);
+}
+
+body.theme-map button.danger {
+    background: transparent;
+    border: 1px solid var(--accent-danger);
+    color: var(--accent-danger);
+}
+
+body.theme-map button.danger:hover {
+    background: rgba(224, 82, 82, 0.1);
+    box-shadow: none;
+}
+
+/* ---- nawigacja modułów (topbar) ---- */
+body.theme-map .nav-tab {
+    border: 1px solid transparent;
+    border-radius: 6px;
+    color: var(--text-muted);
+}
+
+body.theme-map .nav-tab:hover {
+    box-shadow: none;
+    background: var(--bg-muted);
+    color: var(--text-body);
+    border: 1px solid transparent;
+}
+
+body.theme-map .nav-tab.active {
+    color: var(--accent-primary);
+    border-color: var(--map-line-strong);
+    background: var(--bg-panel);
+}
+
+/* ---- collapsible / content ---- */
+body.theme-map .collapsible {
+    background: var(--bg-panel);
+    border: 1px solid var(--map-line-strong);
+    color: var(--text-body);
+    box-shadow: none;
+}
+
+body.theme-map .content {
+    background: var(--bg-panel);
+    border: 1px solid var(--map-line-strong);
+}
+
+/* ---- divider: hairline zamiast gradientu ---- */
+body.theme-map .divider {
+    background: var(--map-line);
+}
+
+/* ---- karta przepisu ---- */
+body.theme-map .recipe-box {
+    background: var(--bg-panel);
+    border: 1px solid var(--map-line);
+    border-radius: 8px;
+    box-shadow: none;
+    color: var(--text-body);
+    transition: border-color 0.15s ease;
+}
+
+body.theme-map .recipe-box:hover {
+    border-color: var(--map-line-strong);
+}
+
+body.theme-map .recipe-box h3 {
+    color: var(--text-heading);
+}
+
+body.theme-map .recipe-image {
+    border: 1px solid var(--map-line);
+    box-shadow: none;
+}
+
+/* ---- badge przepisu (kształt MP, kolory map) ---- */
+body.theme-map .recipe-badge {
+    backdrop-filter: none;
+    box-shadow: none;
+}
+
+body.theme-map .recipe-badge.mine.public {
+    background: rgba(58, 169, 159, 0.1);
+    border-color: rgba(58, 169, 159, 0.4);
+    color: var(--accent-primary);
+}
+
+body.theme-map .recipe-badge.mine.private {
+    background: transparent;
+    border-color: var(--map-line-strong);
+    color: var(--text-muted);
+}
+
+body.theme-map .recipe-badge.foreign {
+    background: transparent;
+    border-color: var(--map-line);
+    color: var(--text-muted);
+}
+
+/* ---- składniki: natywny checkbox z turkusowym akcentem ---- */
+body.theme-map .ingredient input[type="checkbox"] {
+    accent-color: var(--accent-primary);
+}
+
+/* ---- lista zakupów ---- */
+body.theme-map .shopping-item {
+    background: var(--bg-panel);
+    border: 1px solid var(--map-line);
+    border-radius: 8px;
+}
+
+body.theme-map .shopping-item.done {
+    opacity: 0.45;
+    background: var(--bg-main);
+}
+
+/* ilość = fakt → mono (jedyne miejsce mono poza metadanymi importu) */
+body.theme-map .item-qty,
+body.theme-map .qty {
+    font-family: var(--font-mono);
+    font-weight: 500;
+    color: var(--accent-primary);
+}
+
+body.theme-map .qty-btn {
+    border: 1px solid var(--map-line-strong);
+    color: var(--accent-primary);
+    background: transparent;
+}
+
+body.theme-map .qty-btn:hover {
+    background: var(--accent-primary);
+    color: var(--map-primary-ink);
+    opacity: 1;
+}
+
+/* done-switch: neutralny tor, checked = turkus, neutralna gałka */
+body.theme-map .done-slider::before {
+    background: #E9E6DF;
+}
+
+body.theme-map .done-switch input:checked + .done-slider::before {
+    background: var(--map-primary-ink);
+}
+
+/* visibility-switch (PRYWATNY/PUBLICZNY) */
+body.theme-map .visibility-switch .slider {
+    background: var(--bg-muted);
+    border: 1px solid var(--map-line-strong);
+}
+
+body.theme-map .visibility-switch .slider::before {
+    background: var(--text-muted);
+}
+
+body.theme-map .visibility-switch input:checked + .slider::before {
+    background: var(--accent-primary);
+}
+
+body.theme-map .visibility-switch input:not(:checked) ~ .labels .private,
+body.theme-map .visibility-switch input:checked ~ .labels .public {
+    color: var(--accent-primary);
+}
+
+/* ---- modale ---- */
+body.theme-map .modal {
+    background: rgba(13, 12, 11, 0.9);
+}
+
+body.theme-map .modal-content {
+    background: var(--bg-panel);
+    border: 1px solid var(--map-line-strong);
+    border-radius: 8px;
+    box-shadow: var(--map-pop-shadow);
+    color: var(--text-body);
+}
+
+body.theme-map .close {
+    color: var(--text-muted);
+}
+
+/* ---- toast ---- */
+body.theme-map .toast {
+    background: var(--bg-panel);
+    border: 1px solid var(--map-line-strong);
+    color: var(--text-body);
+    box-shadow: var(--map-pop-shadow);
+}
+
+/* ---- burger menu ---- */
+body.theme-map .burger-menu {
+    background: var(--bg-panel);
+    backdrop-filter: none;
+    border: 1px solid var(--map-line-strong);
+    border-radius: 8px;
+    box-shadow: var(--map-pop-shadow);
+}
+
+body.theme-map .burger-menu::after {
+    display: none;               /* bez scanline'a cyber */
+}
+
+body.theme-map .burger-btn {
+    color: var(--text-muted);
+}
+
+body.theme-map .burger-btn.active {
+    color: var(--accent-primary);
+}
+
+/* ---- user badge: spokojna wersja, bez glow ---- */
+body.theme-map .user-badge {
+    border: 1px solid var(--map-line-strong);
+    color: var(--text-body);
+    background: var(--bg-panel);
+    font-family: var(--font-body);
+    font-weight: 500;
+    text-shadow: none;
+    box-shadow: none;
+}
+
+/* ---- lang switch ---- */
+body.theme-map .lang-switch {
+    border: 1px solid var(--map-line-strong);
+    background: var(--bg-panel);
+    box-shadow: none;
+    border-radius: 6px;
+}
+
+body.theme-map .lang-option {
+    color: var(--text-muted);
+    font-family: var(--font-body);
+    font-weight: 500;
+}
+
+body.theme-map .lang-option.active {
+    color: var(--accent-primary);
+    background: rgba(58, 169, 159, 0.1);
+    box-shadow: inset 0 -2px 0 var(--accent-primary);
+}
+
+body.theme-map .lang-option:hover {
+    color: var(--text-body);
+    background: var(--bg-muted);
+}
+
+/* ---- import (metadane techniczne) ---- */
+body.theme-map .ing-edit-table th {
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--map-line-strong);
+}
+
+body.theme-map .ing-edit-table td {
+    border-bottom: 1px solid var(--map-line);
+}
+
+body.theme-map .ing-review-pill.ok {
+    background: rgba(58, 169, 159, 0.12);
+    color: var(--accent-primary);
+}
+
+body.theme-map .ing-review-pill.review {
+    background: rgba(217, 160, 63, 0.15);
+    color: var(--map-work);
+}
+
+body.theme-map .import-warning-item {
+    background: rgba(217, 160, 63, 0.1);
+    border: 1px solid rgba(217, 160, 63, 0.35);
+    color: var(--map-work);
+}
+
+body.theme-map .source-chip {
+    color: var(--text-muted);
+    background: var(--bg-muted);
+    border: 1px solid var(--map-line);
+}
+
+body.theme-map .spinner {
+    border: 2px solid var(--map-line-strong);
+    border-top-color: var(--accent-primary);
+}
+
+/* ---- login ---- */
+body.theme-map .login-form,
+body.login.theme-map form.login-form {
+    border: 1px solid var(--map-line-strong);
+    border-radius: 8px;
+    box-shadow: var(--map-pop-shadow);
+    background: var(--bg-panel);
+}
+
+body.theme-map button.login-btn {
+    background: var(--accent-primary);
+    color: var(--map-primary-ink);
+}
+
+body.theme-map button.theme-btn {
+    border: 1px solid var(--map-line-strong);
+    color: var(--text-muted);
+    background: transparent;
+}
+
+/* ---- mobile (tryb zakupów / topbar) ---- */
+@media (max-width: 700px) {
+    body.theme-map .topbar-left h1 {
+        border: 1px solid var(--map-line-strong);
+        box-shadow: none;
+    }
+
+    body.theme-map .module-nav {
+        background: var(--bg-panel);
+        border: 1px solid var(--map-line-strong);
+        box-shadow: var(--map-pop-shadow);
+    }
+
+    body.theme-map .module-nav.open {
+        background: rgba(23, 22, 20, 0.95);
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+    }
+}
