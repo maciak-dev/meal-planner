@@ -14,6 +14,8 @@
 <!-- FONTS -->
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600&family=Orbitron:wght@400;600&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@400;500;600&display=swap" rel="stylesheet">
+<!-- Motyw map: Space Grotesk (nagłówki) + JetBrains Mono (fakty/ilości) -->
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
 <!-- CSS -->
 <link rel="stylesheet" href="/static/main.css">
@@ -72,12 +74,15 @@
 </div>
 
 <div id="burger-menu" class="burger-menu">
-        <button
-            id="theme-toggle"
-            class="secondary small"
-            >
-            {{ t('burger.switch_theme', lang) }}
-            </button>
+        {# Wybór motywu: ten sam wzorzec segmentowy co .lang-switch.
+           Aktywną opcję podświetla UI.theme.syncSwitcher (recipes.js);
+           preferencja żyje w localStorage("theme") jak dotychczas. #}
+        <div class="lang-switch theme-switch" role="group"
+             aria-label="{{ t('burger.switch_theme', lang) }}">
+            <button type="button" class="lang-option" data-theme-option="theme-cyber">{{ t('theme.cyber', lang) }}</button>
+            <button type="button" class="lang-option" data-theme-option="theme-scandi">{{ t('theme.scandi', lang) }}</button>
+            <button type="button" class="lang-option" data-theme-option="theme-map">{{ t('theme.map', lang) }}</button>
+        </div>
         {# Pozycja "Ingredients" usunięta: prowadziła wyłącznie do toastu
            "feature coming soon". Wraca, gdy będzie co pokazać. #}
 

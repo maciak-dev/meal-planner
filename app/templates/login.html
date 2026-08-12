@@ -14,6 +14,8 @@
 <!-- FONTS -->
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600&family=Orbitron:wght@400;600&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@400;500;600&display=swap" rel="stylesheet">
+<!-- Motyw map: Space Grotesk (nagłówki) + JetBrains Mono (fakty/ilości) -->
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
 <!-- CSS -->
 <link rel="stylesheet" href="/static/main.css">
@@ -54,20 +56,25 @@
 
 <script>
 // THEME FUNCTIONS
+// Ta sama lista i ten sam klucz localStorage co w recipes.js (UI.theme).
+const THEMES = ["theme-cyber", "theme-scandi", "theme-map"];
+
 function setTheme(theme) {
-    document.body.classList.remove("theme-cyber","theme-scandi");
+    if (!THEMES.includes(theme)) theme = THEMES[0];
+    document.body.classList.remove(...THEMES);
     document.body.classList.add(theme);
     localStorage.setItem("theme", theme);
 }
 
+// Pojedynczy przycisk na ekranie logowania przełącza motywy cyklicznie.
 function toggleTheme() {
-    const current = document.body.classList.contains("theme-scandi") ? "theme-scandi" : "theme-cyber";
-    setTheme(current === "theme-scandi" ? "theme-cyber" : "theme-scandi");
+    const current = THEMES.find(t => document.body.classList.contains(t)) || THEMES[0];
+    setTheme(THEMES[(THEMES.indexOf(current) + 1) % THEMES.length]);
 }
 
 // ON LOAD
 (function(){
-    const saved = localStorage.getItem("theme") || "theme-cyber";
+    const saved = localStorage.getItem("theme") || THEMES[0];
     setTheme(saved);
 })();
 </script>

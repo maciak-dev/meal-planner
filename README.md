@@ -13,6 +13,7 @@ GitHub: [https://github.com/maciak-dev/meal-planner](https://github.com/maciak-d
 - Automatic admin in development 
 - Environment-based config (`dev`, `prod`, `rc`)
 - Secure password hashing (bcrypt)
+- Three UI themes: `cyber` (default), `scandi`, `map` — selected in the burger menu, remembered per browser in `localStorage("theme")` (theme blocks live in `app/static/themes.css`)
 
 ---
 
