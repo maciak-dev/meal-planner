@@ -107,21 +107,37 @@ const UI = {
     },
 
     theme: {
+        /* Kolejność definiuje też cykl przełączania (toggle). Nowe motywy
+           dopisujemy tutaj + blok body.theme-* w themes.css. */
+        THEMES: ["theme-cyber", "theme-scandi", "theme-map"],
+
         set(theme) {
-            document.body.classList.remove("theme-cyber", "theme-scandi");
+            if (!this.THEMES.includes(theme)) theme = this.THEMES[0];
+            document.body.classList.remove(...this.THEMES);
             document.body.classList.add(theme);
             localStorage.setItem("theme", theme);
+            this.syncSwitcher(theme);
         },
 
+        current() {
+            return this.THEMES.find(t => document.body.classList.contains(t)) || this.THEMES[0];
+        },
+
+        /* Zachowane dla zgodności (pojedynczy przycisk = cykl przez motywy). */
         toggle() {
-            const current = document.body.classList.contains("theme-scandi")
-                ? "theme-scandi"
-                : "theme-cyber";
-            this.set(current === "theme-scandi" ? "theme-cyber" : "theme-scandi");
+            const next = (this.THEMES.indexOf(this.current()) + 1) % this.THEMES.length;
+            this.set(this.THEMES[next]);
         },
 
         load() {
-            this.set(localStorage.getItem("theme") || "theme-cyber");
+            this.set(localStorage.getItem("theme") || this.THEMES[0]);
+        },
+
+        /* Podświetla aktywny motyw w przełączniku (burger menu). */
+        syncSwitcher(theme) {
+            document.querySelectorAll("[data-theme-option]").forEach(btn => {
+                btn.classList.toggle("active", btn.dataset.themeOption === theme);
+            });
         }
     }
 
@@ -826,10 +842,17 @@ const App = {
             );
         }
 
+        /* Zgodność wstecz: pojedynczy przycisk (jeśli istnieje) cyklicznie
+           przełącza motywy. Docelowy wybór motywu robią przyciski
+           [data-theme-option] w burger menu. */
         const themeBtn = document.getElementById("theme-toggle");
         if (themeBtn) {
             themeBtn.addEventListener("click", () => UI.theme.toggle());
         }
+
+        document.querySelectorAll("[data-theme-option]").forEach(btn => {
+            btn.addEventListener("click", () => UI.theme.set(btn.dataset.themeOption));
+        });
 
 
         document.addEventListener("click", e => App.handleGlobalClick(e));

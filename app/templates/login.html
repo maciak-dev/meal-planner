@@ -14,6 +14,8 @@
 <!-- FONTS -->
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600&family=Orbitron:wght@400;600&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@400;500;600&display=swap" rel="stylesheet">
+<!-- Motyw map: Space Grotesk (nagłówki) + JetBrains Mono (fakty/ilości) -->
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
 <!-- CSS -->
 <link rel="stylesheet" href="/static/main.css">
@@ -27,7 +29,12 @@
     {# Przełącznik języka jest osobnym formularzem POST, więc nie może być
        zagnieżdżony w formularzu logowania - stąd renderowanie go obok, a
        pozycjonowanie w rogu przez CSS. #}
-    <button type="button" class="theme-btn" onclick="toggleTheme()">{{ t('login.switch_theme', lang) }}</button>
+    <div class="lang-switch theme-switch" role="group"
+         aria-label="{{ t('login.switch_theme', lang) }}">
+        <button type="button" class="lang-option" data-theme-option="theme-cyber">{{ t('theme.cyber', lang) }}</button>
+        <button type="button" class="lang-option" data-theme-option="theme-scandi">{{ t('theme.scandi', lang) }}</button>
+        <button type="button" class="lang-option" data-theme-option="theme-map">{{ t('theme.map', lang) }}</button>
+    </div>
 
     {% if error %}
     <div class="error">{{ error }}</div>
@@ -54,21 +61,23 @@
 
 <script>
 // THEME FUNCTIONS
+// Ta sama lista i ten sam klucz localStorage co w recipes.js (UI.theme).
+const THEMES = ["theme-cyber", "theme-scandi", "theme-map"];
+
 function setTheme(theme) {
-    document.body.classList.remove("theme-cyber","theme-scandi");
+    if (!THEMES.includes(theme)) theme = THEMES[0];
+    document.body.classList.remove(...THEMES);
     document.body.classList.add(theme);
     localStorage.setItem("theme", theme);
 }
 
-function toggleTheme() {
-    const current = document.body.classList.contains("theme-scandi") ? "theme-scandi" : "theme-cyber";
-    setTheme(current === "theme-scandi" ? "theme-cyber" : "theme-scandi");
-}
-
 // ON LOAD
 (function(){
-    const saved = localStorage.getItem("theme") || "theme-cyber";
+    const saved = localStorage.getItem("theme") || THEMES[0];
     setTheme(saved);
+    document.querySelectorAll("[data-theme-option]").forEach(btn => {
+        btn.addEventListener("click", () => setTheme(btn.dataset.themeOption));
+    });
 })();
 </script>
 
