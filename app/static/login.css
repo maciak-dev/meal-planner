@@ -38,10 +38,14 @@ button.login-btn {
     font-weight: bold;
 }
 
-button.theme-btn {
-    background: transparent;
-    border: 1px solid var(--accent-primary);
-    color: var(--accent-primary);
+form.login-form .theme-switch {
+    width: 100%;
+    margin-bottom: 0;
+}
+
+form.login-form .theme-switch button {
+    flex: 1;
+    min-width: 0;
 }
 
 
