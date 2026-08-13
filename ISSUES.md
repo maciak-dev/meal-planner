@@ -40,3 +40,10 @@ Dodać prawidłową obsługę admina i możliwość tworzenia nowych użytkownik
 **Tytuł:** Repozytorium GitHub  
 **Opis:** Upewnić się, że repozytorium jest gotowe do pracy, połączone z lokalnym projektem i gotowe do commitów i push.  
 **Label:** devops  
+
+---
+
+## 7️⃣ Front – overflow topbara na 360px
+**Tytuł:** `.topbar-right` wychodzi poza viewport na wąskich telefonach  
+**Opis:** Na widoku Recipes przy szerokości ~360px `.topbar-right` (przełącznik języka + user-badge + przycisk ☰) wychodzi ok. 27px poza prawą krawędź viewportu (`scrollWidth` 387px przy `innerWidth` 360px), obcinając część `user-badge`/burger. Potwierdzone jako pre-existing na `origin/main` (przed theme UX cleanup w commicie `6feb5a1`, niepowiązane z tamtą zmianą) — znalezione podczas manualnego smoke na 360px. Wymaga własnego, osobnego review responsywności topbara, nie tylko odstępów/paddingu.  
+**Label:** frontend, responsive, mobile  
