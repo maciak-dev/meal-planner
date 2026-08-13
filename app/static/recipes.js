@@ -111,8 +111,13 @@ const UI = {
            dopisujemy tutaj + blok body.theme-* w themes.css. */
         THEMES: ["theme-cyber", "theme-scandi", "theme-map"],
 
+        /* Motyw dla nowych użytkowników i brakującej/niepoprawnej wartości
+           w localStorage. Zapisany wybór użytkownika ma priorytet - to pole
+           dotyczy tylko przypadku, gdy nie ma nic do respektowania. */
+        DEFAULT: "theme-map",
+
         set(theme) {
-            if (!this.THEMES.includes(theme)) theme = this.THEMES[0];
+            if (!this.THEMES.includes(theme)) theme = this.DEFAULT;
             document.body.classList.remove(...this.THEMES);
             document.body.classList.add(theme);
             localStorage.setItem("theme", theme);
@@ -120,7 +125,7 @@ const UI = {
         },
 
         current() {
-            return this.THEMES.find(t => document.body.classList.contains(t)) || this.THEMES[0];
+            return this.THEMES.find(t => document.body.classList.contains(t)) || this.DEFAULT;
         },
 
         /* Zachowane dla zgodności (pojedynczy przycisk = cykl przez motywy). */
@@ -130,7 +135,7 @@ const UI = {
         },
 
         load() {
-            this.set(localStorage.getItem("theme") || this.THEMES[0]);
+            this.set(localStorage.getItem("theme") || this.DEFAULT);
         },
 
         /* Podświetla aktywny motyw w przełączniku (burger menu). */

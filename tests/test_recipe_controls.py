@@ -16,6 +16,7 @@ from unittest import mock
 APP_DIR = Path(__file__).resolve().parent.parent / "app"
 RECIPES_HTML = (APP_DIR / "templates" / "recipes.html").read_text(encoding="utf-8")
 RECIPES_JS_RAW = (APP_DIR / "static" / "recipes.js").read_text(encoding="utf-8")
+MAIN_CSS = (APP_DIR / "static" / "main.css").read_text(encoding="utf-8")
 
 
 def _strip_js_comments(source: str) -> str:
@@ -127,6 +128,41 @@ class DeadIngredientsMenuTests(unittest.TestCase):
     def test_dead_handler_and_its_toast_are_gone(self) -> None:
         self.assertNotIn("function openIngredientsModal", RECIPES_JS)
         self.assertNotIn("Ingredients feature coming soon", RECIPES_JS)
+
+
+class MobileCtaSizeTests(unittest.TestCase):
+    """Regresja: 'Dodaj przepis'/'Import z URL' na mobile stały się
+    ogromnymi banerami na całą szerokość (width:100% wymuszone bez wyjątku
+    poniżej 700px). Ten pakiet pilnuje, żeby CTA nie wróciły do tego stanu."""
+
+    def _mobile_media_block(self) -> str:
+        start = MAIN_CSS.index("@media (max-width: 700px)")
+        return MAIN_CSS[start:]
+
+    def test_cta_are_not_forced_to_full_width_on_mobile(self) -> None:
+        mobile = self._mobile_media_block()
+        self.assertNotRegex(mobile, r"\.recipe-actions\s+button\s*\{[^}]*width:\s*100%")
+
+    def test_cta_keep_a_touch_friendly_minimum_height(self) -> None:
+        mobile = self._mobile_media_block()
+        cta_rule = re.search(
+            r"\.recipe-actions #add-recipe-btn,\s*\.recipe-actions #open-import-url-btn\s*\{([^}]*)\}",
+            mobile,
+        )
+        self.assertIsNotNone(cta_rule, "brak reguły rozmiaru CTA w media query dla mobile")
+        self.assertIn("min-height: 44px", cta_rule.group(1))
+
+    def test_cta_can_sit_side_by_side_instead_of_stacking(self) -> None:
+        """Kierunek A z UX cleanup: obok siebie, jeśli szerokość pozwala -
+        więc CTA muszą mieć elastyczną, a nie 100%, szerokość."""
+        mobile = self._mobile_media_block()
+        cta_rule = re.search(
+            r"\.recipe-actions #add-recipe-btn,\s*\.recipe-actions #open-import-url-btn\s*\{([^}]*)\}",
+            mobile,
+        )
+        self.assertIsNotNone(cta_rule)
+        self.assertIn("width: auto", cta_rule.group(1))
+        self.assertNotIn("width: 100%", cta_rule.group(1))
 
 
 class VisibilityPersistenceTests(unittest.TestCase):

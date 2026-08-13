@@ -38,29 +38,37 @@ button.login-btn {
     font-weight: bold;
 }
 
-form.login-form .theme-switch {
-    width: 100%;
-    margin-bottom: 0;
-}
-
-form.login-form .theme-switch button {
-    flex: 1;
-    min-width: 0;
-}
-
-
-
-/* Przełącznik języka na ekranie logowania.
-   Nie może być zagnieżdżony w formularzu logowania (HTML nie pozwala na
-   zagnieżdżone <form>, a przełącznik jest osobnym POST-em), więc jest jego
-   rodzeństwem i pozycjonuje się względem okna. */
-.login-lang-switch {
+/* Górne, drugorzędne ustawienia ekranu logowania: język i motyw.
+   Nie mogą być zagnieżdżone w formularzu logowania (język to osobny POST,
+   motyw to czysto kliencki przełącznik), więc są rodzeństwem formularza i
+   pozycjonują się względem okna, a nie karty logowania.
+   flex-wrap: gdy oba przełączniki nie zmieszczą się w jednym rzędzie na
+   wąskim ekranie, mają się naturalnie przenieść do kolejnego - nie mogą
+   nigdy wyjść poza szerokość viewportu. */
+.login-top-controls {
     position: fixed;
     top: 16px;
     right: 16px;
     z-index: 10;
     display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    max-width: 220px;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-end;
+    max-width: calc(100vw - 32px);
+}
+
+/* .theme-switch domyślnie (main.css) ma width:100% i margin-bottom - to
+   ustawienia dla jego wystąpienia w burger menu. Tutaj ma być kompaktowy i
+   stać w rzędzie obok przełącznika języka, nie na całą szerokość. */
+.login-top-controls .theme-switch {
+    width: auto;
+    margin-bottom: 0;
+}
+
+/* flex-basis (nie width) na pełną szerokość: width:100% na dziecku flexa w
+   kontenerze bez zdefiniowanej szerokości potrafi (w niektórych silnikach)
+   nadmiernie rozciągnąć szerokość samego .login-top-controls. */
+.login-top-controls .lang-scope-note {
+    flex-basis: 100%;
+    text-align: right;
 }

@@ -26,16 +26,6 @@
 
 <body class="login">
 <form class="login-form" method="post" action="/login">
-    {# Przełącznik języka jest osobnym formularzem POST, więc nie może być
-       zagnieżdżony w formularzu logowania - stąd renderowanie go obok, a
-       pozycjonowanie w rogu przez CSS. #}
-    <div class="lang-switch theme-switch" role="group"
-         aria-label="{{ t('login.switch_theme', lang) }}">
-        <button type="button" class="lang-option" data-theme-option="theme-cyber">{{ t('theme.cyber', lang) }}</button>
-        <button type="button" class="lang-option" data-theme-option="theme-scandi">{{ t('theme.scandi', lang) }}</button>
-        <button type="button" class="lang-option" data-theme-option="theme-map">{{ t('theme.map', lang) }}</button>
-    </div>
-
     {% if error %}
     <div class="error">{{ error }}</div>
     {% endif %}
@@ -45,7 +35,12 @@
     <button type="submit" class="login-btn">{{ t('login.button', lang) }}</button>
 </form>
 
-<div class="login-lang-switch">
+{# Język i motyw to drugorzędne ustawienia interfejsu, nie kroki formularza
+   logowania - stąd oba są rodzeństwem <form class="login-form">, a nie jego
+   częścią. Język jest osobnym formularzem POST (HTML nie pozwala na
+   zagnieżdżone <form>), motyw jest czysto klienckim przełącznikiem
+   (localStorage), więc obu nie da się/nie trzeba wpisywać w kartę logowania. #}
+<div class="login-top-controls">
     <form class="lang-switch" method="post" action="/set-lang" aria-label="{{ t('lang.label', lang) }}">
         <button type="submit" name="code" value="pl"
                 class="lang-option {% if lang == 'pl' %}active{% endif %}"
@@ -54,6 +49,14 @@
                 class="lang-option {% if lang == 'en' %}active{% endif %}"
                 {% if lang == 'en' %}aria-current="true"{% endif %}>{{ t('lang.switch_to_en', lang) }}</button>
     </form>
+
+    <div class="lang-switch theme-switch" role="group"
+         aria-label="{{ t('login.switch_theme', lang) }}">
+        <button type="button" class="lang-option" data-theme-option="theme-map">{{ t('theme.map', lang) }}</button>
+        <button type="button" class="lang-option" data-theme-option="theme-scandi">{{ t('theme.scandi', lang) }}</button>
+        <button type="button" class="lang-option" data-theme-option="theme-cyber">{{ t('theme.cyber', lang) }}</button>
+    </div>
+
     {# Jawnie, zanim użytkownik zdąży się nabrać: przełącznik dotyczy
        interfejsu, nie treści przepisów. #}
     <p class="lang-scope-note">{{ t('lang.scope_note', lang) }}</p>
@@ -61,19 +64,24 @@
 
 <script>
 // THEME FUNCTIONS
-// Ta sama lista i ten sam klucz localStorage co w recipes.js (UI.theme).
+// Ta sama lista, ten sam klucz localStorage i ten sam domyślny motyw co w
+// recipes.js (UI.theme.THEMES / UI.theme.DEFAULT).
 const THEMES = ["theme-cyber", "theme-scandi", "theme-map"];
+const DEFAULT_THEME = "theme-map";
 
 function setTheme(theme) {
-    if (!THEMES.includes(theme)) theme = THEMES[0];
+    if (!THEMES.includes(theme)) theme = DEFAULT_THEME;
     document.body.classList.remove(...THEMES);
     document.body.classList.add(theme);
     localStorage.setItem("theme", theme);
+    document.querySelectorAll("[data-theme-option]").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.themeOption === theme);
+    });
 }
 
 // ON LOAD
 (function(){
-    const saved = localStorage.getItem("theme") || THEMES[0];
+    const saved = localStorage.getItem("theme") || DEFAULT_THEME;
     setTheme(saved);
     document.querySelectorAll("[data-theme-option]").forEach(btn => {
         btn.addEventListener("click", () => setTheme(btn.dataset.themeOption));

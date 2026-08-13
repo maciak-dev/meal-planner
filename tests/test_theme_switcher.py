@@ -39,9 +39,21 @@ class ThemeContractTests(unittest.TestCase):
         self.assertIn('localStorage.getItem("theme")', RECIPES_JS)
         self.assertIn('localStorage.getItem("theme")', LOGIN_HTML)
 
-    def test_default_theme_is_cyber(self) -> None:
-        self.assertRegex(RECIPES_JS, r'localStorage\.getItem\("theme"\)\s*\|\|\s*this\.THEMES\[0\]')
-        self.assertEqual(js_theme_list(RECIPES_JS)[0], "theme-cyber")
+    def test_default_theme_is_map(self) -> None:
+        """Brak zapisanego motywu (nowy użytkownik) -> MAP. THEMES[0] zostaje
+        cyber (kolejność cyklu toggle() jest niezmieniona), ale domyślna
+        wartość idzie teraz przez osobną stałą DEFAULT, nie THEMES[0]."""
+        self.assertRegex(RECIPES_JS, r'localStorage\.getItem\("theme"\)\s*\|\|\s*this\.DEFAULT')
+        self.assertRegex(RECIPES_JS, r'DEFAULT:\s*"theme-map"')
+        self.assertRegex(LOGIN_HTML, r'localStorage\.getItem\("theme"\)\s*\|\|\s*DEFAULT_THEME')
+        self.assertRegex(LOGIN_HTML, r'const DEFAULT_THEME = "theme-map";')
+
+    def test_invalid_saved_theme_falls_back_to_map(self) -> None:
+        """Niepoprawna wartość w localStorage("theme") -> MAP, tak samo jak
+        brak wartości. Sam guard `includes` gwarantuje też, że poprawny
+        zapisany wybór (cyber/scandi/map) przechodzi bez zmian."""
+        self.assertRegex(RECIPES_JS, r'if \(!this\.THEMES\.includes\(theme\)\) theme = this\.DEFAULT;')
+        self.assertRegex(LOGIN_HTML, r'if \(!THEMES\.includes\(theme\)\) theme = DEFAULT_THEME;')
 
     def test_css_has_a_block_for_every_switchable_theme(self) -> None:
         """cyber jest motywem bazowym (:root w main.css); scandi i map
@@ -58,6 +70,24 @@ class ThemeContractTests(unittest.TestCase):
     def test_login_uses_explicit_selector(self) -> None:
         self.assertIn('class="lang-switch theme-switch"', LOGIN_HTML)
         self.assertNotIn("onclick=\"toggleTheme()\"", LOGIN_HTML)
+
+    def test_login_form_no_longer_contains_the_theme_switch(self) -> None:
+        """UX cleanup: motyw nie jest już krokiem formularza logowania,
+        tylko drugorzędnym ustawieniem obok niego."""
+        login_form = LOGIN_HTML[LOGIN_HTML.index('<form class="login-form"') : LOGIN_HTML.index("</form>")]
+        self.assertNotIn("theme-switch", login_form)
+        self.assertNotIn("data-theme-option", login_form)
+
+    def test_login_top_controls_hold_both_language_and_theme(self) -> None:
+        self.assertIn('class="login-top-controls"', LOGIN_HTML)
+        top_controls = LOGIN_HTML[LOGIN_HTML.index('class="login-top-controls"') :]
+        self.assertIn('action="/set-lang"', top_controls)
+        self.assertIn("theme-switch", top_controls)
+
+    def test_burger_menu_theme_section_has_a_visible_label(self) -> None:
+        """Wcześniej etykieta 'Zmień motyw'/'Switch Theme' istniała tylko
+        jako aria-label - niewidoczna sekcja w menu."""
+        self.assertIn('class="burger-section-label"', RECIPES_HTML)
 
     def test_map_theme_visual_foundation(self) -> None:
         """Kontrakt motywu map: tokeny prywatnego MAP, bez glow i gradientów."""

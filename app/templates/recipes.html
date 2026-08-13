@@ -74,14 +74,16 @@
 </div>
 
 <div id="burger-menu" class="burger-menu">
-        {# Wybór motywu: ten sam wzorzec segmentowy co .lang-switch.
+        {# Wybór motywu: ten sam wzorzec segmentowy co .lang-switch, teraz z
+           widoczną etykietą sekcji (wcześniej etykieta była tylko w aria-label).
            Aktywną opcję podświetla UI.theme.syncSwitcher (recipes.js);
            preferencja żyje w localStorage("theme") jak dotychczas. #}
+        <p class="burger-section-label">{{ t('burger.switch_theme', lang) }}</p>
         <div class="lang-switch theme-switch" role="group"
              aria-label="{{ t('burger.switch_theme', lang) }}">
-            <button type="button" class="lang-option" data-theme-option="theme-cyber">{{ t('theme.cyber', lang) }}</button>
-            <button type="button" class="lang-option" data-theme-option="theme-scandi">{{ t('theme.scandi', lang) }}</button>
             <button type="button" class="lang-option" data-theme-option="theme-map">{{ t('theme.map', lang) }}</button>
+            <button type="button" class="lang-option" data-theme-option="theme-scandi">{{ t('theme.scandi', lang) }}</button>
+            <button type="button" class="lang-option" data-theme-option="theme-cyber">{{ t('theme.cyber', lang) }}</button>
         </div>
         {# Pozycja "Ingredients" usunięta: prowadziła wyłącznie do toastu
            "feature coming soon". Wraca, gdy będzie co pokazać. #}

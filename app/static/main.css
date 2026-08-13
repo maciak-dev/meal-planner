@@ -967,6 +967,16 @@ body.modal-open {
     margin-bottom: 8px;
 }
 
+/* Etykieta sekcji nad przełącznikiem motywu w burger menu - ten sam ton co
+   .lang-scope-note (drugorzędna informacja, nie nagłówek). */
+.burger-section-label {
+    margin: 0 0 6px;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    opacity: 0.65;
+}
+
 /* nadpisuje .burger-menu button (display:block; width:100%),
    żeby opcje stały obok siebie jak w .lang-switch */
 .burger-menu .theme-switch button {
@@ -1154,15 +1164,6 @@ input[type="file"]::file-selector-button {
         min-width: 32px;
     }
 
-    .recipe-actions {
-        flex-direction: column;
-        width: 100%;
-    }
-
-    .recipe-actions button {
-        width: 100%;
-    }
-
     body {
         overflow-x: hidden;
     }
@@ -1328,6 +1329,30 @@ input[type="file"]::file-selector-button {
 
 .recipe-actions #open-import-url-btn {
     flex: 0 1 220px;
+}
+
+/* Root cause dawnej mobilnej regresji: reguła w @media (max-width: 700px)
+   wyżej w pliku (RECIPE LAYOUT) wymuszała flex-direction:column +
+   width:100% na oba CTA bez wyjątku, więc "Dodaj przepis"/"Import z URL"
+   zawsze wyglądały jak dwa banery na całą szerokość, nawet gdy zmieściłyby
+   się obok siebie (360-430px). Ta reguła musi stać PO regule bazowej wyżej
+   (ten sam selektor z id -> ta sama specyficzność -> wygrywa kolejność w
+   źródle, nie zagnieżdżenie w media query), inaczej baza z powrotem
+   nadpisze mobilny rozmiar.
+   Teraz obie kontrolki mają skromną, ograniczoną szerokość i lądują w
+   jednym rzędzie, jeśli się zmieszczą; przy realnym braku miejsca
+   flex-wrap z .recipe-actions (wyżej) przenosi drugi przycisk do
+   kolejnego wiersza - bez wracania do pełnej szerokości. */
+@media (max-width: 700px) {
+    .recipe-actions #add-recipe-btn,
+    .recipe-actions #open-import-url-btn {
+        flex: 1 1 150px;
+        width: auto;
+        min-width: 0;
+        min-height: 44px;
+        padding: 10px 14px;
+        font-size: 0.95rem;
+    }
 }
 
 .import-draft-content {
