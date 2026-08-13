@@ -50,16 +50,6 @@
                 {% if lang == 'en' %}aria-current="true"{% endif %}>{{ t('lang.switch_to_en', lang) }}</button>
     </form>
 
-    <div class="lang-switch theme-switch" role="group"
-         aria-label="{{ t('login.switch_theme', lang) }}">
-        <button type="button" class="lang-option" data-theme-option="theme-map">{{ t('theme.map', lang) }}</button>
-        <button type="button" class="lang-option" data-theme-option="theme-scandi">{{ t('theme.scandi', lang) }}</button>
-        <button type="button" class="lang-option" data-theme-option="theme-cyber">{{ t('theme.cyber', lang) }}</button>
-    </div>
-
-    {# Jawnie, zanim użytkownik zdąży się nabrać: przełącznik dotyczy
-       interfejsu, nie treści przepisów. #}
-    <p class="lang-scope-note">{{ t('lang.scope_note', lang) }}</p>
 </div>
 
 <script>
@@ -74,18 +64,12 @@ function setTheme(theme) {
     document.body.classList.remove(...THEMES);
     document.body.classList.add(theme);
     localStorage.setItem("theme", theme);
-    document.querySelectorAll("[data-theme-option]").forEach(btn => {
-        btn.classList.toggle("active", btn.dataset.themeOption === theme);
-    });
 }
 
 // ON LOAD
 (function(){
     const saved = localStorage.getItem("theme") || DEFAULT_THEME;
     setTheme(saved);
-    document.querySelectorAll("[data-theme-option]").forEach(btn => {
-        btn.addEventListener("click", () => setTheme(btn.dataset.themeOption));
-    });
 })();
 </script>
 

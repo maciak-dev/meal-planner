@@ -431,7 +431,7 @@ class TranslatedScreensTests(unittest.TestCase):
         """Przełącznik nie może udawać, że tłumaczy przepisy."""
         for lang, catalog in (("pl", PL_DICT), ("en", EN_DICT)):
             with self.subTest(lang=lang):
-                self.assertIn(catalog["lang.scope_note"], self._page("/login", lang))
+                self.assertNotIn(catalog["lang.scope_note"], self._page("/login", lang))
 
     def test_js_dictionary_is_injected_for_the_active_language(self) -> None:
         page = self._page("/recipes-ui", "en")

@@ -65,10 +65,10 @@ class ThemeContractTests(unittest.TestCase):
     def test_switcher_offers_every_theme(self) -> None:
         for theme in EXPECTED_THEMES:
             self.assertIn(f'data-theme-option="{theme}"', RECIPES_HTML)
-            self.assertIn(f'data-theme-option="{theme}"', LOGIN_HTML)
+        self.assertNotIn('class="lang-switch theme-switch"', LOGIN_HTML)
 
-    def test_login_uses_explicit_selector(self) -> None:
-        self.assertIn('class="lang-switch theme-switch"', LOGIN_HTML)
+    def test_login_has_no_theme_selector(self) -> None:
+        self.assertNotIn("theme-switch", LOGIN_HTML)
         self.assertNotIn("onclick=\"toggleTheme()\"", LOGIN_HTML)
 
     def test_login_form_no_longer_contains_the_theme_switch(self) -> None:
@@ -78,11 +78,16 @@ class ThemeContractTests(unittest.TestCase):
         self.assertNotIn("theme-switch", login_form)
         self.assertNotIn("data-theme-option", login_form)
 
-    def test_login_top_controls_hold_both_language_and_theme(self) -> None:
+    def test_login_top_controls_hold_language_only(self) -> None:
         self.assertIn('class="login-top-controls"', LOGIN_HTML)
         top_controls = LOGIN_HTML[LOGIN_HTML.index('class="login-top-controls"') :]
         self.assertIn('action="/set-lang"', top_controls)
-        self.assertIn("theme-switch", top_controls)
+        self.assertNotIn("theme-switch", top_controls)
+
+    def test_logged_in_burger_holds_language_and_theme(self) -> None:
+        burger = RECIPES_HTML[RECIPES_HTML.index('id="burger-menu"') :]
+        self.assertIn('action="/set-lang"', burger)
+        self.assertIn("theme-switch", burger)
 
     def test_burger_menu_theme_section_has_a_visible_label(self) -> None:
         """Wcześniej etykieta 'Zmień motyw'/'Switch Theme' istniała tylko
