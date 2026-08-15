@@ -5,7 +5,7 @@ Data aktualizacji: 2026-08-04
 ## Faktyczny backup wykonany w tym sprincie
 
 - Źródłowa baza: `fastapi_db`
-- Ścieżka: `/home/deploy/backups/meal-planner/meal-planner-fastapi_db-20260804T193513Z.dump`
+- Ścieżka: `/path/to/backup-root/meal-planner-fastapi_db-<timestamp>.dump`
 - Format: PostgreSQL custom dump (`pg_dump -Fc`)
 - Rozmiar: około `4.7M`
 - Integralność:
@@ -20,15 +20,15 @@ Logicznie odpowiada to:
 
 ```bash
 pg_dump -Fc -h localhost -p 5432 -U <masked_user> -d fastapi_db \
-  -f /home/deploy/backups/meal-planner/meal-planner-fastapi_db-<timestamp>.dump
+  -f /path/to/backup-root/meal-planner-fastapi_db-<timestamp>.dump
 ```
 
 ## Weryfikacja backupu
 
 ```bash
-ls -lh /home/deploy/backups/meal-planner/meal-planner-fastapi_db-20260804T193513Z.dump
-file /home/deploy/backups/meal-planner/meal-planner-fastapi_db-20260804T193513Z.dump
-pg_restore -l /home/deploy/backups/meal-planner/meal-planner-fastapi_db-20260804T193513Z.dump
+ls -lh /path/to/backup-root/meal-planner-fastapi_db-<timestamp>.dump
+file /path/to/backup-root/meal-planner-fastapi_db-<timestamp>.dump
+pg_restore -l /path/to/backup-root/meal-planner-fastapi_db-<timestamp>.dump
 ```
 
 ## Test restore wykonany w tym sprincie
@@ -50,7 +50,7 @@ Logika polecenia restore:
 pg_restore --clean --if-exists --no-owner --no-privileges \
   -h localhost -p 5432 -U <masked_user> \
   -d fastapi_db_rc \
-  /home/deploy/backups/meal-planner/meal-planner-fastapi_db-20260804T193513Z.dump
+  /path/to/backup-root/meal-planner-fastapi_db-<timestamp>.dump
 ```
 
 ## Stan bazy RC po smoke

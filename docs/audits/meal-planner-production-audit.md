@@ -35,8 +35,8 @@ Ograniczenia:
 
 ## 3. Środowisko produkcyjne
 
-- Ścieżka aplikacji: `/var/www/meal-planner`
-- Dodatkowa instancja: `/var/www/meal-planner-rc`
+- Ścieżka aplikacji: `/path/to/production-checkout`
+- Dodatkowa instancja: `/path/to/rc-checkout`
 - Repozytorium: `https://github.com/maciak-dev/meal-planner.git`
 - Branch produkcji: `main`
 - Commit produkcji: `feacd6c` (`UI polish and admin redesign`)
@@ -49,9 +49,9 @@ Ograniczenia:
 - Port backendu RC: `8001`
 - Reverse proxy: `nginx`
 - Domena produkcyjna: `maciak.online`, `www.maciak.online`
-- Domena RC: `rc.maciak.online`, ograniczona przez `allow 84.40.235.93; deny all;`
+- Domena RC: `rc.maciak.online`, ograniczona przez `allow <allowlisted-ip>; deny all;`
 - Baza danych używana przez proces produkcyjny: PostgreSQL 14 na `localhost:5432`, baza `fastapi_db`
-- Uploady: `/var/www/meal-planner/app/static/uploads`
+- Uploady: `/path/to/production-checkout/app/static/uploads`
 - Logi: `journalctl`, globalne logi `nginx` w `/var/log/nginx/access.log` i `/var/log/nginx/error.log` skonfigurowane w `nginx.conf`; aplikacja zapisuje requesty i loginy także do PostgreSQL
 - Deployment: ręczny checkout + `systemd`; brak śladu Dockera dla Meal Plannera
 
@@ -60,13 +60,13 @@ Ograniczenia:
 Źródło runtime trzeba rozdzielić na dwa poziomy:
 
 - `systemd` dla produkcji i RC przekazuje tylko `PATH`.
-- `WorkingDirectory` ustawia odpowiednio `/var/www/meal-planner` i `/var/www/meal-planner-rc`.
+- `WorkingDirectory` ustawia odpowiednio `/path/to/production-checkout` i `/path/to/rc-checkout`.
 - `app/core/config.py` wykonuje `load_dotenv()` bez jawnej ścieżki, więc ładuje `.env` z bieżącego katalogu roboczego procesu.
 
 To oznacza:
 
-- produkcyjny proces pobiera `ENV` z `/var/www/meal-planner/.env`,
-- RC pobiera `ENV` z `/var/www/meal-planner-rc/.env`,
+- produkcyjny proces pobiera `ENV` z `/path/to/production-checkout/.env`,
+- RC pobiera `ENV` z `/path/to/rc-checkout/.env`,
 - ale `DATABASE_URL` z `.env` nie jest realnym źródłem prawdy dla żadnej z tych instancji, bo `app/core/config.py` nadpisuje je stałą wartością PostgreSQL wpisaną bezpośrednio w kodzie.
 
 W praktyce działający kod robi więc to:
@@ -81,7 +81,7 @@ W praktyce działający kod robi więc to:
 Produkcja ma w `.env` wpis:
 
 - `ENV=dev`
-- `DATABASE_URL=sqlite:////var/www/meal-planner/data/meal_etl.db`
+- `DATABASE_URL=sqlite:////path/to/production-checkout/data/meal_etl.db`
 
 Jednocześnie wdrożony kod w `app/core/config.py` ma twardo wpisane PostgreSQL. To nie jest zachowanie warunkowe ani fallback. To zwykłe nadpisanie wartości z `.env`.
 
@@ -108,8 +108,8 @@ index e8ab553..4cebb63 100644
 ENV = os.getenv("ENV", "dev")  # dev lub prod
  SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret")
  DATABASE_URL = "postgresql://<redacted>@localhost:5432/fastapi_db"
--#DATABASE_URL = "sqlite:////home/vboxuser/fastapi-projekt/app/db/app.db"
-+# DATABASE_URL = "sqlite:////home/vboxuser/fastapi-projekt/app/db/app.db"
+-#DATABASE_URL = "sqlite:////path/to/local-checkout/app/db/app.db"
++# DATABASE_URL = "sqlite:////path/to/local-checkout/app/db/app.db"
  COOKIE_SECURE = ENV == "prod"
  ALGORITHM = "HS256"
 -ACCESS_TOKEN_EXPIRE_MINUTES = 60
@@ -146,8 +146,8 @@ Obecne procesy `meal-planner` i `meal-planner-rc` wystartowały `2026-08-04 11:2
 
 Metadane plików:
 
-- `/var/www/meal-planner/app/core/config.py` ma `mtime=2026-05-22 21:04:49 UTC`,
-- `/var/www/meal-planner-rc/app/core/config.py` ma `mtime=2026-05-19 19:51:43 UTC`.
+- `/path/to/production-checkout/app/core/config.py` ma `mtime=2026-05-22 21:04:49 UTC`,
+- `/path/to/rc-checkout/app/core/config.py` ma `mtime=2026-05-19 19:51:43 UTC`.
 
 Wniosek:
 
@@ -175,9 +175,9 @@ To jest bardzo ważne ograniczenie bezpieczeństwa zmian.
 
 Stan potwierdzony na VPS:
 
-- `/home/deploy/backups/prod_postgres_backup.sql` istnieje, ale ma rozmiar `0 B` i `mtime=2026-05-22 20:37:34 UTC`
-- `/home/deploy/backups/prod_sqlite_backup.db` istnieje i ma ok. `8.1 MB`
-- `/home/deploy/backups/rc_backup.sql` istnieje i ma ok. `31 KB`
+- `/path/to/backup-root/prod_postgres_backup.sql` istnieje, ale ma rozmiar `0 B` i `mtime=2026-05-22 20:37:34 UTC`
+- `/path/to/backup-root/prod_sqlite_backup.db` istnieje i ma ok. `8.1 MB`
+- `/path/to/backup-root/rc_backup.sql` istnieje i ma ok. `31 KB`
 - w historii powłoki istnieją ślady ręcznych poleceń `pg_dump` i kopiowania SQLite
 
 Wniosek operacyjny:
@@ -193,7 +193,7 @@ Nie można więc dziś uczciwie stwierdzić, że backup i procedura odtworzenia 
 
 `ENV=dev`:
 
-- jest ustawione wprost w `/var/www/meal-planner/.env`.
+- jest ustawione wprost w `/path/to/production-checkout/.env`.
 - produkcyjna jednostka `systemd` nie nadpisuje `ENV`.
 - `load_dotenv()` ładuje ten plik przy starcie procesu.
 
@@ -287,7 +287,7 @@ Najważniejsze obserwacje architektoniczne:
 | Migracje | brak Alembica i katalogów migracji | brak `alembic.ini`, `alembic/`, `migrations/` | wysokie |
 | `create_all` | aktywne na publicznej produkcji | `main.py` robi `Base.metadata.create_all(bind=engine)` gdy `ENV == "dev"`; produkcyjny `.env` ma `ENV=dev` | wysokie |
 | Spójność z modelami | obecny schemat odpowiada obecnym modelom | tabele i kolumny zgodne z modelami SQLAlchemy | średnie, bo bez migracji |
-| Backupy | znaleziono ślady ręcznych backupów, brak potwierdzonej automatyzacji | pliki w `/home/deploy/backups` i wpisy w historii powłoki; brak potwierdzonego harmonogramu | wysokie operacyjne |
+| Backupy | znaleziono ślady ręcznych backupów, brak potwierdzonej automatyzacji | pliki w `/path/to/backup-root` i wpisy w historii powłoki; brak potwierdzonego harmonogramu | wysokie operacyjne |
 
 Dodatkowe fakty:
 - 58 przepisów jest publicznych, 6 prywatnych.
@@ -350,7 +350,7 @@ Dodatkowe fakty:
 ### MPP-001 — Produkcja działa z `ENV=dev`
 
 - Priorytet: P1
-- Potwierdzenie: `ENV=dev` w `/var/www/meal-planner/.env`; `main.py` uruchamia `Base.metadata.create_all()` przy `ENV == "dev"`; `COOKIE_SECURE = ENV == "prod"`
+- Potwierdzenie: `ENV=dev` w `/path/to/production-checkout/.env`; `main.py` uruchamia `Base.metadata.create_all()` przy `ENV == "dev"`; `COOKIE_SECURE = ENV == "prod"`
 - Zakres: cała publiczna instancja `maciak.online`
 - Częstotliwość: stały stan konfiguracyjny
 - Możliwa przyczyna: środowisko publiczne nie zostało przełączone z ustawień deweloperskich
@@ -383,7 +383,7 @@ Dodatkowe fakty:
 ### MPP-004 — Brak potwierdzonego automatycznego backupu i procedury odtworzenia
 
 - Priorytet: P1
-- Potwierdzenie: znaleziono ślady ręcznych backupów (`/home/deploy/backups`, historia powłoki), ale nie znaleziono potwierdzonego harmonogramu lub procedury
+- Potwierdzenie: znaleziono ślady ręcznych backupów (`/path/to/backup-root`, historia powłoki), ale nie znaleziono potwierdzonego harmonogramu lub procedury
 - Zakres: operacje i bezpieczeństwo danych
 - Częstotliwość: stan ciągły
 - Możliwa przyczyna: operacje wykonywane ad hoc

@@ -57,7 +57,7 @@ MEAL_EXPECTED_PORT=8000 \
 MEAL_LOGIN_URL=http://127.0.0.1:8000/login \
 MEAL_DB_KIND=postgres \
 MEAL_DATABASE_URL='postgresql://USER:PASSWORD@127.0.0.1/DB' \
-MEAL_BACKUP_ROOT=/home/deploy/meal-backups \
+MEAL_BACKUP_ROOT=/path/to/backup-root \
 ./scripts/release-meal.sh origin/feature/x --dry-run
 ```
 

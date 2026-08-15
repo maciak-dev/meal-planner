@@ -6,8 +6,6 @@ python_bin="${MEAL_PLANNER_PYTHON:-}"
 if [[ -z "$python_bin" ]]; then
     if [[ -x "$repo_root/venv/bin/python" ]]; then
         python_bin="$repo_root/venv/bin/python"
-    elif [[ -x "/var/www/meal-planner/venv/bin/python" ]]; then
-        python_bin="/var/www/meal-planner/venv/bin/python"
     else
         python_bin="$(command -v python3)"
     fi

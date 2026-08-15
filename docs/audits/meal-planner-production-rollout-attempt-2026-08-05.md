@@ -19,7 +19,7 @@ Nie wykonano:
 
 ## Stan przed próbą
 
-- Checkout produkcji: `/var/www/meal-planner`
+- Checkout produkcji: `/path/to/production-checkout`
 - Branch: `main`
 - Commit: `feacd6c`
 - Baza runtime: PostgreSQL `fastapi_db`
@@ -42,7 +42,7 @@ Checkout produkcji miał istniejące, nierozpoznane wcześniej zmiany lokalne:
 
 Przed próbą utworzono kopię roboczą konfiguracji i pliku `config.py` poza repozytorium:
 
-`/home/deploy/backups/meal-planner/prod-predeploy-20260805T074732Z/`
+`/path/to/backup-root/prod-predeploy-<timestamp>/`
 
 W kopii zachowano również istniejący raport z katalogu `docs/`.
 

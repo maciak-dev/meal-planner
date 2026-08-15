@@ -18,7 +18,7 @@ Ten runbook opisuje wdrożenie Sprintu 0 na produkcję. Faza wykonywana przez Co
 
 ## Prerequisites
 
-- zweryfikowany backup PostgreSQL, np. `/home/deploy/backups/meal-planner/meal-planner-fastapi_db-20260804T193513Z.dump`,
+- zweryfikowany backup PostgreSQL, np. `/path/to/backup-root/meal-planner-fastapi_db-<timestamp>.dump`,
 - dostęp użytkownika do `sudo systemctl`,
 - zatwierdzony commit branchu `chore/meal-planner-sprint-0`,
 - rozpoznane lokalne zmiany produkcji,
@@ -35,13 +35,13 @@ Codex wykonuje poniższe czynności bez restartowania produkcji.
 
 ```bash
 ts=$(date -u +%Y%m%dT%H%M%SZ)
-dest=/home/deploy/backups/meal-planner/prod-predeploy-$ts
+dest=/path/to/backup-root/prod-predeploy-$ts
 mkdir -p "$dest"
-cp /var/www/meal-planner/app/core/config.py "$dest/app-core-config.py"
-cp /var/www/meal-planner/.env "$dest/prod.env"
+cp /path/to/production-checkout/app/core/config.py "$dest/app-core-config.py"
+cp /path/to/production-checkout/.env "$dest/prod.env"
 
-git -C /var/www/meal-planner status --short --branch
-git -C /var/www/meal-planner log -1 --oneline
+git -C /path/to/production-checkout status --short --branch
+git -C /path/to/production-checkout log -1 --oneline
 ss -lntp | rg ':8000\b'
 curl -sS -o /dev/null -w '/ -> %{http_code}\n' https://maciak.online/
 curl -sS -o /dev/null -w '/login -> %{http_code}\n' https://maciak.online/login
@@ -92,7 +92,7 @@ Skrypt czyści środowisko procesu, ustawia fikcyjny DSN `meal_planner_test`, wy
 Następnie zweryfikować rzeczywisty produkcyjny `.env` bez drukowania DSN:
 
 ```bash
-./scripts/validate-production-config.py --checkout /var/www/meal-planner
+./scripts/validate-production-config.py --checkout /path/to/production-checkout
 ```
 
 Oczekiwany wynik:
@@ -109,7 +109,7 @@ Opcjonalne połączenie odczytowe można wykonać wyłącznie jawnie:
 
 ```bash
 ./scripts/validate-production-config.py \
-  --checkout /var/www/meal-planner \
+  --checkout /path/to/production-checkout \
   --check-connection
 ```
 
@@ -118,7 +118,7 @@ Opcjonalne połączenie odczytowe można wykonać wyłącznie jawnie:
 Na wolnym porcie lokalnym uruchomić krótką instancję tego samego kodu, np. `127.0.0.1:8002`, z produkcyjnym `.env`. Nie wykonywać logowania ani CRUD.
 
 ```bash
-/var/www/meal-planner/venv/bin/python -m uvicorn app.main:app \
+/path/to/production-checkout/venv/bin/python -m uvicorn app.main:app \
   --host 127.0.0.1 --port 8002
 ```
 
@@ -184,9 +184,9 @@ Po restarcie przerwać i rollbackować kod, jeśli usługa nie startuje, wchodzi
 Rollback kodu i restore bazy są osobnymi operacjami. Przy regresji kodu:
 
 ```bash
-git -C /var/www/meal-planner checkout <previous_commit>
-cp /home/deploy/backups/meal-planner/prod-predeploy-<timestamp>/prod.env /var/www/meal-planner/.env
-cp /home/deploy/backups/meal-planner/prod-predeploy-<timestamp>/app-core-config.py /var/www/meal-planner/app/core/config.py
+git -C /path/to/production-checkout checkout <previous_commit>
+cp /path/to/backup-root/prod-predeploy-<timestamp>/prod.env /path/to/production-checkout/.env
+cp /path/to/backup-root/prod-predeploy-<timestamp>/app-core-config.py /path/to/production-checkout/app/core/config.py
 sudo systemctl restart meal-planner
 ```
 

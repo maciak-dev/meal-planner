@@ -8,29 +8,29 @@ Ten dokument jest obowiązkową instrukcją dla osób i agentów pracujących na
 
 ## Źródła prawdy
 
-* Kod uruchomiony na produkcji: `/var/www/meal-planner`, obecnie commit `9e64b73e1ee84eed4e296ee09dac7844005e0ceb`.
+* Kod uruchomiony na produkcji: `/path/to/production-checkout`, obecnie commit `9e64b73e1ee84eed4e296ee09dac7844005e0ceb`.
 * Kod w GitHubie: remote `origin`; na dzień obserwacji `origin/main` wskazuje `feacd6c51e5d562a0568244f63d577aa3323581d` i nie jest tym samym stanem co uruchomiona produkcja. Nie zakładaj, że `main` jest źródłem aktualnego runtime.
-* Konfiguracja produkcji: systemd, `/var/www/meal-planner/.env` oraz aktywny plik Nginx na VPS. Wartości sekretów pozostają wyłącznie na VPS.
+* Konfiguracja produkcji: systemd, `/path/to/production-checkout/.env` oraz aktywny plik Nginx na VPS. Wartości sekretów pozostają wyłącznie na VPS.
 * Dokumentacja: pliki `docs/` w repo, z zastrzeżeniem, że starsze audyty mogą opisywać stan historyczny.
 * Dane i konta: PostgreSQL `fastapi_db` na localhost, tabele aplikacyjne `users`, `recipes`, `ingredients`, `login_log`, `request_log`.
 * Sesje i logowanie: kod aplikacji oraz konfiguracja cookies w runtime; dane kont są w tabeli `users`, a sesja jest w cookie `access_token`.
-* Uploady: `/var/www/meal-planner/app/static/uploads` na VPS.
+* Uploady: `/path/to/production-checkout/app/static/uploads` na VPS.
 * Reverse proxy i domeny: `/etc/nginx/sites-available/meal-planner` oraz aktywne linki w `/etc/nginx/sites-enabled/`.
 * Deployment: ręczna obsługa checkoutu/systemd na VPS; nie znaleziono potwierdzonego automatycznego pipeline’u ani harmonogramu backupu Meal Plannera.
-* Backupy: `/home/deploy/backups/meal-planner/`. Znany poprawny produkcyjny dump custom z 2026-08-05 to `meal-planner-fastapi_db-20260805T083834Z.dump`; `pg_restore -l` przechodzi. Plik z 2026-08-04 o rozmiarze 0 B jest nieużywalny.
+* Backupy: `/path/to/backup-root/`. Znany poprawny produkcyjny dump custom z 2026-08-05 to `meal-planner-fastapi_db-<timestamp>.dump`; `pg_restore -l` przechodzi. Plik z 2026-08-04 o rozmiarze 0 B jest nieużywalny.
 
 ## Topologia produkcji
 
 Stan obecny:
 
-* `meal-planner.service` (systemd, enabled) uruchamia Uvicorn z `/var/www/meal-planner` na `0.0.0.0:8000`.
+* `meal-planner.service` (systemd, enabled) uruchamia Uvicorn z `/path/to/production-checkout` na `0.0.0.0:8000`.
 * Nginx terminates HTTPS dla `maciak.online` i `www.maciak.online`, a następnie proxy’uje do `127.0.0.1:8000`.
 * PostgreSQL nasłuchuje lokalnie na `127.0.0.1:5432`; produkcyjna baza to `fastapi_db`.
 * Aplikacja nie korzysta obecnie z Docker Compose ani obrazu Docker. Znalezione kontenery `map-*` i `n8n` należą do odrębnego stosu MAP/n8n i nie są częścią Meal Plannera.
 
 RC:
 
-* `/var/www/meal-planner-rc` jest osobnym checkoutem.
+* `/path/to/rc-checkout` jest osobnym checkoutem.
 * `meal-planner-rc.service` jest obecnie `disabled` i `inactive`; gdy jest uruchamiany, nasłuchuje tylko na `127.0.0.1:8001`.
 * Nginx ma osobny vhost `rc.maciak.online`, ograniczony allowlistą IP, proxy’ujący do `127.0.0.1:8001`.
 * RC używa `ENV=prod`, `APP_INSTANCE=rc`, `DATABASE_NAME=fastapi_db_rc`, `EXPECTED_DATABASE_NAME=fastapi_db_rc`; potwierdzona konfiguracja nie wskazuje produkcyjnej bazy.
@@ -69,7 +69,7 @@ obowiązują także tutaj, bo dotyczą granic bezpiecznej pracy:
 | `.env` | sekret, baza, tryb i cookies; nie commitować i nie kopiować do repo |
 | `meal-planner.service`, `meal-planner-rc.service` | zły checkout, port, użytkownik lub autostart może zmienić środowisko |
 | `/etc/nginx/sites-available/meal-planner*` | domeny, TLS, allowlist RC i proxy mogą odciąć usługę lub ujawnić RC |
-| `/var/www/meal-planner/app/static/uploads` | trwałe dane użytkowników; nie usuwać ani nie wersjonować |
+| `/path/to/production-checkout/app/static/uploads` | trwałe dane użytkowników; nie usuwać ani nie wersjonować |
 | `app/static/` i generowane zasoby | brak zasobów lub niekompatybilny frontend |
 | skrypty wdrożeniowe i backupu | nieprzewidywalny deploy albo brak rollbacku |
 | porty `8000`, `8001`, `5432` | kolizja usług lub połączenie z niewłaściwą bazą |
@@ -123,8 +123,8 @@ Rollback aplikacji jest ręczny i nie jest obecnie pełnym, automatycznym mechan
 
 ## Znane ograniczenia i dług techniczny
 
-* `/var/www/meal-planner` jest osobnym produkcyjnym checkoutem; aktywny commit nie jest aktualnym `origin/main`.
-* Istnieją trzy checkouty Meal Plannera: produkcyjny `/var/www/meal-planner`, RC `/var/www/meal-planner-rc` oraz roboczy `/home/deploy/meal-planner-sprint-0`; ich role nie wynikają z samej nazwy katalogu.
+* `/path/to/production-checkout` jest osobnym produkcyjnym checkoutem; aktywny commit nie jest aktualnym `origin/main`.
+* Istnieją trzy checkouty Meal Plannera: produkcyjny `/path/to/production-checkout`, RC `/path/to/rc-checkout` oraz roboczy `/path/to/release-checkout`; ich role nie wynikają z samej nazwy katalogu.
 * RC jest obecnie zatrzymany i ma wyłączony autostart.
 * Część starszych dokumentów opisuje historyczną konfigurację i wymaga aktualizacji; ten dokument opisuje obserwację z 2026-08-07.
 * W checkoutach są legacy artefakty SQLite, ale aktywna produkcja używa PostgreSQL; nie usuwaj ich bez osobnej decyzji i backupu.

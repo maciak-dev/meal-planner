@@ -6,7 +6,7 @@ Data aktualizacji: 2026-08-04
 
 ## Stan bieżący
 
-- Checkout: `/var/www/meal-planner`
+- Checkout: `/path/to/production-checkout`
 - Branch: `main`
 - Commit: `feacd6c`
 - Proces: `uvicorn app.main:app --host 0.0.0.0 --port 8000`
@@ -14,15 +14,15 @@ Data aktualizacji: 2026-08-04
 - Reverse proxy: `nginx`
 - Domena: `maciak.online`
 - Baza danych: PostgreSQL `fastapi_db`
-- Uploady: `/var/www/meal-planner/app/static/uploads`
+- Uploady: `/path/to/production-checkout/app/static/uploads`
 
 ## Źródła konfiguracji
 
 - `systemd` ustawia:
-  - `WorkingDirectory=/var/www/meal-planner`
-  - `PATH=/var/www/meal-planner/venv/bin`
+  - `WorkingDirectory=/path/to/production-checkout`
+  - `PATH=/path/to/production-checkout/venv/bin`
 - aplikacja ładuje `.env` z katalogu roboczego przez `load_dotenv()`
-- `ENV` pochodzi z `/var/www/meal-planner/.env`
+- `ENV` pochodzi z `/path/to/production-checkout/.env`
 - `DATABASE_URL` ma docelowo pochodzić z `.env`, ale w działającej produkcji nadal jest nadpisywany przez hardcoded DSN w aktualnie wdrożonym kodzie
 
 ## Bieżące problemy produkcyjne
@@ -42,9 +42,9 @@ Data aktualizacji: 2026-08-04
 ## Polecenia tylko do odczytu
 
 ```bash
-git -C /var/www/meal-planner status --short
-git -C /var/www/meal-planner branch --show-current
-git -C /var/www/meal-planner log -1 --oneline
+git -C /path/to/production-checkout status --short
+git -C /path/to/production-checkout branch --show-current
+git -C /path/to/production-checkout log -1 --oneline
 systemctl status meal-planner --no-pager
 ss -lntp | rg ':8000|:443|:80|:5432'
 curl -kfsSI --resolve maciak.online:443:127.0.0.1 https://maciak.online/
@@ -60,7 +60,7 @@ curl -kfsSI --resolve maciak.online:443:127.0.0.1 https://maciak.online/
 
 ## Co zostało potwierdzone na RC przed rolloutem produkcyjnym
 
-- RC działa z checkoutu `/var/www/meal-planner-rc`
+- RC działa z checkoutu `/path/to/rc-checkout`
 - RC korzysta z PostgreSQL `fastapi_db_rc`
 - RC działa z `ENV=prod`
 - RC ustawia `COOKIE_SECURE=True`

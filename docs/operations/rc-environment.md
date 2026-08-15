@@ -4,11 +4,11 @@ Data aktualizacji: 2026-08-04
 
 ## Stan bieżący
 
-- Checkout RC na VPS: `/var/www/meal-planner-rc`
+- Checkout RC na VPS: `/path/to/rc-checkout`
 - Branch checkoutu RC po wdrożeniu Sprint 0: `chore/meal-planner-sprint-0`
 - Commit checkoutu RC po wdrożeniu Sprint 0: `cf9f17c`
 - Usługa systemowa: `meal-planner-rc.service`
-- WorkingDirectory usługi: `/var/www/meal-planner-rc`
+- WorkingDirectory usługi: `/path/to/rc-checkout`
 - Port usługi: `127.0.0.1:8001`
 - Nginx: `rc.maciak.online`
 - Baza RC: PostgreSQL `fastapi_db_rc`
@@ -21,7 +21,7 @@ Data aktualizacji: 2026-08-04
 ## Co zostało już przygotowane
 
 - checkout RC został przełączony na branch `chore/meal-planner-sprint-0`,
-- lokalny plik `/var/www/meal-planner-rc/.env` został zaktualizowany do:
+- lokalny plik `/path/to/rc-checkout/.env` został zaktualizowany do:
   - `ENV=prod`
   - `APP_INSTANCE=rc`
   - `EXPECTED_DATABASE_NAME=fastapi_db_rc`
@@ -34,7 +34,7 @@ Data aktualizacji: 2026-08-04
 
 ## Stan po smoke
 
-- systemowa instancja RC została uruchomiona z checkoutu `/var/www/meal-planner-rc`,
+- systemowa instancja RC została uruchomiona z checkoutu `/path/to/rc-checkout`,
 - smoke potwierdził poprawne zachowanie niezalogowanej sesji,
 - autostart usługi został wyłączony,
 - po smoke usługa RC została zatrzymana,
@@ -44,7 +44,7 @@ Data aktualizacji: 2026-08-04
 
 Zweryfikowano ręczny RC smoke poza produkcją:
 
-- branch roboczy: `/home/deploy/meal-planner-sprint-0`
+- branch roboczy: `/path/to/release-checkout`
 - lokalny `.env` w branchu roboczym:
   - `ENV=prod`
   - `APP_INSTANCE=rc`
@@ -53,9 +53,9 @@ Zweryfikowano ręczny RC smoke poza produkcją:
 - ręczny start:
 
 ```bash
-cd /home/deploy/meal-planner-sprint-0
-PYTHONPATH=/home/deploy/meal-planner-sprint-0 \
-  /var/www/meal-planner/venv/bin/python -m uvicorn app.main:app \
+cd /path/to/release-checkout
+PYTHONPATH=/path/to/release-checkout \
+  /path/to/production-checkout/venv/bin/python -m uvicorn app.main:app \
   --host 127.0.0.1 --port 8002
 ```
 
