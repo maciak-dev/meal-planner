@@ -141,7 +141,9 @@ const UI = {
         /* Podświetla aktywny motyw w przełączniku (burger menu). */
         syncSwitcher(theme) {
             document.querySelectorAll("[data-theme-option]").forEach(btn => {
-                btn.classList.toggle("active", btn.dataset.themeOption === theme);
+                const active = btn.dataset.themeOption === theme;
+                btn.classList.toggle("active", active);
+                btn.setAttribute("aria-pressed", String(active));
             });
         }
     }
@@ -856,7 +858,28 @@ const App = {
         }
 
         document.querySelectorAll("[data-theme-option]").forEach(btn => {
-            btn.addEventListener("click", () => UI.theme.set(btn.dataset.themeOption));
+            btn.addEventListener("click", event => {
+                // Keep the settings menu open while cycling themes. On mobile
+                // the document-level outside-click handler otherwise closes
+                // the burger after the first theme selection.
+                event.stopPropagation();
+                UI.theme.set(btn.dataset.themeOption);
+            });
+        });
+
+        document.querySelectorAll(".language-options").forEach(form => {
+            form.addEventListener("submit", event => {
+                const selected = event.submitter?.value;
+                if (!selected) return;
+
+                form.querySelectorAll("[name=code]").forEach(btn => {
+                    const active = btn.value === selected;
+                    btn.classList.toggle("active", active);
+                    btn.setAttribute("aria-pressed", String(active));
+                    if (active) btn.setAttribute("aria-current", "true");
+                    else btn.removeAttribute("aria-current");
+                });
+            });
         });
 
 

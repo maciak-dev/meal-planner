@@ -61,20 +61,21 @@
 </div>
 
 <div id="burger-menu" class="burger-menu">
-        <form class="lang-switch burger-section" method="post" action="/set-lang" aria-label="{{ t('lang.label', lang) }}">
-            <button type="submit" name="code" value="pl" class="lang-option {% if lang == 'pl' %}active{% endif %}" {% if lang == 'pl' %}aria-current="true"{% endif %}>PL</button>
-            <button type="submit" name="code" value="en" class="lang-option {% if lang == 'en' %}active{% endif %}" {% if lang == 'en' %}aria-current="true"{% endif %}>EN</button>
-        </form>
-        {# Wybór motywu: ten sam wzorzec segmentowy co .lang-switch, teraz z
-           widoczną etykietą sekcji (wcześniej etykieta była tylko w aria-label).
-           Aktywną opcję podświetla UI.theme.syncSwitcher (recipes.js);
-           preferencja żyje w localStorage("theme") jak dotychczas. #}
-        <p class="burger-section-label">{{ t('burger.switch_theme', lang) }}</p>
-        <div class="lang-switch theme-switch" role="group"
-             aria-label="{{ t('burger.switch_theme', lang) }}">
-            <button type="button" class="lang-option" data-theme-option="theme-map">{{ t('theme.map', lang) }}</button>
-            <button type="button" class="lang-option" data-theme-option="theme-scandi">{{ t('theme.scandi', lang) }}</button>
-            <button type="button" class="lang-option" data-theme-option="theme-cyber">{{ t('theme.cyber', lang) }}</button>
+        <div class="burger-setting">
+            <p class="burger-section-label">{{ t('lang.label', lang) }}</p>
+            <form class="burger-options language-options" method="post" action="/set-lang" aria-label="{{ t('lang.label', lang) }}">
+                <button type="submit" name="code" value="pl" class="lang-option {% if lang == 'pl' %}active{% endif %}" aria-pressed="{{ 'true' if lang == 'pl' else 'false' }}" {% if lang == 'pl' %}aria-current="true"{% endif %}>{{ t('lang.switch_to_pl', lang) }}</button>
+                <button type="submit" name="code" value="en" class="lang-option {% if lang == 'en' %}active{% endif %}" aria-pressed="{{ 'true' if lang == 'en' else 'false' }}" {% if lang == 'en' %}aria-current="true"{% endif %}>{{ t('lang.switch_to_en', lang) }}</button>
+            </form>
+        </div>
+        <div class="burger-setting">
+            <p class="burger-section-label">{{ t('burger.switch_theme', lang) }}</p>
+            <div class="burger-options theme-switch" role="group"
+                 aria-label="{{ t('burger.switch_theme', lang) }}">
+                <button type="button" class="lang-option" data-theme-option="theme-map" aria-pressed="false">{{ t('theme.map', lang) }}</button>
+                <button type="button" class="lang-option" data-theme-option="theme-scandi" aria-pressed="false">{{ t('theme.scandi', lang) }}</button>
+                <button type="button" class="lang-option" data-theme-option="theme-cyber" aria-pressed="false">{{ t('theme.cyber', lang) }}</button>
+            </div>
         </div>
         {# Pozycja "Ingredients" usunięta: prowadziła wyłącznie do toastu
            "feature coming soon". Wraca, gdy będzie co pokazać. #}

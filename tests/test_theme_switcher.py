@@ -94,6 +94,27 @@ class ThemeContractTests(unittest.TestCase):
         jako aria-label - niewidoczna sekcja w menu."""
         self.assertIn('class="burger-section-label"', RECIPES_HTML)
 
+    def test_burger_uses_rows_for_language_and_theme(self) -> None:
+        burger = RECIPES_HTML[RECIPES_HTML.index('id="burger-menu"') :]
+        self.assertIn('class="burger-options language-options"', burger)
+        self.assertIn('class="burger-options theme-switch"', burger)
+        self.assertIn("t('lang.label', lang)", burger)
+        self.assertIn("t('burger.switch_theme', lang)", burger)
+
+    def test_real_language_state_is_rendered_as_pressed(self) -> None:
+        self.assertIn('aria-pressed="{{ \'true\' if lang == \'pl\' else \'false\' }}"', RECIPES_HTML)
+        self.assertIn('aria-pressed="{{ \'true\' if lang == \'en\' else \'false\' }}"', RECIPES_HTML)
+
+    def test_theme_state_is_synced_from_persisted_runtime_state(self) -> None:
+        self.assertIn('UI.theme.load()', RECIPES_JS)
+        self.assertIn('localStorage.getItem("theme")', RECIPES_JS)
+        self.assertIn('btn.setAttribute("aria-pressed", String(active))', RECIPES_JS)
+        self.assertIn('form.addEventListener("submit"', RECIPES_JS)
+
+    def test_active_indicator_never_uses_an_underline(self) -> None:
+        self.assertNotIn("box-shadow: inset 0 -2px 0 var(--accent-secondary)", MAIN_CSS)
+        self.assertNotIn("box-shadow: inset 0 -2px 0 var(--accent-primary)", THEMES_CSS)
+
     def test_map_theme_visual_foundation(self) -> None:
         """Kontrakt motywu map: tokeny prywatnego MAP, bez glow i gradientów."""
         map_block = THEMES_CSS[THEMES_CSS.index("body.theme-map") :]
