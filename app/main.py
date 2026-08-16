@@ -4,6 +4,7 @@ from fastapi import FastAPI, Request, Depends, Form, HTTPException
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.openapi.utils import get_openapi
 from sqlalchemy.orm import Session
@@ -13,7 +14,7 @@ from sqlalchemy.orm import Session
 # =========================
 from app.core.database import Base, engine, get_db, SessionLocal
 from app.core.bootstrap import initialize_database_schema
-from app.core.config import COOKIE_SECURE
+from app.core.config import COOKIE_SECURE, MAP_CONTROL_CENTER_ORIGINS
 from app.core import security
 from app.core.i18n import (
     LANG_COOKIE_NAME,
@@ -63,6 +64,19 @@ app = FastAPI(
     redoc_url=None,
     openapi_url=None
 )
+
+# The MAP Control Center reads Meal-owned admin endpoints with the browser's
+# existing, host-only Meal session. No credential or signing secret is shared.
+# Empty by default: cross-origin access is enabled only by explicit runtime
+# configuration and only for read methods.
+if MAP_CONTROL_CENTER_ORIGINS:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=list(MAP_CONTROL_CENTER_ORIGINS),
+        allow_credentials=True,
+        allow_methods=["GET"],
+        allow_headers=["Accept"],
+    )
 
 initialize_database_schema()
 

@@ -2,6 +2,7 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Mapping
+from urllib.parse import urlsplit
 
 from dotenv import dotenv_values, find_dotenv
 from sqlalchemy.engine import make_url
@@ -20,6 +21,7 @@ class Settings:
     DATABASE_URL: str
     SECRET_KEY: str
     DATABASE_NAME: str
+    MAP_CONTROL_CENTER_ORIGINS: tuple[str, ...]
 
 
 def _require_value(values: Mapping[str, str], name: str, *, allow_default: str | None = None) -> str:
@@ -40,6 +42,24 @@ def _database_name_from_url(database_url: str) -> str:
         return Path(url.database or "").name
 
     return url.database or ""
+
+
+def _control_center_origins(raw: str) -> tuple[str, ...]:
+    origins = tuple(origin.strip().rstrip("/") for origin in raw.split(",") if origin.strip())
+    for origin in origins:
+        parsed = urlsplit(origin)
+        if (
+            parsed.scheme not in {"http", "https"}
+            or not parsed.netloc
+            or parsed.path
+            or parsed.query
+            or parsed.fragment
+            or parsed.username is not None
+            or parsed.password is not None
+            or "*" in parsed.netloc
+        ):
+            raise RuntimeError("MAP_CONTROL_CENTER_ORIGINS must contain exact http(s) origins")
+    return origins
 
 
 def load_settings(
@@ -66,6 +86,7 @@ def load_settings(
     secret_key = _require_value(values, "SECRET_KEY", allow_default="dev-secret" if env == "dev" else None)
     database_name = _database_name_from_url(database_url)
     production_database_name = values.get("PRODUCTION_DATABASE_NAME", "fastapi_db")
+    control_center_origins = _control_center_origins(values.get("MAP_CONTROL_CENTER_ORIGINS", ""))
 
     if expected_database_name and database_name != expected_database_name:
         raise RuntimeError(
@@ -87,6 +108,7 @@ def load_settings(
         DATABASE_URL=database_url,
         SECRET_KEY=secret_key,
         DATABASE_NAME=database_name,
+        MAP_CONTROL_CENTER_ORIGINS=control_center_origins,
     )
 
 
@@ -104,3 +126,4 @@ EXPECTED_DATABASE_NAME = settings.EXPECTED_DATABASE_NAME
 DATABASE_URL = settings.DATABASE_URL
 SECRET_KEY = settings.SECRET_KEY
 DATABASE_NAME = settings.DATABASE_NAME
+MAP_CONTROL_CENTER_ORIGINS = settings.MAP_CONTROL_CENTER_ORIGINS

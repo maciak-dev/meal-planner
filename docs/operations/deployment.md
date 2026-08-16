@@ -67,6 +67,19 @@ record confirms a host service named `meal-planner.service` existed, but the
 unit definition and database command remain host-owned and are not assumed by
 this script.
 
+For the optional MAP Control Center read integration, the Meal application
+runtime may additionally set an exact comma-separated browser origin list:
+
+```bash
+MAP_CONTROL_CENTER_ORIGINS=https://map-ui.example
+```
+
+The default is empty (cross-origin access disabled). Wildcards, credentials,
+paths and non-HTTP schemes are rejected at startup. This setting only lets the
+configured browser origin read responses; Meal still requires its host-only
+session cookie and `super_admin` for `/api/v1/admin/*`. It does not share
+`SECRET_KEY`, credentials or database access with MAP.
+
 ## Apply flow
 
 The candidate ref is tested in a temporary detached worktree with pytest and

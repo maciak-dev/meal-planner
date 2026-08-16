@@ -106,3 +106,29 @@ class ConfigTests(unittest.TestCase):
                 },
             )
         self.assertEqual(settings.DATABASE_NAME, "meal_planner_test")
+
+    def test_control_center_origins_are_explicit_exact_origins(self) -> None:
+        config = importlib.import_module("app.core.config")
+        settings = config.load_settings(
+            load_env_file=False,
+            environ={
+                "ENV": "dev",
+                "DATABASE_URL": "sqlite:///meal-planner-test.sqlite3",
+                "MAP_CONTROL_CENTER_ORIGINS": "https://maciak.online/,http://localhost:5173",
+            },
+        )
+        self.assertEqual(
+            settings.MAP_CONTROL_CENTER_ORIGINS,
+            ("https://maciak.online", "http://localhost:5173"),
+        )
+
+        for invalid_origin in ("*", "https://*.example.com"):
+            with self.subTest(origin=invalid_origin), self.assertRaisesRegex(RuntimeError, "exact http"):
+                config.load_settings(
+                    load_env_file=False,
+                    environ={
+                        "ENV": "dev",
+                        "DATABASE_URL": "sqlite:///meal-planner-test.sqlite3",
+                        "MAP_CONTROL_CENTER_ORIGINS": invalid_origin,
+                    },
+                )

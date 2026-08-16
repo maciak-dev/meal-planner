@@ -6,6 +6,12 @@ Data aktualizacji: 2026-08-04
 
 `panel_admin` nie jest osobną aplikacją. To część obecnego monolitu Meal Plannera.
 
+MAP może odczytać dwa istniejące endpointy logów w owner-only Control Center,
+ale Meal nadal jest właścicielem danych, filtrów, roli `super_admin` i sesji.
+Jawna lista `MAP_CONTROL_CENTER_ORIGINS` włącza credentialed CORS tylko dla
+read methods; brak konfiguracji oznacza brak cross-origin access. Legacy UI
+pozostaje aktywne do potwierdzenia parity w realnym użyciu.
+
 Najważniejsze elementy:
 
 - HTML: `app/templates/admin_panel.html`
@@ -72,14 +78,15 @@ to powinny zostać przy module Meal Planner, nie w globalnym panelu MAP.
 - JWT cookie i walidacja sesji
 - kontrola dostępu do request logów i logów logowania
 
-## Proponowana granica MAP vs Meal Planner
+## Obowiązująca granica MAP vs Meal Planner
 
 - MAP:
-  - auth wspólny,
-  - role globalne,
-  - system logs,
-  - globalny panel administracyjny
+  - owner-only UI Control Center,
+  - prezentacja odpowiedzi API i degraded state,
+  - brak kopii logów i brak credentials Meal
 - Meal Planner:
+  - własny auth i rola `super_admin`,
+  - `login_log` / `request_log` i admin API,
   - przepisy,
   - shopping list,
   - ingredients dictionary,
@@ -99,13 +106,13 @@ to powinny zostać przy module Meal Planner, nie w globalnym panelu MAP.
 - smoke systemowej instancji RC potwierdził `GET /admin -> 401`, co jest poprawnym zachowaniem dla niezalogowanego użytkownika,
 - do smoke panelu należy używać `GET`, nie `HEAD`, bo endpointy nie obsługują `HEAD`.
 
-## Rekomendowana kolejność migracji
+## Dalsza kolejność migracji
 
-1. Ujednolicić auth/admin routing.
-2. Oddzielić serwisy i router admina od `main.py`.
-3. Dodać testy do admin API.
-4. Wydzielić panel do osobnego routera/aplikacji w tym samym repo.
-5. Dopiero potem przenosić go do MAP.
+1. Zweryfikować parity Control Center z legacy UI w realnym użyciu.
+2. Ujednolicić zduplikowany auth/admin routing wewnątrz Meal.
+3. Zaprojektować osobno jednorazowy, asymetrycznie podpisany owner handoff;
+   nie współdzielić `SECRET_KEY`.
+4. Dopiero po parity oznaczyć legacy panel jako deprecated.
 
 ## Ocena złożoności
 
