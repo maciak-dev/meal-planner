@@ -6,3 +6,4 @@ from .recipe_translation import RecipeTranslation
 from .recipe_ingredient import RecipeIngredient
 from .ingredient_alias import IngredientAlias
 from .store_section import StoreSection
+from .store import Store
