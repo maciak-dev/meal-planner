@@ -41,7 +41,7 @@ The persisted data is deliberately limited to the current Recipe model:
 * `is_public` selected by the user;
 * source URL, source name, source author and import timestamp;
 * optional structured `RecipeIngredient` rows with no automatic Ingredient
-  mapping;
+  mapping; an explicit catalogue mapping can later provide store preference;
 * an optional downloaded JPEG, PNG or WebP image.
 
 Servings, preparation/cooking times, categories and source-language metadata

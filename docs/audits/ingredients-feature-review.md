@@ -1,6 +1,9 @@
 # Ingredients Feature Review
 
-Data aktualizacji: 2026-08-04
+Data aktualizacji: 2026-08-16
+
+Status: Historical snapshot before the Shop foundation. The current contract is
+documented in `docs/architecture/recipe-ingredients-store.md`.
 
 ## Zakres feature
 
@@ -77,7 +80,7 @@ Nie znaleziono osobnego brancha feature na `origin` poza `main`.
 - startup RC z `ENV=prod` nie próbował zmieniać schematu tabeli
 - brak dodatkowych tabel wspierających feature sklepu/alejek
 
-## Problemy
+## Problemy znalezione w snapshotcie
 
 1. Feature jest tylko częściowo wdrożony.
 2. Model `ingredients` nie ma danych w produkcji.

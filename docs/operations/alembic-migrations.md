@@ -102,6 +102,7 @@ Liniowy, jeden head, wszystkie odwracalne.
 | 5 | `539387eab2be` | rozbudowa `ingredients` + `ingredient_aliases` + `recipe_ingredients` |
 | 6 | `8f9e43e7e225` | `recipes.source_url` / `source_name` / `source_author` / `imported_at` |
 | 7 | `69eea78ac02c` | `recipe_ingredients.parsed_name` |
+| 8 | `7a1c2d4e5f60` | `stores` + nullable `ingredients.preferred_store_id` |
 
 `alembic/env.py` bierze adres bazy z `app.core.config.DATABASE_URL`, nie z
 placeholdera w `alembic.ini`. Jedno źródło prawdy — migracje nie mogą trafić w
@@ -130,11 +131,11 @@ zera i jest właściwym poleceniem — **bez** `stamp`.
 alembic stamp head   # ← NIE. Nigdy na bazie bez wykonanych migracji.
 ```
 
-`stamp head` oznaczy **wszystkie siedem migracji jako wykonane, nie wykonując
+`stamp head` oznaczy **wszystkie osiem migracji jako wykonane, nie wykonując
 żadnej z nich**. Skutek:
 
 - schemat pozostaje niezmieniony — brak `users.language`, brak nowych tabel,
-- `alembic current` pokazuje `69eea78ac02c (head)`, czyli wygląda na sukces,
+- `alembic current` pokazuje `7a1c2d4e5f60 (head)`, czyli wygląda na sukces,
 - `alembic upgrade head` mówi, że nie ma nic do zrobienia,
 - **błąd wychodzi dopiero w aplikacji**, jako brakująca kolumna, i to
   potencjalnie długo po wdrożeniu.
@@ -176,6 +177,8 @@ kształcie produkcyjnym (`tests/test_migrations.py`, klasa
 - składniki zachowane wraz z `is_essential`; nowe `created_at`/`updated_at`
   wypełniają się automatycznie,
 - nowe kolumny `recipes` są `NULL` dla wszystkich istniejących wierszy,
+- `stores` startuje pusta, a `ingredients.preferred_store_id` pozostaje `NULL`,
+  więc istniejące składniki nie dostają domyślnego sklepu,
 - `recipe_translations` po migracji jest **pusta**.
 
 Trzy decyzje projektowe, które sprawiają, że to działa:
@@ -299,7 +302,7 @@ Baza nigdy nie była zarządzana Alembikiem.
    introspekcji" niżej. Rozjazd = zatrzymanie procedury.
 2. `alembic stamp 41e1afa8db94` — **wyłącznie baseline, nigdy `head`.**
 3. `alembic current` — musi pokazać `41e1afa8db94`.
-4. `alembic upgrade head` — zastosuje migracje 2–7.
+4. `alembic upgrade head` — zastosuje migracje 2–8.
 
 #### Stan B — `alembic_version` istnieje
 
@@ -309,10 +312,9 @@ Baza jest już zarządzana Alembikiem. **Nie stampuj niczego.**
    `8f9e43e7e225`.
 2. `alembic current` — potwierdź tę samą rewizję.
 3. `alembic upgrade head` — zastosuje **wyłącznie brakujące** migracje. Przy
-   `8f9e43e7e225` będzie to tylko `69eea78ac02c` (jedna nullable kolumna na
-   tabeli, która ma dziś zero wierszy).
-4. Jeżeli `version_num` jest inne niż `8f9e43e7e225` i inne niż
-   `69eea78ac02c` — **zatrzymaj się**. Nieoczekiwana rewizja oznacza, że baza
+   `8f9e43e7e225` będą to `69eea78ac02c` oraz `7a1c2d4e5f60`.
+4. Jeżeli `version_num` jest inne niż `8f9e43e7e225`, `69eea78ac02c` lub
+   `7a1c2d4e5f60` — **zatrzymaj się**. Nieoczekiwana rewizja oznacza, że baza
    ma historię, której ta procedura nie opisuje.
 
 ### Kroki wspólne (5–10)

@@ -10,6 +10,8 @@ GitHub: [https://github.com/maciak-dev/meal-planner](https://github.com/maciak-d
 
 - User login & role-based access (`user` / `admin`) 
 - Create, view, edit recipes 
+- Paginated/infinite-scroll recipe list with server-side search
+- Ingredient catalogue with optional preferred store
 - Automatic admin in development 
 - Environment-based config (`dev`, `prod`, `rc`)
 - Secure password hashing (bcrypt)
