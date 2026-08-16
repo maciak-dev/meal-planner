@@ -35,6 +35,7 @@ done
 
 repo_root="$(git rev-parse --show-toplevel 2>/dev/null)" || { echo "STOP: not inside a Git repository" >&2; exit 1; }
 cd "$repo_root"
+source "$repo_root/scripts/lib/release-test-env.sh"
 
 check_args=("$release_ref")
 [[ -n "$expected_sha" ]] && check_args+=(--expected-sha "$expected_sha")
@@ -66,6 +67,9 @@ echo "plan: backup = configured Meal Planner database"
 echo "plan: merge = --ff-only into main, then push origin/main"
 echo "plan: restart = systemctl restart ${MEAL_SERVICE_NAME:-<unset>}"
 echo "plan: smoke = systemd active + port ${MEAL_EXPECTED_PORT:-<unset>} + ${MEAL_LOGIN_URL:-<unset>}"
+resolve_meal_python_runner "$repo_root"
+python_bin="$MEAL_RELEASE_PYTHON_BIN"
+print_meal_test_plan "$python_bin"
 if ((dry_run)); then
   echo "PASS: Meal Planner release dry-run (no backup, merge, push, restart, or smoke mutation)"
   exit 0
@@ -76,26 +80,36 @@ fi
   exit 1
 }
 
-python_bin="${MEAL_PYTHON_BIN:-python3}"
-command -v "$python_bin" >/dev/null || { echo "STOP: Python executable not found: $python_bin" >&2; exit 1; }
-
-candidate_dir="$(mktemp -d "${TMPDIR:-/tmp}/meal-release.XXXXXX")"
+candidate_dir=""
+release_test_dir=""
+candidate_worktree_added=0
 cleanup_candidate() {
-  if [[ -n "${candidate_dir:-}" && -d "$candidate_dir" ]]; then
-    git worktree remove "$candidate_dir"
+  if ((candidate_worktree_added)) && [[ -n "$candidate_dir" && -d "$candidate_dir" ]]; then
+    git worktree remove "$candidate_dir" || echo "STOP: failed to remove candidate worktree: $candidate_dir" >&2
+  elif [[ -n "$candidate_dir" && -d "$candidate_dir" ]]; then
+    case "$candidate_dir" in
+      "${TMPDIR:-/tmp}"/meal-release.*) rmdir "$candidate_dir" 2>/dev/null || true ;;
+      *) echo "STOP: refusing to remove unexpected candidate directory: $candidate_dir" >&2 ;;
+    esac
+  fi
+  if [[ -n "$release_test_dir" && -d "$release_test_dir" ]]; then
+    case "$release_test_dir" in
+      "${TMPDIR:-/tmp}"/meal-release-tests.*) rm -rf -- "$release_test_dir" ;;
+      *) echo "STOP: refusing to remove unexpected test directory: $release_test_dir" >&2 ;;
+    esac
   fi
 }
 trap cleanup_candidate EXIT
+candidate_dir="$(mktemp -d "${TMPDIR:-/tmp}/meal-release.XXXXXX")"
+release_test_dir="$(mktemp -d "${TMPDIR:-/tmp}/meal-release-tests.XXXXXX")"
 git worktree add --detach "$candidate_dir" "$candidate_ref"
-pushd "$candidate_dir" >/dev/null
-"$python_bin" -m pytest
-"$python_bin" -m compileall -q app
-popd >/dev/null
+candidate_worktree_added=1
+run_meal_test_gate "$candidate_dir" "$release_test_dir/candidate" "$python_bin" "detached candidate $candidate_sha"
 git worktree remove "$candidate_dir"
+candidate_worktree_added=0
 candidate_dir=""
 
-"$python_bin" -m pytest
-"$python_bin" -m compileall -q app
+run_meal_test_gate "$repo_root" "$release_test_dir/current" "$python_bin" "current main $main_before"
 
 backup_root="${MEAL_BACKUP_ROOT:-}"
 [[ -n "$backup_root" ]] || { echo "STOP: MEAL_BACKUP_ROOT is required" >&2; exit 1; }

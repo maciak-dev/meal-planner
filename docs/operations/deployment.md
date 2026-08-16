@@ -40,8 +40,14 @@ Apply mode requires:
 - `MEAL_DB_KIND`: `sqlite` or `postgres`.
 - `MEAL_BACKUP_ROOT`: writable timestamped backup directory.
 - `MEAL_DB_PATH` for SQLite, or `MEAL_DATABASE_URL` for PostgreSQL.
-- `MEAL_PYTHON_BIN` optionally selects the production Python executable;
-  default is `python3`.
+- `MEAL_PYTHON_BIN` optionally selects the project Python executable. Without
+  it the script accepts only `venv/bin/python` or `.venv/bin/python` from the
+  production checkout. It never silently falls back to system `python3`.
+
+The selected runner must already contain the dependencies declared in
+`requirements.txt` and `requirements-test.txt`, including pytest. The release
+script verifies imports and stops with a clear error when the runner is absent
+or incomplete. It never installs packages during a release.
 
 Examples use placeholders intentionally:
 
@@ -64,10 +70,26 @@ this script.
 ## Apply flow
 
 The candidate ref is tested in a temporary detached worktree with pytest and
-`compileall`. The current checkout is also checked before the release. The
-configured database is then backed up with SQLite `.backup` or `pg_dump`; the
-archive must be non-empty. Only after that does the script perform an
-`--ff-only` merge into `main` and push `origin/main`.
+`compileall`. The current checkout is also checked before the release. Both
+gates run with `env -i`, dotenv disabled and `PYTHONPATH` pointing at the
+source tree being tested. A fidelity check imports `app.core.config` and
+requires it to come from that exact candidate/current checkout.
+
+Each gate receives its own temporary SQLite `DATABASE_URL`, a non-secret test
+`SECRET_KEY`, `APP_INSTANCE=test` and a temporary HOME/TMPDIR/pycache. The
+directory is removed at the end. Tests never inherit the production `.env`,
+never receive `MEAL_DATABASE_URL` and do not require a PostgreSQL server.
+
+`MEAL_DATABASE_URL` belongs only to the later PostgreSQL backup step and is
+passed only to `pg_dump`. It must never be copied to test `DATABASE_URL`.
+After both isolated gates pass, the configured database is backed up with
+SQLite `.backup` or `pg_dump`; the archive must be non-empty. Only after that
+does the script perform an `--ff-only` merge into `main` and push
+`origin/main`.
+
+Dry-run verifies the project runner and prints the runner, candidate-source
+policy, temporary SQLite policy and commands without printing the test secret,
+database URL or any production DSN. It creates no test database or worktree.
 
 The script restarts only `MEAL_SERVICE_NAME`, verifies systemd active state,
 the configured port and `MEAL_LOGIN_URL` returning HTTP 200.
