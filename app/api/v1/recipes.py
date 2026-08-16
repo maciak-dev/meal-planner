@@ -1,6 +1,6 @@
 import uuid, os
 
-from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, status
+from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -20,10 +20,21 @@ router = APIRouter()
 
 @router.get("/", response_model=list[RecipeRead])
 def list_recipes(
+    response: Response,
     db: Session = Depends(get_db),
-    user=Depends(get_current_user)
+    user=Depends(get_current_user),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(24, ge=1, le=100),
+    search: str | None = Query(None, max_length=200),
 ):
-    recipes = recipe_service.get_visible_recipes(db, user)
+    recipes = recipe_service.get_visible_recipes(
+        db, user, page=page, page_size=page_size, search=search
+    )
+    has_next = len(recipes) > page_size
+    recipes = recipes[:page_size]
+    response.headers["X-Recipes-Page"] = str(page)
+    response.headers["X-Recipes-Page-Size"] = str(page_size)
+    response.headers["X-Recipes-Has-Next"] = "true" if has_next else "false"
 
     return [
         RecipeRead(
@@ -173,6 +184,3 @@ def delete_recipe_image(
     db.refresh(recipe)
 
     return {"detail": "Image deleted"}
-
-
-

@@ -1,6 +1,7 @@
 import logging
 from datetime import datetime, timedelta
 
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 
@@ -139,11 +140,16 @@ def get_user_recipes(db: Session, user_id: int):
     )
 
 
-def get_visible_recipes(db: Session, user):
-    """Zwraca przepisy widoczne dla użytkownika."""
-    from sqlalchemy import or_
-
-    return (
+def get_visible_recipes(
+    db: Session,
+    user,
+    *,
+    page: int = 1,
+    page_size: int = 24,
+    search: str | None = None,
+):
+    """Return one deterministic page without loading the full recipe table."""
+    query = (
         db.query(Recipe)
         .filter(
             or_(
@@ -151,7 +157,20 @@ def get_visible_recipes(db: Session, user):
                 Recipe.is_public == True
             )
         )
-        .order_by(Recipe.created_at.desc())
+    )
+    if search and search.strip():
+        term = f"%{search.strip()}%"
+        query = query.filter(
+            or_(
+                Recipe.name.ilike(term),
+                Recipe.description.ilike(term),
+                Recipe.ingredients.ilike(term),
+            )
+        )
+    return (
+        query.order_by(Recipe.created_at.desc(), Recipe.id.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size + 1)
         .all()
     )
 
