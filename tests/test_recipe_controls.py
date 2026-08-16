@@ -141,11 +141,13 @@ class RecipePaginationUiTests(unittest.TestCase):
         self.assertIn("Recipes.load({ reset: true, query })", RECIPES_JS)
         self.assertNotIn("box.style.display = text.includes(query)", RECIPES_JS)
 
-    def test_shop_catalog_reuses_existing_recipe_surfaces(self) -> None:
-        self.assertIn('id="shop-catalog" class="recipe-box"', RECIPES_HTML)
+    def test_store_layout_settings_reuses_existing_recipe_surfaces(self) -> None:
+        self.assertIn('id="open-store-layout-btn"', RECIPES_HTML)
+        self.assertIn('id="store-layout-modal"', RECIPES_HTML)
+        self.assertIn('id="shopping-store-select"', RECIPES_HTML)
         self.assertIn("/api/v1/stores", RECIPES_JS)
         self.assertIn("/api/v1/ingredients", RECIPES_JS)
-        self.assertIn("/store", RECIPES_JS)
+        self.assertIn("/sections", RECIPES_JS)
 
 
 class MobileCtaSizeTests(unittest.TestCase):

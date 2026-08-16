@@ -626,7 +626,7 @@ const Shopping = {
         listEl.querySelectorAll(".shopping-item").forEach(el => {
             oldPositions.set(el.dataset.id, el.getBoundingClientRect());
         });
-        const sortedList = [...list].sort((a, b) => a.done - b.done);
+        const sortedList = StoreLayouts.sortItems(list);
         listEl.replaceChildren();
         if (sortedList.length === 0) {
             listEl.appendChild(el("p", "muted", t("shopping.empty_state")));
@@ -843,87 +843,104 @@ const Shopping = {
 };
 
 
-const ShopCatalog = {
-    state: { stores: [], ingredients: [], loaded: false },
-
+const StoreLayouts = {
+    state: { stores: [], ingredients: [], layouts: new Map(), activeStoreId: null },
+    norm(value) { return String(value || "").trim().toLocaleLowerCase().replace(/\s+/g, " "); },
     async load() {
-        if (this.state.loaded) return;
         try {
             const [storesResponse, ingredientsResponse] = await Promise.all([
-                Api.get("/api/v1/stores"),
-                Api.get("/api/v1/ingredients")
+                Api.get("/api/v1/stores"), Api.get("/api/v1/ingredients")
             ]);
             this.state.stores = await storesResponse.json();
             this.state.ingredients = await ingredientsResponse.json();
-            this.state.loaded = true;
-            this.render();
-        } catch (err) {
-            console.error("Error loading ingredient catalogue:", err);
-            const list = document.getElementById("shop-catalog-list");
-            if (list) list.textContent = t("shop.catalog_error");
-        }
+            const saved = localStorage.getItem("activeShoppingStoreId");
+            this.state.activeStoreId = saved && this.state.stores.some(s => String(s.id) === saved) ? Number(saved) : null;
+            this.renderStoreChoices();
+            if (this.state.activeStoreId) await this.loadLayout(this.state.activeStoreId);
+        } catch (err) { console.error("Error loading store layouts:", err); }
     },
-
-    render() {
-        const list = document.getElementById("shop-catalog-list");
-        if (!list) return;
-        list.className = "shop-catalog-list";
+    async loadLayout(storeId) {
+        if (!storeId) return;
+        const response = await Api.get(`/api/v1/stores/${storeId}/layout`);
+        const layout = await response.json();
+        this.state.layouts.set(Number(storeId), layout);
+        this.renderStoreChoices();
+        this.renderEditor();
+        Shopping.render();
+    },
+    renderStoreChoices() {
+        [document.getElementById("shopping-store-select"), document.getElementById("store-layout-select")].forEach(select => {
+            if (!select) return;
+            const current = String(this.state.activeStoreId || "");
+            select.replaceChildren();
+            if (select.id === "shopping-store-select") {
+                const none = el("option", null, t("shop.no_store")); none.value = ""; select.appendChild(none);
+            }
+            this.state.stores.forEach(store => { const option = el("option", null, store.name); option.value = String(store.id); option.selected = String(store.id) === current; select.appendChild(option); });
+        });
+        const rename = document.getElementById("store-rename");
+        const selected = this.state.stores.find(store => store.id === Number(this.state.activeStoreId));
+        if (rename && selected) rename.value = selected.name;
+    },
+    selectStore(value) {
+        this.state.activeStoreId = value ? Number(value) : null;
+        if (this.state.activeStoreId) localStorage.setItem("activeShoppingStoreId", String(this.state.activeStoreId));
+        else localStorage.removeItem("activeShoppingStoreId");
+        this.renderStoreChoices();
+        if (this.state.activeStoreId) this.loadLayout(this.state.activeStoreId);
+        Shopping.render();
+    },
+    sortItems(items) {
+        const layout = this.state.layouts.get(Number(this.state.activeStoreId));
+        if (!layout) return [...items].sort((a, b) => a.done - b.done);
+        const sections = new Map(layout.sections.map(s => [s.id, s.position]));
+        const placements = new Map(layout.placements.map(p => [p.ingredient_id, p]));
+        const names = new Map();
+        this.state.ingredients.forEach(i => [i.name, i.canonical_name_pl, i.canonical_name_en].filter(Boolean).forEach(n => names.set(this.norm(n), i.id)));
+        return [...items].map((item, index) => {
+            const ingredientId = names.get(this.norm(item.name));
+            const placement = placements.get(ingredientId);
+            const rank = placement ? [0, sections.get(placement.store_section_id) ?? 10**9, placement.position ?? 10**9, index] : [1, 0, 0, index];
+            return { item, index, rank };
+        }).sort((a, b) => a.item.done - b.item.done || a.rank[0] - b.rank[0] || a.rank[1] - b.rank[1] || a.rank[2] - b.rank[2] || a.rank[3] - b.rank[3]).map(x => x.item);
+    },
+    renderEditor() {
+        const list = document.getElementById("store-layout-list"); if (!list) return;
         list.replaceChildren();
-        if (!this.state.ingredients.length) {
-            list.appendChild(el("p", "muted", t("shop.no_ingredients")));
-            return;
-        }
-        this.state.ingredients.forEach(ingredient => {
-            const row = el("div", "shop-catalog-row");
-            row.appendChild(el("span", null, ingredient.name));
-            const select = document.createElement("select");
-            select.setAttribute("aria-label", ingredient.name);
-            const empty = el("option", null, t("shop.no_store"));
-            empty.value = "";
-            select.appendChild(empty);
-            this.state.stores.forEach(store => {
-                const option = el("option", null, store.name);
-                option.value = String(store.id);
-                option.selected = store.id === ingredient.preferred_store_id;
-                select.appendChild(option);
-            });
-            select.value = ingredient.preferred_store_id ? String(ingredient.preferred_store_id) : "";
-            select.addEventListener("change", () => this.setStore(ingredient.id, select.value));
-            row.appendChild(select);
+        const layout = this.state.layouts.get(Number(this.state.activeStoreId));
+        if (!layout) { list.appendChild(el("p", "muted", t("shop.choose_store"))); return; }
+        layout.sections.forEach((section, index) => {
+            const row = el("div", "shop-catalog-row"); row.appendChild(el("span", null, `${section.position + 1}. ${section.name}`));
+            [ ["↑", index > 0 ? section.position - 1 : null], ["↓", index < layout.sections.length - 1 ? section.position + 1 : null] ].forEach(([label, position]) => { const button = el("button", "secondary small", label); button.type = "button"; button.disabled = position === null; button.addEventListener("click", async () => { await Api.patch(`/api/v1/stores/${layout.id}/sections/${section.id}`, { name: section.name, position }); await this.loadLayout(layout.id); }); row.appendChild(button); });
+            const remove = el("button", "secondary small", "×"); remove.type = "button"; remove.addEventListener("click", async () => { await Api.delete(`/api/v1/stores/${layout.id}/sections/${section.id}`); await this.loadLayout(layout.id); }); row.appendChild(remove);
             list.appendChild(row);
         });
-    },
-
-    async setStore(ingredientId, value) {
-        try {
-            const response = await Api.patch(`/api/v1/ingredients/${ingredientId}/store`, {
-                preferred_store_id: value ? Number(value) : null
+        const ingredientSelect = document.getElementById("placement-ingredient");
+        const sectionSelect = document.getElementById("placement-section");
+        if (ingredientSelect) { ingredientSelect.replaceChildren(); this.state.ingredients.forEach(i => { const o = el("option", null, i.name); o.value = String(i.id); ingredientSelect.appendChild(o); }); }
+        if (sectionSelect) { sectionSelect.replaceChildren(); layout.sections.forEach(s => { const o = el("option", null, s.name); o.value = String(s.id); sectionSelect.appendChild(o); }); }
+        const placements = document.getElementById("store-placement-list");
+        if (placements) {
+            placements.replaceChildren(); placements.appendChild(el("p", "muted", t("shop.placement_help")));
+            layout.placements.forEach(placement => {
+                const row = el("div", "shop-catalog-row");
+                const ingredient = this.state.ingredients.find(i => i.id === placement.ingredient_id);
+                const section = layout.sections.find(s => s.id === placement.store_section_id);
+                row.appendChild(el("span", null, `${ingredient?.name || placement.ingredient_id} · ${section?.name || "?"}${placement.position != null ? ` · ${placement.position + 1}` : ""}`));
+                const remove = el("button", "secondary small", "×"); remove.type = "button"; remove.addEventListener("click", async () => { await Api.delete(`/api/v1/stores/${layout.id}/placements/${placement.id}`); await this.loadLayout(layout.id); }); row.appendChild(remove); placements.appendChild(row);
             });
-            const updated = await response.json();
-            const ingredient = this.state.ingredients.find(item => item.id === ingredientId);
-            if (ingredient) ingredient.preferred_store_id = updated.preferred_store_id;
-            UI.toast(t("shop.store_saved"));
-        } catch (err) {
-            console.error(err);
-            UI.toast(t("toast.server_error"), "warn");
-            this.render();
         }
     },
-
-    async addStore(name) {
-        const response = await Api.post("/api/v1/stores", { name });
-        this.state.stores.push(await response.json());
-        this.state.stores.sort((a, b) => a.name.localeCompare(b.name));
-        this.render();
-    },
-
-    async addIngredient(name) {
-        const response = await Api.post("/api/v1/ingredients", { name });
-        this.state.ingredients.push(await response.json());
-        this.state.ingredients.sort((a, b) => a.name.localeCompare(b.name));
-        this.render();
+    async addStore(name) { const response = await Api.post("/api/v1/stores", { name }); this.state.stores.push(await response.json()); this.renderStoreChoices(); },
+    async renameStore(name) { if (!this.state.activeStoreId) return; const response = await Api.patch(`/api/v1/stores/${this.state.activeStoreId}`, { name }); const store = await response.json(); const current = this.state.stores.find(item => item.id === store.id); if (current) current.name = store.name; this.renderStoreChoices(); },
+    async addSection(name) { if (!this.state.activeStoreId) return; await Api.post(`/api/v1/stores/${this.state.activeStoreId}/sections`, { name }); await this.loadLayout(this.state.activeStoreId); },
+    async addPlacement(ingredientId, sectionId, position) {
+        if (!this.state.activeStoreId) return;
+        await Api.post(`/api/v1/stores/${this.state.activeStoreId}/placements`, { ingredient_id: Number(ingredientId), store_section_id: Number(sectionId), position: position === "" ? null : Number(position) });
+        await this.loadLayout(this.state.activeStoreId);
     }
 };
+const ShopCatalog = StoreLayouts;
 
 
 const App = {
@@ -938,25 +955,45 @@ const App = {
         }
         Shopping.render();
         Shopping.updateImportButton();
+        StoreLayouts.load();
+        document.getElementById("shopping-store-select")?.addEventListener("change", event => StoreLayouts.selectStore(event.target.value));
+        document.getElementById("store-layout-select")?.addEventListener("change", event => StoreLayouts.selectStore(event.target.value));
+        document.getElementById("open-store-layout-btn")?.addEventListener("click", () => {
+            UI.openModal("store-layout-modal"); StoreLayouts.renderStoreChoices(); StoreLayouts.renderEditor();
+        });
+        document.querySelector("[data-close-store-layout]")?.addEventListener("click", () => UI.closeModal("store-layout-modal"));
         document.getElementById("store-form")?.addEventListener("submit", async event => {
             event.preventDefault();
             const input = document.getElementById("store-name");
             try {
-                await ShopCatalog.addStore(input.value);
+                await StoreLayouts.addStore(input.value);
+                input.value = "";
+                UI.toast(t("shop.store_saved"));
+            } catch (err) {
+                UI.toast(t("toast.server_error"), "warn");
+            }
+        });
+        document.getElementById("section-form")?.addEventListener("submit", async event => {
+            event.preventDefault();
+            const input = document.getElementById("section-name");
+            try {
+                await StoreLayouts.addSection(input.value);
                 input.value = "";
             } catch (err) {
                 UI.toast(t("toast.server_error"), "warn");
             }
         });
-        document.getElementById("ingredient-form")?.addEventListener("submit", async event => {
+        document.getElementById("store-rename-form")?.addEventListener("submit", async event => {
             event.preventDefault();
-            const input = document.getElementById("ingredient-name");
+            try { await StoreLayouts.renameStore(document.getElementById("store-rename").value); UI.toast(t("shop.store_saved")); }
+            catch (err) { UI.toast(t("toast.server_error"), "warn"); }
+        });
+        document.getElementById("placement-form")?.addEventListener("submit", async event => {
+            event.preventDefault();
             try {
-                await ShopCatalog.addIngredient(input.value);
-                input.value = "";
-            } catch (err) {
-                UI.toast(t("toast.server_error"), "warn");
-            }
+                await StoreLayouts.addPlacement(document.getElementById("placement-ingredient").value, document.getElementById("placement-section").value, document.getElementById("placement-position").value);
+                document.getElementById("placement-position").value = "";
+            } catch (err) { UI.toast(t("toast.server_error"), "warn"); }
         });
         this.bindEvents();
     },
@@ -1207,7 +1244,7 @@ function showModule(name) {
 
     if (name === "shopping") {
         Shopping.render();
-        ShopCatalog.load();
+        StoreLayouts.load();
     }
 }
 

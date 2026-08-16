@@ -11,6 +11,13 @@ produkcję. Granice operacyjne pozostają takie, jak w
 [production-guardrails.md](production-guardrails.md) — ten dokument ich nie
 rozluźnia.
 
+## Store route preset extension
+
+Revision `8b2c3d4e5f61` adds per-store section ownership and ingredient placements.
+The migration is additive: existing global sections and
+`Ingredient.preferred_store_id` remain available for compatibility; recipe and
+shopping-list data are not rewritten.
+
 ## Stan przed tą zmianą
 
 Schemat powstawał wyłącznie przez `Base.metadata.create_all()` w
