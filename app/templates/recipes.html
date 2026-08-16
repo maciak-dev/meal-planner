@@ -91,7 +91,7 @@
 <section id="recipes-module">
 <section class="controls">
 
-<input id="search" placeholder="{{ t('recipes.search_placeholder', lang) }}" oninput="filterRecipes()">
+<input id="search" placeholder="{{ t('recipes.search_placeholder', lang) }}" oninput="filterRecipes()" autocomplete="off">
 <div class="recipe-actions">
 <button id="add-recipe-btn" class="collapsible">{{ t('recipes.add_button', lang) }}</button>
 <button id="open-import-url-btn" class="secondary">{{ t('import.button', lang) }}</button>
@@ -120,10 +120,27 @@
 <div class="divider"></div>
 </section>
 
-    <section id="recipes-container"></section>
+    <section id="recipes-container" aria-live="polite"></section>
+    <p id="recipes-status" class="muted" role="status"></p>
+    <div id="recipes-sentinel" aria-hidden="true"></div>
 </section>
 <section id="shopping-module" style="display:none;">
     <h2 id="shopping-title">{{ t('shopping.title_default', lang) }}</h2>
+    <section id="shop-catalog" class="recipe-box" aria-labelledby="shop-catalog-title">
+        <h3 id="shop-catalog-title">{{ t('shop.catalog_title', lang) }}</h3>
+        <p class="muted">{{ t('shop.catalog_help', lang) }}</p>
+        <div class="shop-catalog-forms">
+            <form id="store-form" class="shop-catalog-form">
+                <input id="store-name" maxlength="120" required placeholder="{{ t('shop.store_placeholder', lang) }}">
+                <button class="secondary" type="submit">{{ t('shop.add_store', lang) }}</button>
+            </form>
+            <form id="ingredient-form" class="shop-catalog-form">
+                <input id="ingredient-name" maxlength="160" required placeholder="{{ t('shop.ingredient_placeholder', lang) }}">
+                <button class="primary" type="submit">{{ t('shop.add_ingredient', lang) }}</button>
+            </form>
+        </div>
+        <div id="shop-catalog-list" aria-live="polite"></div>
+    </section>
     <button class="secondary" onclick="toggleShoppingMode()">
     {{ t('shopping.mode_button', lang) }}
     </button>        <button

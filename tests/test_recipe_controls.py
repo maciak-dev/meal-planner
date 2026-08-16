@@ -130,6 +130,24 @@ class DeadIngredientsMenuTests(unittest.TestCase):
         self.assertNotIn("Ingredients feature coming soon", RECIPES_JS)
 
 
+class RecipePaginationUiTests(unittest.TestCase):
+    def test_recipe_list_uses_server_pagination_and_intersection_observer(self) -> None:
+        self.assertIn("X-Recipes-Has-Next", RECIPES_JS)
+        self.assertIn("new IntersectionObserver", RECIPES_JS)
+        self.assertIn("Recipes.loadNext()", RECIPES_JS)
+        self.assertIn("page_size", RECIPES_JS)
+
+    def test_search_resets_query_and_does_not_filter_only_loaded_dom(self) -> None:
+        self.assertIn("Recipes.load({ reset: true, query })", RECIPES_JS)
+        self.assertNotIn("box.style.display = text.includes(query)", RECIPES_JS)
+
+    def test_shop_catalog_reuses_existing_recipe_surfaces(self) -> None:
+        self.assertIn('id="shop-catalog" class="recipe-box"', RECIPES_HTML)
+        self.assertIn("/api/v1/stores", RECIPES_JS)
+        self.assertIn("/api/v1/ingredients", RECIPES_JS)
+        self.assertIn("/store", RECIPES_JS)
+
+
 class MobileCtaSizeTests(unittest.TestCase):
     """Regresja: 'Dodaj przepis'/'Import z URL' na mobile stały się
     ogromnymi banerami na całą szerokość (width:100% wymuszone bez wyjątku

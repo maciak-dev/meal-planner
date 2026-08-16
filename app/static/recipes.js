@@ -41,8 +41,8 @@ const Api = {
         return res;
     },
 
-    get(url) {
-        return this.request(url);
+    get(url, options = {}) {
+        return this.request(url, options);
     },
 
     post(url, data) {
@@ -209,23 +209,67 @@ function clearForm(fields) {
 const Recipes = {
     state: {
         cache: [],
-        ingredientsMap: {}
+        ingredientsMap: {},
+        page: 0,
+        pageSize: 24,
+        hasNext: true,
+        loading: false,
+        query: "",
+        requestId: 0,
+        controller: null,
+        ingredientsLoaded: false
     },
 
-    async load() {
-        try {
-            const mapRes = await Api.get("/ingredients/map");
-            this.state.ingredientsMap = await mapRes.json();
+    async load({ reset = true, query = this.state.query } = {}) {
+        if (reset) {
+            this.state.controller?.abort();
+            this.state.controller = new AbortController();
+            this.state.requestId += 1;
+            this.state.page = 0;
+            this.state.hasNext = true;
+            this.state.query = query.trim();
+            this.state.cache = [];
+            this.render([]);
+        } else if (this.state.loading || !this.state.hasNext) {
+            return;
+        }
 
-            const res = await Api.get("/api/v1/recipes/");
+        const requestId = this.state.requestId;
+        const page = this.state.page + 1;
+        this.state.loading = true;
+        this.renderStatus(page === 1 ? "loading" : "loading-more");
+        try {
+            if (!this.state.ingredientsLoaded) {
+                const mapRes = await Api.get("/ingredients/map", { signal: this.state.controller.signal });
+                this.state.ingredientsMap = await mapRes.json();
+                this.state.ingredientsLoaded = true;
+            }
+
+            const params = new URLSearchParams({ page: String(page), page_size: String(this.state.pageSize) });
+            if (this.state.query) params.set("search", this.state.query);
+            const res = await Api.get(`/api/v1/recipes/?${params.toString()}`, { signal: this.state.controller.signal });
             const data = await res.json();
 
-            this.state.cache = data;
-            this.render(data);
+            if (requestId !== this.state.requestId) return;
+            const known = new Set(this.state.cache.map(recipe => recipe.id));
+            const fresh = data.filter(recipe => !known.has(recipe.id));
+            this.state.cache.push(...fresh);
+            this.state.page = page;
+            this.state.hasNext = res.headers.get("X-Recipes-Has-Next") === "true";
+            this.render(fresh, { append: page > 1 });
+            this.renderStatus(this.state.cache.length === 0 ? "empty" : this.state.hasNext ? "ready" : "end");
 
         } catch (err) {
+            if (err.name === "AbortError" || requestId !== this.state.requestId) return;
             console.error("Error loading recipes:", err);
+            this.renderStatus("error");
+        } finally {
+            if (requestId === this.state.requestId) this.state.loading = false;
         }
+    },
+
+    loadNext() {
+        return this.load({ reset: false });
     },
 
     renderRecipeBadge(recipe) {
@@ -250,10 +294,34 @@ const Recipes = {
     },
 
 
-    render(recipes) {
+    render(recipes, { append = false } = {}) {
         const container = RecipesUI.list();
-        container.replaceChildren();
+        if (!append) container.replaceChildren();
         recipes.forEach(r => container.appendChild(this.renderRecipeCard(r)));
+    },
+
+    renderStatus(state) {
+        const status = document.getElementById("recipes-status");
+        if (!status) return;
+        const messages = {
+            loading: t("recipes.loading"),
+            "loading-more": t("recipes.loading_more"),
+            empty: t("recipes.empty"),
+            end: t("recipes.end"),
+            error: t("recipes.load_error"),
+            ready: ""
+        };
+        status.replaceChildren();
+        if (state === "error") {
+            status.appendChild(el("span", null, messages.error));
+            const retry = el("button", "secondary", t("common.retry"));
+            retry.type = "button";
+            retry.addEventListener("click", () => this.load({ reset: true }));
+            status.appendChild(retry);
+        } else {
+            status.textContent = messages[state] || "";
+        }
+        status.classList.toggle("error", state === "error");
     },
 
     /**
@@ -382,7 +450,7 @@ const Recipes = {
                 .then(res => res.json())
                 .then(data => uploadRecipeImage(data.id, "add-image"))
                 .then(() => {
-                    Recipes.load();
+                    Recipes.load({ reset: true });
                     clearForm(RecipesUI.add);
                     RecipesUI.add.preview().style.display = "none";
                     RecipesUI.add.image().value = "";
@@ -432,7 +500,7 @@ const Recipes = {
 
                 editingId = null;
                 closeEdit();
-                await Recipes.load();
+                await Recipes.load({ reset: true });
 
                 UI.toast(t("toast.recipe_updated"), "success");
             } catch (err) {
@@ -775,12 +843,121 @@ const Shopping = {
 };
 
 
+const ShopCatalog = {
+    state: { stores: [], ingredients: [], loaded: false },
+
+    async load() {
+        if (this.state.loaded) return;
+        try {
+            const [storesResponse, ingredientsResponse] = await Promise.all([
+                Api.get("/api/v1/stores"),
+                Api.get("/api/v1/ingredients")
+            ]);
+            this.state.stores = await storesResponse.json();
+            this.state.ingredients = await ingredientsResponse.json();
+            this.state.loaded = true;
+            this.render();
+        } catch (err) {
+            console.error("Error loading ingredient catalogue:", err);
+            const list = document.getElementById("shop-catalog-list");
+            if (list) list.textContent = t("shop.catalog_error");
+        }
+    },
+
+    render() {
+        const list = document.getElementById("shop-catalog-list");
+        if (!list) return;
+        list.className = "shop-catalog-list";
+        list.replaceChildren();
+        if (!this.state.ingredients.length) {
+            list.appendChild(el("p", "muted", t("shop.no_ingredients")));
+            return;
+        }
+        this.state.ingredients.forEach(ingredient => {
+            const row = el("div", "shop-catalog-row");
+            row.appendChild(el("span", null, ingredient.name));
+            const select = document.createElement("select");
+            select.setAttribute("aria-label", ingredient.name);
+            const empty = el("option", null, t("shop.no_store"));
+            empty.value = "";
+            select.appendChild(empty);
+            this.state.stores.forEach(store => {
+                const option = el("option", null, store.name);
+                option.value = String(store.id);
+                option.selected = store.id === ingredient.preferred_store_id;
+                select.appendChild(option);
+            });
+            select.value = ingredient.preferred_store_id ? String(ingredient.preferred_store_id) : "";
+            select.addEventListener("change", () => this.setStore(ingredient.id, select.value));
+            row.appendChild(select);
+            list.appendChild(row);
+        });
+    },
+
+    async setStore(ingredientId, value) {
+        try {
+            const response = await Api.patch(`/api/v1/ingredients/${ingredientId}/store`, {
+                preferred_store_id: value ? Number(value) : null
+            });
+            const updated = await response.json();
+            const ingredient = this.state.ingredients.find(item => item.id === ingredientId);
+            if (ingredient) ingredient.preferred_store_id = updated.preferred_store_id;
+            UI.toast(t("shop.store_saved"));
+        } catch (err) {
+            console.error(err);
+            UI.toast(t("toast.server_error"), "warn");
+            this.render();
+        }
+    },
+
+    async addStore(name) {
+        const response = await Api.post("/api/v1/stores", { name });
+        this.state.stores.push(await response.json());
+        this.state.stores.sort((a, b) => a.name.localeCompare(b.name));
+        this.render();
+    },
+
+    async addIngredient(name) {
+        const response = await Api.post("/api/v1/ingredients", { name });
+        this.state.ingredients.push(await response.json());
+        this.state.ingredients.sort((a, b) => a.name.localeCompare(b.name));
+        this.render();
+    }
+};
+
+
 const App = {
     init() {
         UI.theme.load();
-        Recipes.load();
+        Recipes.load({ reset: true });
+        const sentinel = document.getElementById("recipes-sentinel");
+        if (sentinel && "IntersectionObserver" in window) {
+            new IntersectionObserver(entries => {
+                if (entries.some(entry => entry.isIntersecting)) Recipes.loadNext();
+            }, { rootMargin: "320px 0px" }).observe(sentinel);
+        }
         Shopping.render();
         Shopping.updateImportButton();
+        document.getElementById("store-form")?.addEventListener("submit", async event => {
+            event.preventDefault();
+            const input = document.getElementById("store-name");
+            try {
+                await ShopCatalog.addStore(input.value);
+                input.value = "";
+            } catch (err) {
+                UI.toast(t("toast.server_error"), "warn");
+            }
+        });
+        document.getElementById("ingredient-form")?.addEventListener("submit", async event => {
+            event.preventDefault();
+            const input = document.getElementById("ingredient-name");
+            try {
+                await ShopCatalog.addIngredient(input.value);
+                input.value = "";
+            } catch (err) {
+                UI.toast(t("toast.server_error"), "warn");
+            }
+        });
         this.bindEvents();
     },
 
@@ -968,7 +1145,7 @@ async function confirmDeleteYes() {
 
         closeDeleteModal();
         closeEdit();
-        Recipes.load();
+        Recipes.load({ reset: true });
         UI.toast(t("toast.recipe_deleted"), "success");
 
     } catch (err) { console.error(err); UI.toast(t("toast.server_error"), "warn"); }
@@ -998,14 +1175,11 @@ function closeModal() {
 }
 
 
+let recipeSearchTimer = null;
 function filterRecipes() {
-    const query = document.getElementById("search").value.toLowerCase();
-    const recipes = document.querySelectorAll(".recipe-box");
-
-    recipes.forEach(box => {
-        const text = box.innerText.toLowerCase();
-        box.style.display = text.includes(query) ? "block" : "none";
-    });
+    clearTimeout(recipeSearchTimer);
+    const query = document.getElementById("search").value;
+    recipeSearchTimer = setTimeout(() => Recipes.load({ reset: true, query }), 250);
 }
 
 
@@ -1033,6 +1207,7 @@ function showModule(name) {
 
     if (name === "shopping") {
         Shopping.render();
+        ShopCatalog.load();
     }
 }
 
@@ -1775,7 +1950,7 @@ async function confirmImportSave() {
         const data = await res.json();
 
         closeImportDraftModal();
-        await Recipes.load();
+        await Recipes.load({ reset: true });
 
         if (data.warnings && data.warnings.includes("image_download_failed")) {
             UI.toast(t("import.warning.image_download_failed"), "warn");
