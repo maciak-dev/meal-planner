@@ -17,6 +17,8 @@ class Ingredient(Base):
     # preferowany sklep jest opcjonalną preferencją katalogu.
     canonical_name_pl = Column(String, nullable=True)
     canonical_name_en = Column(String, nullable=True)
+    # Legacy convenience field. Route sorting uses IngredientStorePlacement,
+    # because one ingredient can have a different location per store.
     preferred_store_id = Column(Integer, ForeignKey("stores.id"), nullable=True)
     default_store_section_id = Column(Integer, ForeignKey("store_sections.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)

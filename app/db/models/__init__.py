@@ -7,3 +7,4 @@ from .recipe_ingredient import RecipeIngredient
 from .ingredient_alias import IngredientAlias
 from .store_section import StoreSection
 from .store import Store
+from .ingredient_store_placement import IngredientStorePlacement

@@ -106,6 +106,48 @@ class ShopFeatureTests(unittest.TestCase):
         self.assertEqual(row.original_text, "500 ml mleka")
         self.assertEqual(recipe.ingredients, "500 ml mleka")
 
+    def test_store_route_sorts_shopping_items_and_keeps_unassigned_stable(self) -> None:
+        store = self.client.post("/api/v1/stores", json={"name": "Lidl"}).json()
+        sections = {}
+        for position, name in enumerate(("Pieczywo", "Warzywa / owoce", "Nabiał", "Chemia")):
+            response = self.client.post(
+                f"/api/v1/stores/{store['id']}/sections",
+                json={"name": name, "position": position},
+            )
+            self.assertEqual(response.status_code, 201)
+            sections[name] = response.json()["id"]
+        ids = {}
+        for name in ("bułki", "pomidor", "ogórek", "mleko", "dezodorant"):
+            ids[name] = self.client.post("/api/v1/ingredients", json={"name": name}).json()["id"]
+        placements = (("bułki", "Pieczywo", None), ("pomidor", "Warzywa / owoce", 2),
+                      ("ogórek", "Warzywa / owoce", 3), ("mleko", "Nabiał", None),
+                      ("dezodorant", "Chemia", None))
+        for name, section, position in placements:
+            response = self.client.post(
+                f"/api/v1/stores/{store['id']}/placements",
+                json={"ingredient_id": ids[name], "store_section_id": sections[section], "position": position},
+            )
+            self.assertEqual(response.status_code, 201)
+        response = self.client.post(
+            f"/api/v1/stores/{store['id']}/sort-items",
+            json={"items": [{"id": str(i), "name": name, "qty": 1} for i, name in enumerate(
+                ("dezodorant", "ogórek", "mleko", "bułki", "pomidor", "nieznany"))]},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual([item["name"] for item in response.json()["items"]],
+                         ["bułki", "pomidor", "ogórek", "mleko", "dezodorant", "nieznany"])
+        self.assertEqual(response.json()["unassigned_count"], 1)
+
+    def test_one_ingredient_can_have_different_store_placements(self) -> None:
+        ingredient = self.client.post("/api/v1/ingredients", json={"name": "mleko"}).json()
+        stores = [self.client.post("/api/v1/stores", json={"name": name}).json() for name in ("Lidl", "Biedronka")]
+        for index, store in enumerate(stores):
+            section = self.client.post(f"/api/v1/stores/{store['id']}/sections", json={"name": "Nabiał"}).json()
+            response = self.client.post(f"/api/v1/stores/{store['id']}/placements", json={
+                "ingredient_id": ingredient["id"], "store_section_id": section["id"], "position": index,
+            })
+            self.assertEqual(response.status_code, 201)
+
 
 if __name__ == "__main__":
     unittest.main()

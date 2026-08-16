@@ -18,7 +18,7 @@ from unittest import mock
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 BASELINE = "41e1afa8db94"
-HEAD = "7a1c2d4e5f60"
+HEAD = "8b2c3d4e5f61"
 # Musi odpowiadać COMPARISON_OPTIONS w alembic/env.py - inaczej testy mierzyłyby
 # drift inną miarą niż `alembic check` uruchamiany przy wdrożeniu.
 COMPARISON_OPTIONS = {"compare_type": True, "compare_server_default": True}
@@ -31,6 +31,7 @@ EXPECTED_CHAIN = [
     "8f9e43e7e225",  # recipes.source_*
     "69eea78ac02c",  # recipe_ingredients.parsed_name
     "7a1c2d4e5f60",  # stores + ingredient.preferred_store_id
+    "8b2c3d4e5f61",  # per-store sections + ingredient route placements
 ]
 
 
@@ -157,6 +158,7 @@ class EmptyDatabaseLifecycleTests(MigrationTestCase):
                 "recipe_translations", "recipe_ingredients", "ingredient_aliases",
                 "store_sections",
                 "stores",
+                "ingredient_store_placements",
             },
             self.table_names(),
         )
@@ -167,7 +169,7 @@ class EmptyDatabaseLifecycleTests(MigrationTestCase):
 
         self.assertEqual(self.current_revision(), BASELINE)
         tables = self.table_names()
-        for new_table in ("recipe_translations", "recipe_ingredients", "ingredient_aliases", "store_sections", "stores"):
+        for new_table in ("recipe_translations", "recipe_ingredients", "ingredient_aliases", "store_sections", "stores", "ingredient_store_placements"):
             self.assertNotIn(new_table, tables)
         # Tabele produkcyjne muszą przetrwać rollback.
         for kept in ("users", "recipes", "ingredients", "login_log", "request_log"):
