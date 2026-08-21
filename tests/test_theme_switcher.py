@@ -1,4 +1,4 @@
-"""Motywy interfejsu (cyber / scandi / map).
+"""Motywy interfejsu (cyber / MAP Light / MAP Dark; Scandi legacy).
 
 Testy statyczne w stylu test_ui_i18n.py: czytają pliki frontendu i pilnują
 kontraktu systemu motywów — jednej listy motywów, jednego klucza
@@ -16,7 +16,7 @@ RECIPES_JS = (APP_DIR / "static" / "recipes.js").read_text(encoding="utf-8")
 RECIPES_HTML = (APP_DIR / "templates" / "recipes.html").read_text(encoding="utf-8")
 LOGIN_HTML = (APP_DIR / "templates" / "login.html").read_text(encoding="utf-8")
 
-EXPECTED_THEMES = ["theme-cyber", "theme-scandi", "theme-map"]
+EXPECTED_THEMES = ["theme-cyber", "theme-light", "theme-map"]
 
 
 def js_theme_list(source: str) -> list[str]:
@@ -56,11 +56,17 @@ class ThemeContractTests(unittest.TestCase):
         self.assertRegex(LOGIN_HTML, r'if \(!THEMES\.includes\(theme\)\) theme = DEFAULT_THEME;')
 
     def test_css_has_a_block_for_every_switchable_theme(self) -> None:
-        """cyber jest motywem bazowym (:root w main.css); scandi i map
-        muszą mieć własne bloki w themes.css."""
-        self.assertIn("body.theme-scandi", THEMES_CSS)
+        """Cyber jest motywem bazowym, a oba warianty MAP mają kontrakt CSS.
+        Scandi pozostaje w pliku wyłącznie jako legacy compatibility CSS."""
+        self.assertIn("body.theme-light", THEMES_CSS)
         self.assertIn("body.theme-map", THEMES_CSS)
         self.assertIn("body.theme-cyber", MAIN_CSS)
+
+    def test_legacy_scandi_preference_maps_to_map_light(self) -> None:
+        self.assertIn('"theme-scandi": "theme-light"', RECIPES_JS)
+        self.assertIn('"theme-scandi": "theme-light"', LOGIN_HTML)
+        self.assertIn('data-theme-option="theme-light"', RECIPES_HTML)
+        self.assertNotIn('data-theme-option="theme-scandi"', RECIPES_HTML)
 
     def test_switcher_offers_every_theme(self) -> None:
         for theme in EXPECTED_THEMES:

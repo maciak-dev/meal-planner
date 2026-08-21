@@ -109,7 +109,8 @@ const UI = {
     theme: {
         /* Kolejność definiuje też cykl przełączania (toggle). Nowe motywy
            dopisujemy tutaj + blok body.theme-* w themes.css. */
-        THEMES: ["theme-cyber", "theme-scandi", "theme-map"],
+        THEMES: ["theme-cyber", "theme-light", "theme-map"],
+        LEGACY_ALIASES: { "theme-scandi": "theme-light" },
 
         /* Motyw dla nowych użytkowników i brakującej/niepoprawnej wartości
            w localStorage. Zapisany wybór użytkownika ma priorytet - to pole
@@ -117,14 +118,19 @@ const UI = {
         DEFAULT: "theme-map",
 
         set(theme) {
+            theme = this.LEGACY_ALIASES[theme] || theme;
             if (!this.THEMES.includes(theme)) theme = this.DEFAULT;
-            document.body.classList.remove(...this.THEMES);
+            document.body.classList.remove(...this.THEMES, "theme-scandi");
             document.body.classList.add(theme);
+            // MAP Light reuses the canonical MAP geometry/state selectors;
+            // the light token layer below supplies only luminance changes.
+            if (theme === "theme-light") document.body.classList.add("theme-map");
             localStorage.setItem("theme", theme);
             this.syncSwitcher(theme);
         },
 
         current() {
+            if (document.body.classList.contains("theme-light")) return "theme-light";
             return this.THEMES.find(t => document.body.classList.contains(t)) || this.DEFAULT;
         },
 

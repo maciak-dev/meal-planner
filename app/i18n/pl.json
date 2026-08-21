@@ -14,6 +14,8 @@
   "theme.cyber": "Cyber",
   "theme.scandi": "Scandi",
   "theme.map": "MAP",
+  "theme.map_dark": "MAP Dark",
+  "theme.map_light": "MAP Light",
   "recipes.search_placeholder": "Szukaj przepisów...",
   "recipes.loading": "Ładowanie przepisów…",
   "recipes.loading_more": "Ładowanie kolejnych przepisów…",
